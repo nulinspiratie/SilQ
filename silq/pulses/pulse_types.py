@@ -792,15 +792,6 @@ class MultiSinePulse(Pulse):
         if self.phase_reference == 'relative':
             t = t - self.t_start
 
-        amplitude = self.amplitude
-        if amplitude is None:
-            assert self.power is not None, f'Pulse {self.name} does not have ' \
-                                           f'a specified power_LO or amplitude_LO.'
-            if self['power'].unit == 'dBm':
-                # This formula assumes the source is 50 Ohm matched and power is in dBm
-                # A factor of 2 comes from the conversion from amplitude to RMS.
-                amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
-
         amplitudes = self.amplitudes
         if amplitudes is None:
             assert self.powers is not None, f'Pulse {self.name} does not have ' \
