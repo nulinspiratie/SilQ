@@ -223,14 +223,8 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def start(self):
         """Start instrument"""
-        try:
-            self.instrument.run(channels=[self._channels[channel].id for channel in
-                                          self.active_channels()])
-        except AssertionError:
-            logger.error('Driver connection error when starting arbstudio, retrying.')
-            time.sleep(3)
-            self.instrument.run(channels=[self._channels[channel].id for channel in
-                                          self.active_channels()])
+        self.instrument.run(channels=[self._channels[channel].id for channel in
+                                      self.active_channels()])
 
     def stop(self):
         """Stop instrument"""
