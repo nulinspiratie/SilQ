@@ -868,6 +868,7 @@ def plot_nuclear_up_proportions(
     up_proportions=None,
     threshold_up_proportion=None,
     shots_per_frequency=None,
+    slice=None
 ):
     if up_proportions is None:
         if data is None:
@@ -879,6 +880,9 @@ def plot_nuclear_up_proportions(
         ]
     if not up_proportions:
         raise RuntimeError(f'Could not find any up_proportions in dataset {data}')
+
+    if slice is not None:
+        up_proportions = [arr[slice] for arr in up_proportions]
 
     if threshold_up_proportion is None:
         logger.warning("No threshold_up_proportion provided. Using 0.5")
