@@ -938,7 +938,7 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        frequency_rate = self.frequency_deviation / self.duration
+        frequency_rate = 2 * self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
         amplitude = self.amplitude
         if amplitude is None:
