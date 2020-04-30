@@ -701,7 +701,6 @@ class MultiSinePulse(Pulse):
                  amplitude: float = None,
                  amplitudes: List[float] = None,
                  power: float = None,
-                 powers: List[float] = None,
                  offset: float = None,
                  frequency_sideband: float = None,
                  sideband_mode: float = None,
@@ -718,8 +717,6 @@ class MultiSinePulse(Pulse):
                                vals=vals.Numbers())
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
-        self.powers = Parameter(initial_value=powers, unit='dBm', set_cmd=None,
-                                vals=vals.Lists())
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
                                    set_cmd=None, vals=vals.Numbers())
         self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
@@ -735,9 +732,8 @@ class MultiSinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'frequencies', 'phase', 'power', 'powers', 'amplitude',
-             'amplitudes', 'phase', 'offset', 'frequency_sideband', 'sideband_mode',
-             'phase_reference'])
+            ['frequency', 'frequencies', 'phase', 'power', 'amplitude', 'amplitudes',
+             'phase', 'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
@@ -757,9 +753,7 @@ class MultiSinePulse(Pulse):
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
 
             if self.power is not None:
-                properties_str += f', power_LO={self.power} dBm'
-            if self.powers is not None:
-                properties_str += f', powers={self.powers} dBm'
+                properties_str += f', power={self.power} dBm'
             if self.amplitude is not None:
                 properties_str += f', A_LO={self.amplitude} V'
             if self.amplitudes is not None:
@@ -793,13 +787,11 @@ class MultiSinePulse(Pulse):
             t = t - self.t_start
 
         amplitudes = self.amplitudes
-        if amplitudes is None:
-            assert self.powers is not None, f'Pulse {self.name} does not have ' \
-                                            f'specified powers or amplitudes.'
-            if self['powers'].unit == 'dBm':
-                # This formula assumes the source is 50 Ohm matched and power is in dBm
-                # A factor of 2 comes from the conversion from amplitude to RMS.
-                amplitudes = np.sqrt(10**(np.array(self.powers)/10) * 1e-3 * 100)
+        assert amplitudes is not None, f'Pulse {self.name} does not have ' \
+                                       f'specified amplitudes.'
+
+        assert len(amplitudes) == len(self.frequencies), f'Pulse {self.name} does not have ' \
+                                                         f'equal number of amplitudes and frequencies.'
 
         waveform = 0.0
         for amp, freq in zip(amplitudes, self.frequencies):
