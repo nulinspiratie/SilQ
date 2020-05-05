@@ -1505,6 +1505,7 @@ def analyse_multi_state_readout(
                 results[f"possible_flips_{label1}_{label2}"] = 0
                 results[f"flips_{label1}_{label2}"] = 0
                 results[f"flip_probability_{label1}_{label2}"] = np.nan
+                results[f"filtered_flip_probability_{label1}_{label2}"] = np.nan
 
         return results
 
