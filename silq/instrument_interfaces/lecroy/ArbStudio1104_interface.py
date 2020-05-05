@@ -1,14 +1,12 @@
 import numpy as np
 import logging
 from typing import List
-import time
+from time import sleep
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
-from silq.meta_instruments.layout import SingleConnection, CombinedConnection
+from silq.meta_instruments.layout import SingleConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation, MarkerPulse
-from silq import config
-from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
 from qcodes.utils.helpers import arreqclose_in_list
 from qcodes.instrument.parameter import Parameter
@@ -103,7 +101,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.sequences = {}
 
     @parameter
-    def active_channels_get(self) -> List[str]:
+    def active_channels_get(self, parameter) -> List[str]:
         """Get all active channels used in pulses"""
         active_channels = [pulse.connection.output['channel'].name for pulse in
                            self.pulse_sequence]
@@ -212,13 +210,13 @@ class ArbStudio1104Interface(InstrumentInterface):
         # Clear waveforms and sequences
         for ch in self._output_channels.values():
             self.instrument._waveforms = [[] for _ in range(4)]
-            self.instrument.channels[f'ch{ch.id}'].sequence([])
+            self.instrument.channels[ch.name].sequence([])
 
         # Generate waveforms and sequences
         self.generate_waveforms_sequences()
 
         for ch in self.active_channels():
-            channel = self.instrument.channels[f'ch{ch}']
+            channel = self.instrument.channels[ch]
 
             channel.trigger_source = 'fp_trigger_in'
 
@@ -267,7 +265,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         """
         # Determine sampling rates
         sampling_rates = {
-            ch: 250e6 / self.channels[ch].sampling_rate_prescaler()
+            ch: 250e6 / self.instrument.channels[ch].sampling_rate_prescaler()
             for ch in self.active_channels()
         }
 
@@ -330,7 +328,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
     def load_waveforms_sequences(self):
         for ch in self.active_channels():
-            channel = self.instrument.channels[f'ch{ch}']
+            channel = self.instrument.channels[ch]
 
             if not self.force_upload_waveform():
                 # Check if all waveforms already exist on the arbstudio channel.
@@ -346,13 +344,17 @@ class ArbStudio1104Interface(InstrumentInterface):
                     # Remap sequences to existing waveforms
                     self.sequences[ch] = [
                         channel_idxs[sequence_idx]
-                        for sequence_idx in self.sequences[sequence_idx]
+                        for sequence_idx in self.sequences[ch]
                     ]
                     upload_waveforms = False
+                    logger.debug('waveforms already uploaded, skipping upload')
                 else:
                     upload_waveforms = True
+            else:
+                upload_waveforms = True
 
             if upload_waveforms:
+                channel.clear_waveforms()
                 for waveform in self.waveforms[ch]:
                     channel.add_waveform(waveform)
                 self.instrument.load_waveforms(channels=self.active_channels_id)
@@ -585,7 +587,6 @@ class MarkerPulseImplementation(PulseImplementation):
                      for ch in channels}
 
         return waveforms, sequences
-
 
 
 class TriggerPulseImplementation(PulseImplementation):
