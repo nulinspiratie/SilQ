@@ -1,8 +1,8 @@
 from typing import List
 import numpy as np
-from copy import copy
 from typing import Dict, Iterable
 from functools import partial
+import logging
 
 from silq.parameters.acquisition_parameters import AcquisitionParameter
 from silq.pulses.pulse_sequences import (
@@ -22,6 +22,9 @@ __all__ = [
     'ESRParameterComposite',
     'NMRParameterComposite'
 ]
+
+logger = logging.getLogger(__name__)
+
 
 class AcquisitionParameterComposite(AcquisitionParameter):
     def __init__(self, name, **kwargs):
@@ -422,8 +425,10 @@ class NMRParameterComposite(AcquisitionParameterComposite):
                     if key.startswith("filtered_shots")
                 )
             except StopIteration:
-                "No filtered_shots found, be sure to set " \
-                "analyses.initialization.settings.threshold_up_proportion"
+                logger.warning(
+                    "No filtered_shots found, be sure to set "
+                    "analyses.initialization.settings.threshold_up_proportion"
+                )
                 filtered_shots = self.results.initialization.up_proportions > 0.5
         else:
             # Do not use filtered shots
@@ -445,14 +450,14 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         return self.results
 
-    def plot_flips(self):
+    def plot_flips(self , figsize=(8, 3)):
         up_proportion_arrays = [
             val for key, val in self.results.ESR.items()
             if key.startswith('up_proportion')
         ]
-        assert len(up_proportion_arrays) == 2
+        assert len(up_proportion_arrays) >= 2
 
-        plot = MatPlot(up_proportion_arrays, marker='o', linestyle='')
+        plot = MatPlot(up_proportion_arrays, marker='o', ms=5, linestyle='', figsize=figsize)
 
         ax = plot[0]
         ax.set_xlim(-0.5, len(up_proportion_arrays[0])-0.5)
@@ -465,10 +470,25 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         ax.hlines(self.results.NMR.threshold_low, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
         ax.hlines(self.results.NMR.threshold_high, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
 
-        filtered_shots = self.results.NMR.filtered_shots
-        for k, up_proportion_pair in enumerate(zip(*up_proportion_arrays)):
-            color = 'green' if filtered_shots[k] else 'red'
-            ax.plot([k, k], up_proportion_pair, color=color, zorder=-1)
+        if 'initialization' in self.results:
+            plot.add(self.results.initialization.up_proportions, marker='o', ms=8,  linestyle='', color='grey', zorder=0, alpha=0.5)
+            initialization_filtered_shots = next(
+                val for key, val in self.results["initialization"].items()
+                if key.startswith("filtered_shots")
+            )
+        else:
+            initialization_filtered_shots = [True] * len(self.results.NMR.filtered_shots)
+
+        NMR_filtered_shots = self.results.NMR.filtered_shots
+        for k, up_proportion_tuple in enumerate(zip(*up_proportion_arrays)):
+            if not initialization_filtered_shots[k]:
+                color = 'orange'
+            elif not NMR_filtered_shots[k]:
+                color = 'red'
+            else:
+                color = 'green'
+
+            ax.plot([k, k], sorted(up_proportion_tuple)[-2:], color=color, zorder=-1)
 
         plot.tight_layout()
         return plot
