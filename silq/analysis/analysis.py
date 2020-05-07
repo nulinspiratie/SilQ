@@ -1083,6 +1083,9 @@ class AnalyseElectronReadout(Analysis):
         self.outputs.threshold_voltage = Parameter(
             initial_value=True, unit="V", set_cmd=None
         )
+        self.outputs.filtered_shots = Parameter(
+            initial_value=False, set_cmd=None
+        )
 
     @property
     def result_parameters(self):
@@ -1204,7 +1207,12 @@ def determine_threshold_up_proportion(
 
     # Calculate minimum and maximum up proportions
     up_max = np.nanmax(up_proportions_arrs, axis=0)
-    up_min = np.nanmin(up_proportions_arrs, axis=0)
+    if np.any(np.isnan(up_proportions_arrs)):
+        # Not sure what the best approach is here. up proportions can be NaN if
+        # a voltage threshold cannot be determined.
+        up_min = np.nanmin(up_proportions_arrs, axis=0)
+    else:
+        up_min = np.sort(up_proportions_arrs, axis=0)[:,-2]
 
     if threshold_up_proportion is not None:
         # Threshold already provided
@@ -1253,8 +1261,9 @@ def determine_threshold_up_proportion(
 
     # Determine the fraction of up proportion pairs that have one
     # up proportion above threshold_high and one below threshold_low
-    above_threshold = np.nansum(up_proportions_arrs >= results["threshold_high"], axis=0)
-    below_threshold = np.nansum(up_proportions_arrs <= results["threshold_low"], axis=0)
+    # Note 1e-11 for machine precision errors
+    above_threshold = np.nansum(up_proportions_arrs >= results["threshold_high"]-1e-11, axis=0)
+    below_threshold = np.nansum(up_proportions_arrs <= results["threshold_low"]+1e-11, axis=0)
 
     # Each column should have one up proportion above threshold, and the
     # remaining should be below threshold
