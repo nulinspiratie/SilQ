@@ -39,6 +39,7 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
 
         self.add_parameter(name='acquisition_controller',
                            set_cmd=None,
+                           snapshot_value=False,
                            docstring='Acquisition controller for acquiring '
                                      'data with SD digitizer. '
                                      'Must be acquisition controller object.')
