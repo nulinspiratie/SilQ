@@ -156,11 +156,15 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                         subfrequencies.append(subpulse.frequency)
                     elif isinstance(subpulse, str):
                         subfrequencies.append(self.pulse_settings[subpulse].frequency)
+                    elif isinstance(subpulse, PulseSequence):
+                        subfrequencies.append(None)
                     else:
                         raise RuntimeError(
                             f'RF subpulse must be a pulse or a string: {repr(subpulse)}'
                         )
                 frequencies.append(subfrequencies)
+            elif isinstance(pulse, PulseSequence):
+                frequencies.append(None)
             else:
                 raise RuntimeError(
                     f'RF pulse must be Pulse, str, or list of pulses: {pulse}'
