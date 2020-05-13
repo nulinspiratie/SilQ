@@ -33,7 +33,7 @@ qc.config.user.update({'silq_config': config})
 
 silq_env_var = 'SILQ_EXP_FOLDER'
 
-if 'ipykernel' in sys.modules:
+if 'ipykernel' in sys.modules and using_ipython():
     # Load iPython magic (configured via qc.config.core.register_magic)
     from qcodes.utils.magic import register_magic_class
 
