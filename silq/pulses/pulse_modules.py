@@ -451,6 +451,9 @@ class PulseSequence(ParameterNode):
             else:
                 return super().__getitem__(index)
 
+    def __iter__(self):
+        yield from self.enabled_pulses
+
     def __len__(self):
         return len(self.enabled_pulses)
 
@@ -521,6 +524,9 @@ class PulseSequence(ParameterNode):
         return not self.__eq__(other)
 
     def __copy__(self, *args):
+        return self.copy(connect_to_config=True)
+
+    def copy(self, connect_to_config=True):
         # Temporarily remove pulses from parameter so they won't be deepcopied
         backup = {
             key: self.parameters[key]._latest for key in [
@@ -546,12 +552,16 @@ class PulseSequence(ParameterNode):
         self_copy._last_pulse = None
 
         # Add pulses (which will create copies)
-        self_copy.my_pulses = [copy(pulse) for pulse in self.my_pulses]
+        self_copy.my_pulses = [
+            pulse.copy(connect_to_config=connect_to_config)
+            for pulse in self.my_pulses
+        ]
 
         # Copy nested pulse sequences
         if self.pulse_sequences:
             pulse_sequences = [
-                copy(pulse_sequence) for pulse_sequence in self.pulse_sequences
+                pulse_sequence.copy(connect_to_config=connect_to_config)
+                for pulse_sequence in self.pulse_sequences
             ]
             self_copy.pulse_sequences = pulse_sequences  # TODO
 
@@ -1520,7 +1530,7 @@ class PulseImplementation:
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
         if copy:
-            targeted_pulse = copy_alias(pulse)
+            targeted_pulse = pulse.copy(connect_parameters_to_config=False)
         else:
             targeted_pulse = pulse
         pulse_implementation = deepcopy(self)

@@ -392,10 +392,13 @@ class Pulse(ParameterNode):
         also connects the copied parameters to the config if the original ones
         are also connected
         """
+        return self.copy(connect_to_config=True)
+
+    def copy(self, connect_to_config=True):
         self_copy = super().__copy__()
         self_copy.parent = self.parent
 
-        if self._connected_to_config:
+        if connect_to_config and self._connected_to_config:
             self_copy._connect_parameters_to_config()
         return self_copy
 
