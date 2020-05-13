@@ -103,8 +103,6 @@ class ArbStudio1104Interface(InstrumentInterface):
     @parameter
     def active_channels_get(self, parameter) -> List[str]:
         """Get all active channels used in pulses"""
-        active_channels = [pulse.connection.output['channel'].name for pulse in
-                           self.pulse_sequence]
         # Transform into set to ensure that elements are unique
         return list({pulse.connection.output['channel'].name
                      for pulse in self.pulse_sequence})
@@ -146,20 +144,15 @@ class ArbStudio1104Interface(InstrumentInterface):
         for ch in self.active_channels():
             pulses = self.pulse_sequence.get_pulses(output_channel=ch)
             connection = self.pulse_sequence.get_connection(output_channel=ch)
+
             t = 0
-            while t < self.pulse_sequence.duration:
-                remaining_pulses = [pulse for pulse in pulses if
-                                    pulse.t_start >= t]
-                if not remaining_pulses:
-                    # Add final DC pulse at amplitude zero
+            for pulse in sorted(pulses, key=lambda p: p.t_start):
+                if pulse.t_start > t:
+                    # Add DC pulse at amplitude zero
                     dc_pulse = self.get_pulse_implementation(
-                        DCPulse(
-                            'final_pulse',
-                            t_start=t,
-                            t_stop=self.pulse_sequence.duration,
-                            amplitude=0,
-                            connection=connection)
-                    )
+                        DCPulse(t_start=t, t_stop=pulse.t_start,
+                                amplitude=0,
+                                connection=connection))
                     self.pulse_sequence.add(dc_pulse)
 
                     # Check if trigger pulse is necessary.
@@ -167,26 +160,25 @@ class ArbStudio1104Interface(InstrumentInterface):
                         additional_pulses.append(self._get_trigger_pulse(t))
                         t_trigger_pulses.append(t)
 
-                    t = self.pulse_sequence.duration
-                else:
-                    # Determine start time of next pulse
-                    t_next = min(pulse.t_start for pulse in remaining_pulses)
-                    pulse_next = [pulse for pulse in remaining_pulses if
-                                  pulse.t_start == t_next][0]
-                    if t_next > t:
-                        # Add DC pulse at amplitude zero
-                        dc_pulse = self.get_pulse_implementation(
-                            DCPulse(t_start=t, t_stop=t_next, amplitude=0,
-                                    connection=connection))
-                        self.pulse_sequence.add(dc_pulse)
+                # Set time to t_stop of next pulse
+                t = pulse.t_stop
 
-                        # Check if trigger pulse is necessary.
-                        if t > 0 and t not in t_trigger_pulses:
-                            additional_pulses.append(self._get_trigger_pulse(t))
-                            t_trigger_pulses.append(t)
+            if t < self.pulse_sequence.duration:
+                # Add final DC pulse at amplitude zero
+                dc_pulse = self.get_pulse_implementation(
+                    DCPulse(
+                        'final_pulse',
+                        t_start=t,
+                        t_stop=self.pulse_sequence.duration,
+                        amplitude=0,
+                        connection=connection)
+                )
+                self.pulse_sequence.add(dc_pulse)
 
-                    # Set time to t_stop of next pulse
-                    t = pulse_next.t_stop
+            # Check if trigger pulse is necessary.
+            if t > 0 and t not in t_trigger_pulses:
+                additional_pulses.append(self._get_trigger_pulse(t))
+                t_trigger_pulses.append(t)
 
         # Add a trigger pulse at the end if it does not yet exist
         if self.pulse_sequence.duration not in t_trigger_pulses:
