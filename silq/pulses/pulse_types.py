@@ -804,7 +804,7 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        frequency_rate = self.frequency_deviation / self.duration
+        frequency_rate = 2 * self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
         amplitude = self.amplitude
         if amplitude is None:
@@ -813,8 +813,8 @@ class FrequencyRampPulse(Pulse):
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
-
-        if self.phase_reference == 'relative':
+        # Check if phase_reference is defined for backwards-compatibility
+        if not hasattr(self, 'phase_reference') or self.phase_reference == 'relative':
             t = t - self.t_start
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))

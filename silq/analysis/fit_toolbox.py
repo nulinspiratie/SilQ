@@ -157,7 +157,7 @@ class Fit():
         """
 
         if parameters is None:
-            if kwargs:
+            if kwargs and self.parameters is None:
                 self.get_parameters(**kwargs)
             parameters = self.parameters
 

@@ -1,4 +1,4 @@
-from typing import Union, List, Dict, Any, Tuple
+from typing import Union, List, Dict, Any, Tuple, Sequence
 import logging
 
 from qcodes import Instrument
@@ -129,6 +129,26 @@ class InstrumentInterface(Instrument):
 
     def __repr__(self):
         return f'{self.name} interface'
+
+    def snapshot_base(
+            self,
+            update: bool=False,
+            params_to_skip_update: Sequence[str]=None
+    ):
+        snapshot = super().snapshot_base(
+            update=update,
+            params_to_skip_update=params_to_skip_update,
+            skip_parameter_nodes=[
+                'instrument',
+                'pulse_sequence',
+                'input_pulse_sequence',
+                'targeted_pulse_sequence',
+                'targeted_input_pulse_sequence',
+                'additional_settings'
+            ]
+        )
+        snapshot['parameter_nodes']['instrument'] = self.instrument.name
+        return snapshot
 
     def get_channel(self, channel_name: str) -> Channel:
         """Get channel by its name.

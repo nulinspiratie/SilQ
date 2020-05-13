@@ -166,11 +166,6 @@ class E8267DInterface(InstrumentInterface):
         if None in frequency_sidebands:
             frequency_sidebands.remove(None)
 
-        if frequency_sidebands or self.FM_mode() == 'IQ':
-            settings['IQ_modulation'] = 'on'
-        else:
-            settings['IQ_modulation'] = 'off'
-
         # Find minimum and maximum frequency
         min_frequency = max_frequency = None
         for pulse in self.pulse_sequence:
@@ -214,6 +209,13 @@ class E8267DInterface(InstrumentInterface):
         assert self.frequency_deviation() < 80e6 or self.FM_mode() == 'IQ', \
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
+
+        if frequency_sidebands or (self.FM_mode() == 'IQ'
+                                   and min_frequency != max_frequency):
+            settings['IQ_modulation'] = 'on'
+        else:
+            settings['IQ_modulation'] = 'off'
+
 
         if update:
             self.frequency(settings['frequency'])
@@ -277,7 +279,7 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.pulse_modulation_source('ext')
         self.instrument.output_modulation('on')
 
-        if self.IQ_modulation() == 'on' or self.FM_mode() == 'IQ':
+        if self.IQ_modulation() == 'on':
             self.instrument.internal_IQ_modulation('on')
         else:
             self.instrument.internal_IQ_modulation('off')
