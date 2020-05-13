@@ -1116,8 +1116,8 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
             'NMR_pulses': ['NMR_pulse'],
-            'post_pulse': DCPulse('read'),
-            'intermediate_pulses' : [],
+            'post_pulse': DCPulse('read', acquire=True),
+            'intermediate_pulses': [],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3}
