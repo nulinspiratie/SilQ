@@ -200,13 +200,17 @@ class E8267DInterface(InstrumentInterface):
                 frequency_carrier = int(round((min_frequency + max_frequency) / 2))
                 frequency_carrier += self.frequency_carrier_choice()
             settings['frequency'] = frequency_carrier
+        else:
+            settings['frequency'] = self.frequency()
 
         if not self.fix_frequency_deviation():
             settings['frequency_deviation'] = (
-                int(round(max([max_frequency - self.frequency(),
-                               self.frequency() - min_frequency]))))
+                int(round(max([max_frequency - settings['frequency'],
+                               settings['frequency'] - min_frequency]))))
+        else:
+            settings['frequency_deviation'] = self.frequency_deviation()
 
-        assert self.frequency_deviation() < 80e6 or self.FM_mode() == 'IQ', \
+        assert settings['frequency_deviation'] < 80e6 or self.FM_mode() == 'IQ', \
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
