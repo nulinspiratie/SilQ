@@ -79,7 +79,7 @@ class Analysis(ParameterNode):
 
 
 def find_high_low(
-    traces: np.ndarray,
+    traces: Union[np.ndarray, list, dict],
     plot: bool = False,
     threshold_peak: float = 0.02,
     attempts: int = 8,
@@ -87,6 +87,7 @@ def find_high_low(
     min_voltage_difference: Union[float, str] = "config",
     threshold_requires_high_low: Union[bool, str] = "config",
     min_SNR: Union[float, None] = None,
+    skip_pts=0
 ):
     """ Find high and low voltages of traces using histograms
 
@@ -135,6 +136,7 @@ def find_high_low(
             Can be set by config.analysis.threshold_requires_high_low
         min_SNR: Minimum SNR between high and low voltages required to determine
             a threshold voltage (default None).
+        skip_pts: Optional number of points to skip at the start of each trace
 
     Returns:
         Dict[str, Any]:
@@ -152,6 +154,22 @@ def find_high_low(
         raise ValueError(
             f"Attempts {attempts} to find high and low voltage must be at least 1"
         )
+
+    # Convert traces to list of traces, as traces may contain multiple 2D arrays
+    if isinstance(traces, np.ndarray):
+        traces = [traces]
+    elif isinstance(traces, dict):
+        traces = list(traces.values())
+        assert isinstance(traces[0], np.ndarray)
+    elif isinstance(traces, list):
+        pass
+
+    # Optionally remove the first points of each trace
+    if skip_pts > 0:
+        traces = [trace[:, skip_pts:] for trace in traces]
+
+    # Turn list of 2D traces into a single 2D array
+    traces = np.ravel(traces)
 
     # Retrieve properties from config.analysis
     analysis_config = config.get("analysis", {})
@@ -697,21 +715,22 @@ def analyse_traces(
         mesh.set_clim(-1, 1)
 
         # Add vertical line for t_read
-        ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
-        ax.text(
-            t_read,
-            len(traces) + 0.5,
-            f"t_read={t_read*1e3} ms",
-            horizontalalignment="center",
-            verticalalignment="bottom",
-        )
-        ax.text(
-            t_skip,
-            len(traces) + 0.5,
-            f"t_skip={t_skip*1e3} ms",
-            horizontalalignment="center",
-            verticalalignment="bottom",
-        )
+        if t_read is not None:
+            ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
+            ax.text(
+                t_read,
+                len(traces) + 0.5,
+                f"t_read={t_read*1e3} ms",
+                horizontalalignment="center",
+                verticalalignment="bottom",
+            )
+            ax.text(
+                t_skip,
+                len(traces) + 0.5,
+                f"t_skip={t_skip*1e3} ms",
+                horizontalalignment="center",
+                verticalalignment="bottom",
+            )
 
     return results
 
@@ -844,6 +863,8 @@ def analyse_EPR(
         "blips": results_read["blips"],
         "mean_low_blip_duration": results_read["mean_low_blip_duration"],
         "mean_high_blip_duration": results_read["mean_high_blip_duration"],
+        "threshold_voltage": results_read["threshold_voltage"]
+
     }
 
 
@@ -948,10 +969,11 @@ def analyse_electron_readout(
     samples, points_per_shot = first_trace.shape
 
     # Calculate threshold voltages from combined read traces
-    high_low = find_high_low(
-        np.ravel([trace for trace in traces.values()]),
+    results['high_low'] = high_low = find_high_low(
+        traces=traces,
         plot=plot_high_low,
         threshold_method=threshold_method,
+        skip_pts = round(sample_rate * t_skip)
     )
     if threshold_voltage is None or np.isnan(threshold_voltage):
         threshold_voltage = high_low["threshold_voltage"]

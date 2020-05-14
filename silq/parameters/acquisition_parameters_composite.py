@@ -195,7 +195,7 @@ class ESRParameterComposite(AcquisitionParameterComposite):
 
         super().__init__(name=name, **kwargs)
 
-    def analyse(self, traces=None, plot=False):
+    def analyse(self, traces=None, plot=False, plot_high_low=False):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -218,6 +218,7 @@ class ESRParameterComposite(AcquisitionParameterComposite):
                 plunge_traces=traces[self.EPR[1].full_name]["output"],
                 read_traces=traces[self.EPR[2].full_name]["output"],
                 plot=plot,
+                plot_high_low=plot_high_low
             )
             dark_counts = results["EPR"]["dark_counts"]
         else:
@@ -228,7 +229,10 @@ class ESRParameterComposite(AcquisitionParameterComposite):
                 continue
             if isinstance(analysis, AnalyseElectronReadout):
                 results[name] = analysis.analyse(
-                    traces=traces[name], dark_counts=dark_counts, plot=plot
+                    traces=traces[name],
+                    dark_counts=dark_counts,
+                    plot=plot,
+                    plot_high_low=plot_high_low
                 )
             else:
                 raise SyntaxError(f'Cannot process analysis {name} {type(analysis)}')
