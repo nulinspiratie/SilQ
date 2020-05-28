@@ -218,7 +218,6 @@ class ESRParameterComposite(AcquisitionParameterComposite):
                 plunge_traces=traces[self.EPR[1].full_name]["output"],
                 read_traces=traces[self.EPR[2].full_name]["output"],
                 plot=plot,
-                plot_high_low=plot_high_low
             )
             dark_counts = results["EPR"]["dark_counts"]
         else:
