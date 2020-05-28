@@ -1,8 +1,8 @@
 from typing import List
 import numpy as np
-from copy import copy
 from typing import Dict, Iterable
 from functools import partial
+import logging
 
 from silq.parameters.acquisition_parameters import AcquisitionParameter
 from silq.pulses.pulse_sequences import (
@@ -12,17 +12,20 @@ from silq.pulses.pulse_sequences import (
 from silq.pulses.pulse_types import Pulse
 from silq.pulses.pulse_sequences import NMRCircuitPulseSequence
 from silq.tools import property_ignore_setter
-from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseFlips
+from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
-
+from qcodes.plots.qcmatplotlib import MatPlot
 
 __all__ = [
     'AcquisitionParameterComposite',
     'ESRParameterComposite',
     'NMRParameterComposite'
 ]
+
+logger = logging.getLogger(__name__)
+
 
 class AcquisitionParameterComposite(AcquisitionParameter):
     def __init__(self, name, **kwargs):
@@ -186,17 +189,14 @@ class ESRParameterComposite(AcquisitionParameterComposite):
         self.EPR["enabled"].connect(self.analyses.EPR["enabled"])
         self.ESR["enabled"].connect(self.analyses.ESR["enabled"])
 
-        num_frequencies = self.analyses.ESR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        samples = self.analyses.ESR.settings["samples"]
-        samples.get_raw = lambda: self.samples
-        samples.get = samples._wrap_get(samples.get_raw)
+        self.analyses.ESR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.ESR.settings["samples"].define_get(lambda: self.samples)
 
         super().__init__(name=name, **kwargs)
 
-    def analyse(self, traces=None, plot=False):
+    def analyse(self, traces=None, plot=False, plot_high_low=False):
         """Analyse ESR traces.
 
         If there is only one ESR pulse, returns ``up_proportion_{pulse.name}``.
@@ -229,7 +229,10 @@ class ESRParameterComposite(AcquisitionParameterComposite):
                 continue
             if isinstance(analysis, AnalyseElectronReadout):
                 results[name] = analysis.analyse(
-                    traces=traces[name], dark_counts=dark_counts, plot=plot
+                    traces=traces[name],
+                    dark_counts=dark_counts,
+                    plot=plot,
+                    plot_high_low=plot_high_low
                 )
             else:
                 raise SyntaxError(f'Cannot process analysis {name} {type(analysis)}')
@@ -353,25 +356,28 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         self.analyses = ParameterNode()
         self.analyses.ESR = AnalyseElectronReadout('ESR')
-        self.analyses.NMR = AnalyseFlips('NMR')
+        self.analyses.NMR = AnalyseMultiStateReadout('NMR')
 
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
+        self.analyses.ESR.settings['labels'].connect(
+            self.analyses.NMR.settings['labels']
+        )
+        self.analyses.NMR.settings['labels'].connect(
+            self.analyses.ESR.settings['labels']
+        )
 
-        shots_per_frequency = self.analyses.ESR.settings["shots_per_frequency"]
-        shots_per_frequency.get_raw = partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
-        shots_per_frequency.get = shots_per_frequency._wrap_get(shots_per_frequency.get_raw)
-
-        num_frequencies = self.analyses.ESR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        num_frequencies = self.analyses.NMR.settings["num_frequencies"]
-        num_frequencies.get_raw = lambda: len(self.ESR.frequencies)
-        num_frequencies.get = num_frequencies._wrap_get(num_frequencies.get_raw)
-
-        samples = self.analyses.ESR.settings["samples"]
-        samples.get_raw = lambda: self.samples
-        samples.get = samples._wrap_get(samples.get_raw)
+        self.analyses.ESR.settings["shots_per_frequency"].define_get(
+            partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
+        )
+        self.analyses.ESR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.NMR.settings["num_frequencies"].define_get(
+            lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.ESR.settings["samples"].define_get(
+            lambda: self.samples
+        )
 
         super().__init__(name=name, **kwargs)
 
@@ -409,20 +415,87 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         traces = DotDict(traces)
 
         self.results = DotDict()
+
+        initialization_sequence = getattr(self.pulse_sequence, 'initialization', None)
+        if initialization_sequence is not None and initialization_sequence.enabled:
+            # An initialization sequence is added, we need to filter the results
+            # based on whether initialization was successful
+            self.results["initialization"] = self.analyses.initialization.analyse(
+                traces=traces.ESR_initialization, plot=plot
+            )
+            try:
+                filtered_shots = next(
+                    val for key, val in self.results["initialization"].items()
+                    if key.startswith("filtered_shots")
+                )
+            except StopIteration:
+                logger.warning(
+                    "No filtered_shots found, be sure to set "
+                    "analyses.initialization.settings.threshold_up_proportion"
+                )
+                filtered_shots = self.results.initialization.up_proportions > 0.5
+        else:
+            # Do not use filtered shots
+            filtered_shots = None
+
         self.results["ESR"] = self.analyses.ESR.analyse(
             traces=traces.ESR, plot=plot
         )
 
-        up_proportions_arrs = [
+        up_proportions_arrs = np.array([
             val for key, val in self.results['ESR'].items()
             if key.startswith('up_proportion')
-        ]
+        ])
 
         self.results["NMR"] = self.analyses.NMR.analyse(
-            up_proportions_arrs=up_proportions_arrs
+            up_proportions_arrs=up_proportions_arrs,
+            filtered_shots=filtered_shots
         )
 
         return self.results
+
+    def plot_flips(self , figsize=(8, 3)):
+        up_proportion_arrays = [
+            val for key, val in self.results.ESR.items()
+            if key.startswith('up_proportion')
+        ]
+        assert len(up_proportion_arrays) >= 2
+
+        plot = MatPlot(up_proportion_arrays, marker='o', ms=5, linestyle='', figsize=figsize)
+
+        ax = plot[0]
+        ax.set_xlim(-0.5, len(up_proportion_arrays[0])-0.5)
+        ax.set_ylim(-0.015, 1.015)
+        ax.set_xlabel('Shot index')
+        ax.set_ylabel('Up proportion')
+
+        # Add threshold lines
+        ax.hlines(self.results.NMR.threshold_up_proportion, *ax.get_xlim(), lw=3)
+        ax.hlines(self.results.NMR.threshold_low, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
+        ax.hlines(self.results.NMR.threshold_high, *ax.get_xlim(), color='grey', linestyle='--', lw=2)
+
+        if 'initialization' in self.results:
+            plot.add(self.results.initialization.up_proportions, marker='o', ms=8,  linestyle='', color='grey', zorder=0, alpha=0.5)
+            initialization_filtered_shots = next(
+                val for key, val in self.results["initialization"].items()
+                if key.startswith("filtered_shots")
+            )
+        else:
+            initialization_filtered_shots = [True] * len(self.results.NMR.filtered_shots)
+
+        NMR_filtered_shots = self.results.NMR.filtered_shots
+        for k, up_proportion_tuple in enumerate(zip(*up_proportion_arrays)):
+            if not initialization_filtered_shots[k]:
+                color = 'orange'
+            elif not NMR_filtered_shots[k]:
+                color = 'red'
+            else:
+                color = 'green'
+
+            ax.plot([k, k], sorted(up_proportion_tuple)[-2:], color=color, zorder=-1)
+
+        plot.tight_layout()
+        return plot
 
 
 class NMRCircuitParameter(NMRParameterComposite):

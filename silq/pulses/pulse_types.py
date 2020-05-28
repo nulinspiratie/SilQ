@@ -147,7 +147,10 @@ class Pulse(ParameterNode):
         self.t_start = Parameter(initial_value=t_start,
                                  unit='s', set_cmd=None, wrap_get=False)
         self['t_start']._relative_value = t_start
-        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
+        self.duration = Parameter(
+            initial_value=duration, unit='s', set_cmd=None, wrap_get=False,
+            vals=vals.Numbers(min_value=0, allow_none=True)
+        )
         self.t_stop = Parameter(unit='s', wrap_get=False)
 
         # We separately set and get t_stop to ensure duration is also updated
@@ -389,10 +392,13 @@ class Pulse(ParameterNode):
         also connects the copied parameters to the config if the original ones
         are also connected
         """
+        return self.copy(connect_to_config=True)
+
+    def copy(self, connect_to_config=True):
         self_copy = super().__copy__()
         self_copy.parent = self.parent
 
-        if self._connected_to_config:
+        if connect_to_config and self._connected_to_config:
             self_copy._connect_parameters_to_config()
         return self_copy
 
@@ -856,8 +862,8 @@ class FrequencyRampPulse(Pulse):
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
-
-        if self.phase_reference == 'relative':
+        # Check if phase_reference is defined for backwards-compatibility
+        if not hasattr(self, 'phase_reference') or self.phase_reference == 'relative':
             t = t - self.t_start
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2) + self.phase)
