@@ -4,13 +4,21 @@ from copy import copy, deepcopy
 copy_alias = copy  # Alias for functions that have copy as a kwarg
 from blinker import Signal
 from matplotlib import pyplot as plt
+from functools import partial
 
 from qcodes.instrument.parameter_node import parameter
 from qcodes import ParameterNode, Parameter
 from qcodes.utils import validators as vals
+from qcodes.instrument.parameter_node import __deepcopy__ as _deepcopy_parameterNode
 
 __all__ = ['PulseRequirement', 'PulseSequence', 'PulseImplementation']
 
+
+def __deepcopy__(self, memodict={}):
+    duration = getattr(self.parameters['duration'], '_duration', None)
+    self_copy = _deepcopy_parameterNode(self, memodict=memodict)
+    self_copy.parameters['duration']._duration = duration
+    return self_copy
 
 class PulseRequirement():
     """`Pulse` attribute requirement for a `PulseImplementation`
@@ -224,6 +232,8 @@ class PulseSequence(ParameterNode):
             simplify_snapshot=True
         )
 
+        self.__deepcopy__ = partial(__deepcopy__, self)
+
         self.name = Parameter(vals=vals.Strings(), set_cmd=None, initial_value=name)
         self.full_name = Parameter(vals=vals.Strings(), initial_value=name)
         self.enabled = Parameter(vals=vals.Bool(), set_cmd=None, initial_value=enabled)
@@ -249,6 +259,7 @@ class PulseSequence(ParameterNode):
 
         self.t_start = Parameter(unit='s', set_cmd=None, initial_value=0)
         self.duration = Parameter(unit='s', set_cmd=None)
+        self.parameters['duration']._duration = None
         self.t_stop = Parameter(unit='s', set_cmd=None)
 
         self.final_delay = Parameter(unit='s', set_cmd=None, vals=vals.Numbers())
@@ -451,6 +462,9 @@ class PulseSequence(ParameterNode):
             else:
                 return super().__getitem__(index)
 
+    def __iter__(self):
+        yield from self.enabled_pulses
+
     def __len__(self):
         return len(self.enabled_pulses)
 
@@ -521,6 +535,9 @@ class PulseSequence(ParameterNode):
         return not self.__eq__(other)
 
     def __copy__(self, *args):
+        return self.copy(connect_to_config=True)
+
+    def copy(self, connect_to_config=True):
         # Temporarily remove pulses from parameter so they won't be deepcopied
         backup = {
             key: self.parameters[key]._latest for key in [
@@ -546,12 +563,16 @@ class PulseSequence(ParameterNode):
         self_copy._last_pulse = None
 
         # Add pulses (which will create copies)
-        self_copy.my_pulses = [copy(pulse) for pulse in self.my_pulses]
+        self_copy.my_pulses = [
+            pulse.copy(connect_to_config=connect_to_config)
+            for pulse in self.my_pulses
+        ]
 
         # Copy nested pulse sequences
         if self.pulse_sequences:
             pulse_sequences = [
-                copy(pulse_sequence) for pulse_sequence in self.pulse_sequences
+                pulse_sequence.copy(connect_to_config=connect_to_config)
+                for pulse_sequence in self.pulse_sequences
             ]
             self_copy.pulse_sequences = pulse_sequences  # TODO
 
@@ -619,13 +640,18 @@ class PulseSequence(ParameterNode):
     def add(self, *pulses,
             reset_duration: bool = True,
             copy: bool = True,
-            nest: bool = False):
+            nest: bool = False,
+            connect: bool = True
+            ):
         """Adds pulse(s) to the PulseSequence.
 
         Args:
             *pulses (Pulse): Pulses to add
             reset_duration: Reset duration of pulse sequence to t_stop of final
                 pulse
+            copy: Copy the pulse when adding to the pulse sequence
+            nest: Add pulse to a nested pulse sequence if it belongs there
+            connect: Connect pulse.t_start to end of previous pulse.
 
         Returns:
             List[Pulse]: Added pulses, which are copies of the original pulses.
@@ -712,12 +738,19 @@ class PulseSequence(ParameterNode):
             # the end of the last pulse on the same connection(_label)
             if pulse_copy.t_start is None and self.pulses:
                 # Find relevant pulses that share same connection(_label)
-                relevant_pulses = self.get_pulses(connection=pulse_copy.connection,
-                                                  connection_label=pulse_copy.connection_label)
+                relevant_pulses = self.get_pulses(
+                    connection=pulse_copy.connection,
+                    connection_label=pulse_copy.connection_label
+                )
                 if relevant_pulses:
-                    last_pulse = max(relevant_pulses,
-                                     key=lambda pulse: pulse.parameters['t_stop'].raw_value)
-                    last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
+                    last_pulse = max(
+                        relevant_pulses,
+                        key=lambda pulse: pulse.parameters['t_stop'].raw_value
+                    )
+                    if connect:
+                        last_pulse['t_stop'].connect(pulse_copy['t_start'], update=True)
+                    else:
+                        pulse_copy.t_start = last_pulse.t_stop
 
             if pulse_copy.t_start is None:  # No relevant pulses found
                 pulse_copy.t_start = self.t_start
@@ -1027,6 +1060,7 @@ class PulseSequence(ParameterNode):
         self.my_disabled_pulses.clear()
         if clear_pulse_sequences:
             self['pulse_sequences']._latest = {'value': (), 'raw_value': ()}
+
         self.duration = None  # Reset duration to t_stop of last pulse
 
     @staticmethod
@@ -1059,11 +1093,12 @@ class PulseSequence(ParameterNode):
         else:
             return True
 
-    def get_pulses(self, enabled=True, connection=None, connection_label=None,
-                   **conditions):
+    def get_pulses(self, name=None, enabled=True, connection=None,
+                   connection_label=None, **conditions):
         """Get list of pulses in pulse sequence satisfying conditions
 
         Args:
+            name: pulse name
             enabled: Pulse must be enabled
             connection: pulse must have connection
             **conditions: Additional connection and pulse conditions.
@@ -1076,6 +1111,8 @@ class PulseSequence(ParameterNode):
         """
         pulses = self.enabled_pulses if enabled else self.pulses
         # Filter pulses by pulse conditions
+        if name is not None:
+            conditions['name'] = name
         pulse_conditions = {k: v for k, v in conditions.items()
                             if k in self.pulse_conditions and v is not None}
         pulses = [pulse for pulse in pulses if pulse.satisfies_conditions(**pulse_conditions)]
@@ -1104,10 +1141,11 @@ class PulseSequence(ParameterNode):
         pulses = sorted(pulses, key=lambda pulse: pulse.t_start)
         return pulses
 
-    def get_pulse(self, **conditions):
+    def get_pulse(self, name=None, **conditions):
         """Get unique pulse in pulse sequence satisfying conditions.
 
         Args:
+            name: Pulse name
             **conditions: Connection and pulse conditions.
 
         Returns:
@@ -1119,6 +1157,9 @@ class PulseSequence(ParameterNode):
         Raises:
             RuntimeError: No unique pulse satisfying conditions
         """
+        if name is not None:
+            conditions['name'] = name
+
         pulses = self.get_pulses(**conditions)
 
         if not pulses:
@@ -1501,7 +1542,7 @@ class PulseImplementation:
             raise TypeError(f'Pulse {pulse} must be type {self.pulse_class}')
 
         if copy:
-            targeted_pulse = copy_alias(pulse)
+            targeted_pulse = pulse.copy(connect_parameters_to_config=False)
         else:
             targeted_pulse = pulse
         pulse_implementation = deepcopy(self)

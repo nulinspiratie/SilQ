@@ -238,7 +238,7 @@ class SingleConnection(Connection):
             ``amplitude_start``, and ``amplitude_stop`` are scaled.
         """
         if copy_pulse:
-            targeted_pulse = copy(pulse)
+            targeted_pulse = pulse.copy(connect_to_config=False)
         else:
             targeted_pulse = pulse
         targeted_pulse.connection = self
@@ -376,7 +376,7 @@ class CombinedConnection(Connection):
         """
         pulses = []
         for k, connection in enumerate(self.connections):
-            targeted_pulse = copy(pulse)
+            targeted_pulse = pulse.copy(connect_to_config=False)
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
@@ -1191,7 +1191,7 @@ class Layout(Instrument):
                 pulse._connected_to_config = False
 
             # Copy the pulse sequence
-            self._pulse_sequence = copy(pulse_sequence)
+            self._pulse_sequence = pulse_sequence.copy(connect_to_config=False)
         finally:
             # Restore original pulse._connected_to_config values
             for pulse, _connected_to_config in zip(pulse_sequence.pulses,

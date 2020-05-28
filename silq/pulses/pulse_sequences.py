@@ -1,7 +1,7 @@
 from functools import partial
 import numpy as np
 import logging
-from collections import Iterable
+from collections import Iterable, Sequence
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
 from copy import deepcopy
@@ -34,6 +34,7 @@ class PulseSequenceGenerator(PulseSequence):
 
     def generate(self):
         raise NotImplementedError('Needs to be implemented in subclass')
+
 
     def up_to_date(self):
         # Compare to attributes when pulse sequence was created
@@ -132,10 +133,6 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
             'shots_per_frequency': 1
         })
 
-        # Primary ESR pulses, the first ESR pulse in each plunge.
-        # Used for assigning names during analysis
-        self.primary_RF_pulses = []
-
         self.frequencies = Parameter()
 
     @property
@@ -159,11 +156,15 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                         subfrequencies.append(subpulse.frequency)
                     elif isinstance(subpulse, str):
                         subfrequencies.append(self.pulse_settings[subpulse].frequency)
+                    elif isinstance(subpulse, PulseSequence):
+                        subfrequencies.append(None)
                     else:
                         raise RuntimeError(
                             f'RF subpulse must be a pulse or a string: {repr(subpulse)}'
                         )
                 frequencies.append(subfrequencies)
+            elif isinstance(pulse, PulseSequence):
+                frequencies.append(None)
             else:
                 raise RuntimeError(
                     f'RF pulse must be Pulse, str, or list of pulses: {pulse}'
@@ -210,14 +211,112 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
                 converted_RF_pulses.append(pulse_copy)
             elif isinstance(RF_pulse, Pulse):
                 converted_RF_pulses.append(RF_pulse)
+            elif isinstance(RF_pulse, PulseSequence):
+                converted_RF_pulses.append(RF_pulse)
             elif isinstance(RF_pulse, list):
                 # Pulse is a list containing other pulses, to be joined in a single stage
                 converted_RF_subpulses = self.convert_RF_pulse_labels_to_pulses(RF_pulse)
                 converted_RF_pulses.append(converted_RF_subpulses)
+            elif RF_pulse is None:
+                converted_RF_pulses.append([])
             else:
                 raise RuntimeError(f'Cannot understand RF pulse {repr(RF_pulse)}')
 
         return converted_RF_pulses
+
+    def _add_RF_pulses_single_stage(self, RF_pulses_single_stage):
+        # Each element should be the RF pulses to apply within a single
+        # plunge, between elements there is a read
+        if not isinstance(RF_pulses_single_stage, list):
+            # Single RF pulse provided, turn into list
+            RF_pulses_single_stage = [RF_pulses_single_stage]
+
+        RF_pulse = None
+
+        stage_pulse, = self.add(self.pulse_settings['stage_pulse'])
+        t_connect = partial(stage_pulse['t_start'].connect,
+                            offset=self.pulse_settings['pre_delay'])
+
+        for k, RF_subpulse in enumerate(RF_pulses_single_stage):
+            if RF_subpulse is None:
+                continue
+            elif isinstance(RF_subpulse, Pulse):
+                # Add a plunge and read pulse for each frequency
+                RF_pulse, = self.add(RF_subpulse, connect=False)
+                t_connect(RF_pulse['t_start'])
+
+                if k < len(RF_pulses_single_stage) - 1:
+                    # Determine delay between NMR pulses
+                    inter_delay = self.pulse_settings['inter_delay']
+                    if isinstance(inter_delay, Sequence):
+                        # inter_delay contains an element for each pulse
+                        inter_delay = inter_delay[k]
+
+                    t_connect = partial(RF_pulse['t_stop'].connect, offset=inter_delay)
+            elif isinstance(RF_subpulse, PulseSequence):
+                for pulse in RF_subpulse:
+                    RF_pulse, = self.add(pulse, connect=False)
+                    t_connect(RF_pulse['t_start'], offset=pulse.t_start)
+
+                final_delay = RF_subpulse.duration - pulse.t_stop
+                inter_delay = self.pulse_settings['inter_delay']
+                assert not isinstance(inter_delay, Sequence)
+                t_connect = partial(
+                    RF_pulse['t_stop'].connect,
+                    offset=final_delay + inter_delay
+                )
+            else:
+                raise ValueError(
+                    f'Pulse {RF_subpulse} not understood. It must either be '
+                    f'a pulse or pulse sequence.'
+                )
+
+        if RF_pulse is not None:
+            # Either connect stage_pulse.t_stop to the last RF_pulse, or
+            # not if the RF_pulse starts too soon (depending on min_duration)
+            t_stop = RF_pulse.t_stop + self.pulse_settings['post_delay']
+            duration = t_stop - stage_pulse.t_start
+            min_duration = self.pulse_settings['min_duration']
+            if min_duration is not None and duration < min_duration:
+                # Do not connect t_stop to last RF pulse since the post_delay
+                # is too little
+                # TODO There should ideally still be a connection such that
+                # if the RF_pulse t_stop becomes larger, stage_pulse will
+                # still extend
+                stage_pulse.t_stop = stage_pulse.t_start + min_duration
+            else:
+                RF_pulse['t_stop'].connect(
+                    stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
+                )
+        else:
+            duration = self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
+            if self.pulse_settings['min_duration'] is not None:
+                duration = max(duration, self.pulse_settings['min_duration'])
+            stage_pulse.duration = duration
+
+    def _add_RF_pulse_sequence_single_stage(self, RF_pulse_sequence):
+        # Determine if a stage pulse is needed or not
+        stage_pulse_needed = ~any(
+            pulse.connection_label == 'stage' for pulse in RF_pulse_sequence
+        )
+        if stage_pulse_needed:
+            stage_pulse, = self.add(self.pulse_settings['stage_pulse'])
+            # Note that we ignore pre_delay and post_delay
+            stage_pulse.duration = RF_pulse_sequence.duration
+            # Connect all pulses to stage_pulse.t_start
+            connect_parameter = stage_pulse['t_start']
+        else:
+            # Connect all pulses to t_stop of last stage pulse
+            last_pulse = self.get_pulse(connection_label='stage', t_stop=self.t_stop)
+            connect_parameter = last_pulse['t_stop']
+
+        pulses_add = []
+        for pulse in RF_pulse_sequence:
+            pulse_copy = deepcopy(pulse)
+            connect_parameter.connect(pulse_copy['t_start'], offset=pulse.t_start)
+            pulses_add.append(pulse_copy)
+
+        self.add(*pulses_add, copy=False)  # Already copied pulses
 
     def add_RF_pulses(self):
         """Add RF pulses to the pulse sequence
@@ -227,62 +326,15 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
               frequencies, in which case multiple pulses with the provided
               subfrequencies will be used.
         """
-
-        self.primary_RF_pulses = []  # Clear primary RF pulses (first in each plunge)
-
         # Add pulses to pulse sequence
         for RF_pulses_single_stage in self.pulse_settings['RF_pulses']:
-            # Each element should be the RF pulses to apply within a single
-            # plunge, between elements there is a read
-            if not isinstance(RF_pulses_single_stage, list):
-                # Single RF pulse provided, turn into list
-                RF_pulses_single_stage = [RF_pulses_single_stage]
 
-            RF_pulse = None
-
-            stage_pulse, = self.add(self.pulse_settings['stage_pulse'])
-            t_connect = partial(stage_pulse['t_start'].connect,
-                                offset=self.pulse_settings['pre_delay'])
-
-            for k, RF_subpulse in enumerate(RF_pulses_single_stage):
-                # Add a plunge and read pulse for each frequency
-                RF_pulse, = self.add(RF_subpulse)
-                t_connect(RF_pulse['t_start'])
-
-                if k < len(RF_pulses_single_stage) - 1:
-                    # Determine delay between NMR pulses
-                    inter_delay = self.pulse_settings['inter_delay']
-                    if isinstance(inter_delay, Iterable):
-                        # inter_delay contains an element for each pulse
-                        inter_delay = inter_delay[k]
-
-                    t_connect = partial(RF_pulse['t_stop'].connect, offset=inter_delay)
-
-                if not k:
-                    self.primary_RF_pulses.append(RF_pulse)
-
-            if RF_pulse is not None:
-                # Either connect stage_pulse.t_stop to the last RF_pulse, or
-                # not if the RF_pulse starts too soon (depending on min_duration)
-                t_stop = RF_pulse.t_stop + self.pulse_settings['post_delay']
-                duration = t_stop - stage_pulse.t_start
-                min_duration = self.pulse_settings['min_duration']
-                if min_duration is not None and duration < min_duration:
-                    # Do not connect t_stop to last RF pulse since the post_delay
-                    # is too little
-                    # TODO There should ideally still be a connection such that
-                    # if the RF_pulse t_stop becomes larger, stage_pulse will
-                    # still extend
-                    stage_pulse.t_stop = stage_pulse.t_start + min_duration
-                else:
-                    RF_pulse['t_stop'].connect(
-                        stage_pulse['t_stop'], offset=self.pulse_settings['post_delay']
-                    )
+            if isinstance(RF_pulses_single_stage, PulseSequence):
+                self._add_RF_pulse_sequence_single_stage(
+                    RF_pulses_single_stage
+                )
             else:
-                duration = self.pulse_settings['pre_delay'] + self.pulse_settings['post_delay']
-                if self.pulse_settings['min_duration'] is not None:
-                    duration = max(duration, self.pulse_settings['min_duration'])
-                stage_pulse.duration = duration
+                self._add_RF_pulses_single_stage(RF_pulses_single_stage)
 
             if self.pulse_settings['read_pulse'] is not None:
                 self.add(self.pulse_settings['read_pulse'])
@@ -1064,8 +1116,8 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
             'NMR_pulses': ['NMR_pulse'],
-            'post_pulse': DCPulse('read'),
-            'intermediate_pulses' : [],
+            'post_pulse': DCPulse('read', acquire=True),
+            'intermediate_pulses': [],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3}
