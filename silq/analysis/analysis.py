@@ -222,20 +222,24 @@ def find_high_low(
 
         if not threshold_requires_high_low and threshold_method != "mean":
             # Still return threshold voltage even though no two peaks were observed
-            # Use {factor}*std_low/high to determine threshold voltage
-            factor = float(threshold_method.split("*")[0])
+            low_or_high, equation = threshold_method.split(':')
+            assert low_or_high in ['low', 'high']
+
             voltages = sorted(traces.flatten())
-            if threshold_method.endswith("std_low"):
+            if low_or_high == 'low':
                 # Remove top 20 percent (high voltage)
                 cutoff_slice = slice(None, int(0.8 * len(voltages)))
+                voltages_cutoff = voltages[cutoff_slice]
+                mean = results['low'] = np.mean(voltages_cutoff)
             else:
-                factor *= -1  # standard deviations should be subtracted from mean
                 # Remove bottom 20 percent of voltages (low voltage)
                 cutoff_slice = slice(int(0.8 * len(voltages)), None)
-            voltages_cutoff = voltages[cutoff_slice]
-            voltage_mean = np.mean(voltages_cutoff)
-            voltage_std = np.std(voltages_cutoff)
-            threshold_voltage = voltage_mean + factor * voltage_std
+                voltages_cutoff = voltages[cutoff_slice]
+                mean = results['high'] = np.mean(voltages_cutoff)
+            # Mean and std are used when evaluating the equation
+            std = results['std'] = np.std(voltages_cutoff)
+
+            threshold_voltage = eval(equation)
             results["threshold_voltage"] = threshold_voltage
 
         return results
@@ -258,14 +262,13 @@ def find_high_low(
     if threshold_method == "mean":
         # Threshold_method is midway between low and high mean
         threshold_voltage = (high["mean"] + low["mean"]) / 2
-    elif threshold_method.endswith("std_low"):
-        # Threshold_method is {factor} standard deviations above low mean
-        factor = float(threshold_method.split("*")[0])
-        threshold_voltage = low["mean"] + factor * low["std"]
-    elif threshold_method.endswith("std_high"):
-        # Threshold_method is {factor} standard deviations below high mean
-        factor = float(threshold_method.split("*")[0])
-        threshold_voltage = high["mean"] - factor * high["std"]
+    elif ':' in threshold_method:
+        low_or_high, equation = threshold_method.split(':')
+        assert low_or_high in ['low', 'high']
+        signal = {'low': low, 'high': high}[low_or_high]
+        mean = signal["mean"]
+        std = signal["std"]
+        threshold_voltage = eval(equation)
     else:
         raise RuntimeError(f"Threshold method {threshold_method} not understood")
 
