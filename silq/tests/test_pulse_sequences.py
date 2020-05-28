@@ -518,6 +518,33 @@ class TestCopyPulseSequence(unittest.TestCase):
 
         self.assertTupleEqual(pulse_sequence_copy.pulses, pulse_sequence_copy.enabled_pulses)
 
+    def test_copy_pulse_sequence_explicit_duration(self):
+        pulse_sequence = PulseSequence([
+            DCPulse('read', t_start=1, duration=1)
+        ])
+        pulse_sequence.duration = 3
+        self.assertEqual(pulse_sequence.duration, 3)
+
+        pulse_sequence_copy = copy(pulse_sequence)
+        self.assertEqual(pulse_sequence_copy[0].t_start, 1)
+        self.assertEqual(pulse_sequence_copy[0].duration, 1)
+        self.assertEqual(pulse_sequence_copy[0].t_stop, 2)
+        self.assertEqual(pulse_sequence_copy.duration, 3)
+
+    def test_deepcopy_pulse_sequence_explicit_duration(self):
+        pulse_sequence = PulseSequence([
+            DCPulse('read', t_start=1, duration=1)
+        ])
+        pulse_sequence.duration = 3
+        self.assertEqual(pulse_sequence.duration, 3)
+
+        pulse_sequence_copy = deepcopy(pulse_sequence)
+        self.assertEqual(pulse_sequence_copy[0].t_start, 1)
+        self.assertEqual(pulse_sequence_copy[0].duration, 1)
+        self.assertEqual(pulse_sequence_copy[0].t_stop, 2)
+        self.assertEqual(pulse_sequence_copy.duration, 3)
+
+
 
 class TestCopyCountPulseSequence(unittest.TestCase):
     def reset_executions(self):
