@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Union
 from pathlib import Path
 import numpy as np
 import regex as re
@@ -40,6 +40,8 @@ def convert_circuit(circuit, target_type: Type = str):
 
         # Split by every letter G
         expanded_circuit = ['G'+ gate for gate in expanded_circuit.split('G')[1:]]
+    elif isinstance(circuit, list):
+        expanded_circuit = circuit
     else:
         raise RuntimeError("circuit type not understood")
 
@@ -65,24 +67,38 @@ def save_circuits(circuits, filepath):
             f.write(circuit_str + '\n')
 
 
-def load_circuits(filepath, target_type=list):
+def load_circuits(
+        filepath: Union[str, Path],
+        target_type: type = list,
+        load_probabilities: bool = False
+):
     filepath = Path(filepath)
     with open(filepath.with_suffix('.txt')) as file:
         lines = [line.strip() for line in file]
 
-        # Check if line already contains data
-        if lines[0].startswith('##'):
-            # Remove two headers
-            lines = lines[1:]
+    # Check if line already contains data
+    if lines[0].startswith('##'):
+        # Remove two headers
+        lines = lines[1:]
 
-        # Remove any existing results
-        lines = [line.split(' ')[0] for line in lines]
+    # Remove any existing results
+    circuit_strings = [line.split(' ')[0] for line in lines]
 
-        circuits = [
-            convert_circuit(line, target_type=target_type) for line in lines
-        ]
+    # Ensure all strings are of the target type
+    circuits = [
+        convert_circuit(circuit, target_type=target_type)
+        for circuit in circuit_strings
+    ]
 
-    return circuits
+    if load_probabilities:
+        state_events = np.array([
+            [int(elem) for elem in line.replace('   ', ' ').split(' ')[1:]]
+            for line in lines
+        ])
+        state_probabilities = state_events / state_events.sum(axis=1)[:, None]
+        return circuits, state_probabilities
+    else:
+        return circuits
 
 
 def analyse_circuit_results(
