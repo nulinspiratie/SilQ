@@ -673,10 +673,11 @@ class MultiSinePulse(Pulse):
 
     Parameters:
         name: Pulse name
-        frequency: main Pulse frequency - !!! to be checked !!!
-        frequencies: list of pulse frequencies
-        phase: Pulse phase
+        frequency: main (local oscillator) Pulse frequency
+        frequencies: list of Pulse frequencies
+        phases: list of Pulse phases
         amplitude: Pulse amplitude. If not set, power must be set.
+        amplitudes: list of Pulse amplitudes
         power: Pulse power. If not set, amplitude must be set.
         offset: amplitude offset, zero by default
         frequency_sideband: Mixer sideband frequency (off by default).
@@ -697,7 +698,7 @@ class MultiSinePulse(Pulse):
                  name: str = None,
                  frequency: float = None,
                  frequencies: List[float] = None,
-                 phase: float = None,
+                 phases: List[float] = None,
                  amplitude: float = None,
                  amplitudes: List[float] = None,
                  power: float = None,
@@ -713,8 +714,8 @@ class MultiSinePulse(Pulse):
                                    set_cmd=None, vals=vals.Numbers())
         self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
                                      set_cmd=None, vals=vals.Lists())
-        self.phase = Parameter(initial_value=phase, unit='deg', set_cmd=None,
-                               vals=vals.Numbers())
+        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
+                                vals=vals.Lists())
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
         self.amplitude = Parameter(initial_value=amplitude, unit='V',
@@ -732,15 +733,13 @@ class MultiSinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'frequencies', 'phase', 'power', 'amplitude', 'amplitudes',
-             'phase', 'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
+            ['frequency', 'frequencies', 'phases', 'power', 'amplitude', 'amplitudes',
+             'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
             self.phase_reference = 'absolute'
-        if self.phase is None:
-            self.phase = 0
         if self.offset is None:
             self.offset = 0
 
@@ -749,7 +748,7 @@ class MultiSinePulse(Pulse):
         try:
             properties_str = f'f_LO={freq_to_str(self.frequency)}'
             properties_str += f', f={self.frequencies} Hz'
-            properties_str += f', phase={self.phase} deg '
+            properties_str += f', phases={self.phases} deg'
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
 
             if self.power is not None:
@@ -760,7 +759,6 @@ class MultiSinePulse(Pulse):
                 properties_str += f', A={self.amplitudes} V'
             if self.offset:
                 properties_str += f', offset={self.offset} V'
-
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
                                   f'{self.sideband_mode}'
@@ -779,23 +777,23 @@ class MultiSinePulse(Pulse):
             AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
-        assert is_between(t, self.t_start, self.t_stop), \
+        assert is_between(t, self.t_start, self.t_stop),\
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
         if self.phase_reference == 'relative':
             t = t - self.t_start
 
-        amplitudes = self.amplitudes
-        assert amplitudes is not None, f'Pulse {self.name} does not have ' \
-                                       f'specified amplitudes.'
+        assert self.amplitudes is not None, f'Pulse {self.name} does not have specified amplitudes.'
+        assert self.frequencies is not None, f'Pulse {self.name} does not have specified frequencies.'
+        assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
 
-        assert len(amplitudes) == len(self.frequencies), f'Pulse {self.name} does not have ' \
-                                                         f'equal number of amplitudes and frequencies.'
-
+        assert len(self.amplitudes) == len(self.frequencies) == len(self.phases), f'Pulse {self.name} does not have '\
+                                                                                  f'equal number of amplitudes, ' \
+                                                                                  f'frequencies and phases.'
         waveform = 0.0
-        for amp, freq in zip(amplitudes, self.frequencies):
-            waveform += amp * np.sin(2 * np.pi * (freq * t + self.phase / 360))
+        for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
+            waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset
         # We need to insure the waveform is limited by +- 1V:
         waveform = waveform/len(self.frequencies)

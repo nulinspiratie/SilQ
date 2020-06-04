@@ -420,20 +420,21 @@ class MultiSinePulseImplementation(PulseImplementation):
                 output channel, where each element in sequence indicates the
                 waveform that must be played after the trigger
         """
-        # Find all trigger pulses occuring within this pulse
+        # Find all trigger pulses occurring within this pulse
         trigger_pulses = input_pulse_sequence.get_pulses(
             t_start=('>', self.pulse.t_start),
             t_stop=('<', self.pulse.t_stop),
             trigger=True)
         assert len(trigger_pulses) == 0, \
-            "Cannot implement multi sine pulse if the arbstudio receives intermediary triggers"
+            "Cannot implement multi sine pulse if the Arbstudio receives intermediary triggers"
 
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        assert [frequency > 0 for frequency in self.pulse.frequencies], "All pulse frequencies must be larger than zero."
+        assert [frequency > 0 for frequency in self.pulse.frequencies], \
+            "All pulse frequencies must be larger than zero."
 
         waveforms, sequences = {}, {}
         for ch in channels:
