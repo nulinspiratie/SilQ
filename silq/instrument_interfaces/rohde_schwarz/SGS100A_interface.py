@@ -114,6 +114,15 @@ class SGS100AInterface(InstrumentInterface):
             "frequencies, self.fix_frequency() is True, or "
             "self.force_IQ_modulation() is True.",
         )
+        self.IQ_channels = Parameter(
+            initial_value='IQ',
+            vals=vals.Enum('IQ', 'I', 'Q'),
+            set_cmd=None,
+            docstring="Which channels to use for IQ modulation."
+                      "Double-sideband modulation is used if only 'I' or 'Q' "
+                      "is chosen, while single-sideband modulation is used when"
+                      "'IQ' is chosen."
+        )
         self.force_IQ_modulation = Parameter(
             initial_value=False,
             vals=vals.Bool(),
@@ -237,6 +246,8 @@ class SGS100AInterface(InstrumentInterface):
                 )
             settings["power"] = next(iter(powers))
 
+        settings["IQ_channels"] = self.IQ_channels()
+
         if update:
             self.frequency = settings["frequency"]
             self.power = settings["power"]
@@ -328,17 +339,20 @@ class SinePulseImplementation(PulseImplementation):
         interface: InstrumentInterface,
         frequency: float,
         IQ_modulation: bool,
+        IQ_channels: str,
         power: float,
     ):
         if not IQ_modulation:
             return []
-        else:  # interface.IQ_modulation() == 'on'
-            attenuation = self.pulse.power - power
-            amplitude = 10.0 ** (attenuation / 20)
-            assert amplitude <= 1.01, f"IQ amplitude larger than 1: {amplitude}"
 
-            frequency_IQ = self.pulse.frequency - frequency
-            additional_pulses = [
+        attenuation = self.pulse.power - power
+        amplitude = 10.0 ** (attenuation / 20)
+        assert amplitude <= 1.01, f"IQ amplitude larger than 1: {amplitude}"
+
+        frequency_IQ = self.pulse.frequency - frequency
+        additional_pulses = []
+        if 'I' in IQ_channels:
+            additional_pulses.append(
                 SinePulse(
                     name="sideband_I",
                     t_start=self.pulse.t_start - interface.envelope_padding(),
@@ -350,7 +364,10 @@ class SinePulseImplementation(PulseImplementation):
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "I",
                     },
-                ),
+                )
+            )
+        if 'Q' in IQ_channels:
+            additional_pulses.append(
                 SinePulse(
                     name="sideband_Q",
                     t_start=self.pulse.t_start - interface.envelope_padding(),
@@ -362,9 +379,10 @@ class SinePulseImplementation(PulseImplementation):
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "Q",
                     },
-                ),
-            ]
-            return additional_pulses
+                )
+            )
+
+        return additional_pulses
 
 
 class FrequencyRampPulseImplementation(PulseImplementation):
@@ -379,6 +397,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         interface: InstrumentInterface,
         frequency: float,
         IQ_modulation: bool,
+        IQ_channels: str,
         power: float,
     ):
         assert IQ_modulation
@@ -387,32 +406,39 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         amplitude = 10.0 ** (attenuation / 20)
         assert amplitude <= 1.01, f"IQ amplitude larger than 1: {amplitude}"
 
-        additional_pulses = [
-            FrequencyRampPulse(
-                name="sideband_I",
-                t_start=self.pulse.t_start,
-                t_stop=self.pulse.t_stop,
-                frequency_start=self.pulse.frequency_start - frequency,
-                frequency_stop=self.pulse.frequency_stop - frequency,
-                amplitude=amplitude,
-                phase=0,
-                connection_requirements={
-                    "input_instrument": interface.instrument_name(),
-                    "input_channel": "I",
-                },
-            ),
-            FrequencyRampPulse(
-                name="sideband_Q",
-                t_start=self.pulse.t_start,
-                t_stop=self.pulse.t_stop,
-                frequency_start=self.pulse.frequency_start - frequency,
-                frequency_stop=self.pulse.frequency_stop - frequency,
-                amplitude=amplitude,
-                phase=-90,
-                connection_requirements={
-                    "input_instrument": interface.instrument_name(),
-                    "input_channel": "Q",
-                },
-            ),
-        ]
+        additional_pulses = []
+        if 'I' in IQ_channels:
+            additional_pulses.append(
+                FrequencyRampPulse(
+                    name="sideband_I",
+                    t_start=self.pulse.t_start,
+                    t_stop=self.pulse.t_stop,
+                    frequency_start=self.pulse.frequency_start - frequency,
+                    frequency_stop=self.pulse.frequency_stop - frequency,
+                    amplitude=amplitude,
+                    phase=0,
+                    connection_requirements={
+                        "input_instrument": interface.instrument_name(),
+                        "input_channel": "I",
+                    },
+                )
+            )
+
+        if 'Q' in IQ_channels:
+            additional_pulses.append(
+                FrequencyRampPulse(
+                    name="sideband_Q",
+                    t_start=self.pulse.t_start,
+                    t_stop=self.pulse.t_stop,
+                    frequency_start=self.pulse.frequency_start - frequency,
+                    frequency_stop=self.pulse.frequency_stop - frequency,
+                    amplitude=amplitude,
+                    phase=-90,
+                    connection_requirements={
+                        "input_instrument": interface.instrument_name(),
+                        "input_channel": "Q",
+                    },
+                )
+            )
+
         return additional_pulses
