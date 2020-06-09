@@ -509,6 +509,24 @@ def _stop_layout(close_trace_file=True):
     except (KeyError, TypeError):
         logger.warning(f'No layout found to stop')
 
+
+def _clear_all_acquisition_parameter_settings(measurement=None):
+    if measurement is None:
+        measurement = qc.active_measurement()
+
+    if isinstance(measurement, qc.loops.ActiveLoop):
+        for action in measurement:
+            if isinstance(action, qc.loops.ActiveLoop):
+                _clear_all_acquisition_parameter_settings(action)
+            elif isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+    else:
+        for action_indices, action in measurement.actions.items():
+            if isinstance(action, SettingsClass):
+                logger.info(f'End-of-measurement: clearing settings for {action}')
+                action.clear_settings()
+
 qc.Measurement.final_actions = [
     _stop_layout,
 ]
