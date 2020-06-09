@@ -217,6 +217,10 @@ class Keysight81180AInterface(InstrumentInterface):
         self.instrument.ensure_idle = False
 
     def generate_waveform_sequences(self):
+        """Generate waveforms and sequences for AWG.
+
+        Note that each channel has a memory limit (usually 16M points per channel)
+        """
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
         self.point = {ch: 0 for ch in self.active_channels()}
@@ -315,7 +319,7 @@ class Keysight81180AInterface(InstrumentInterface):
 
             # Ensure total waveform points are less than memory limit
             total_waveform_points = sum(
-                len(waveform) for waveform in self.waveforms["ch1"]
+                len(waveform) for waveform in self.waveforms[ch]
             )
             if total_waveform_points > self.instrument.waveform_max_length:
                 raise RuntimeError(
