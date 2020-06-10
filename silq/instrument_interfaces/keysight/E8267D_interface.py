@@ -77,6 +77,12 @@ class E8267DInterface(InstrumentInterface):
                                      "the gate marker pulse, and end afterwards. "
                                      "This is ignored for chirp pulses where "
                                      "FM_mode = 'IQ'.")
+        self.add_parameter('IQ_phase_correction',
+                           unit='deg',
+                           set_cmd=None,
+                           initial_value=0,
+                           docstring="To calibrate the phase difference between I and Q components"
+                                     "to be exactly 90 degrees. Only for FM_mode = 'IQ'.")
         self.add_parameter('marker_amplitude',
                            unit='V',
                            set_cmd=None,
@@ -319,7 +325,7 @@ class SinePulseImplementation(PulseImplementation):
                           t_start=self.pulse.t_start - interface.envelope_padding(),
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
-                          phase=self.pulse.phase-90,
+                          phase=self.pulse.phase-(90 + interface.IQ_phase_correction()),
                           amplitude=1,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
@@ -397,7 +403,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                           t_start=self.pulse.t_start - interface.envelope_padding(),
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
-                          phase=-90,
+                          phase=-(90 + interface.IQ_phase_correction()),
                           amplitude=1,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
@@ -420,7 +426,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    frequency_start=frequency_IQ_start,
                                    frequency_stop=frequency_IQ_stop,
                                    amplitude=1,
-                                   phase=-90,
+                                   phase=-(90 + interface.IQ_phase_correction()),
                                    connection_requirements={
                                        'input_instrument': interface.instrument_name(),
                                        'input_channel': 'Q'})])
@@ -477,7 +483,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                              'IQ_modulation should be ON for MultiSinePulses')
         else:
             frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
-            phases_Q = list(np.array(self.pulse.phases) - 90)
+            phases_Q = list(np.array(self.pulse.phases) - (90 + interface.IQ_phase_correction()))
 
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
