@@ -214,6 +214,10 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
         if not self.is_primary():
             # Return flag to ensure this instrument is started after its
             # triggering instrument. This is because it is triggered when its

@@ -16,6 +16,7 @@ from silq.pulses.pulse_modules import PulseSequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 import qcodes as qc
+from qcodes.instrument.parameter_node import parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes import Instrument, FormatLocation, MatPlot
 from qcodes.loops import ActiveLoop
@@ -506,68 +507,88 @@ class Layout(Instrument):
     # Targeted pulse sequence whose duration exceeds this will raise an error
     maximum_pulse_sequence_duration = 25
 
-    def __init__(self, name: str = 'layout',
-                 instrument_interfaces: List[InstrumentInterface] = [],
-                 store_pulse_sequences_folder: Union[bool, None] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str = "layout",
+        instrument_interfaces: List[InstrumentInterface] = [],
+        store_pulse_sequences_folder: Union[bool, None] = None,
+        **kwargs
+    ):
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
-        self._interfaces = {interface.instrument_name(): interface
-                            for interface in instrument_interfaces}
+        self._interfaces = {
+            interface.instrument_name(): interface
+            for interface in instrument_interfaces
+        }
 
         self.connections = []
 
-        self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()),
-                           docstring='List of instrument names. Can only be '
-                                     'retrieved. To set, update layout._interfaces')
-        self.add_parameter('primary_instrument',
-                           get_cmd=None,
-                           set_cmd=self._set_primary_instrument,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of primary instrument, usually the '
-                                     'instrument that performs triggering')
+        self.instruments = Parameter(
+            get_cmd=lambda: list(self._interfaces.keys()),
+            docstring="List of instrument names. Can only be retrieved. "
+            "To set, update layout._interfaces",
+        )
+        self.primary_instrument = Parameter(
+            get_cmd=None,
+            set_cmd=self._set_primary_instrument,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of primary instrument, usually the instrument that "
+            "performs triggering",
+        )
+        self.acquisition_instrument = Parameter(
+            set_cmd=None,
+            initial_value=None,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of instrument that acquires data",
+        )
+        self.acquisition_channels = Parameter(
+            set_cmd=None,
+            vals=vals.Lists(),
+            docstring="List of acquisition channels to acquire. "
+            "Each element in the list should be a tuple (ch_name, ch_label), "
+            "where ch_name is a channel of the acquisition interface, "
+            "and ch_label is a given label for that channel (e.g. 'output')."
+        )
+        self.samples = Parameter(
+            set_cmd=None,
+            initial_value=1,
+            docstring="Number of times to acquire the pulse sequence",
+        )
 
-        self.add_parameter('acquisition_instrument',
-                           set_cmd=None,
-                           initial_value=None,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of instrument that acquires data')
-        self.add_parameter('acquisition_channels',
-                           set_cmd=None,
-                           vals=vals.Lists(),
-                           docstring='List of acquisition channels to acquire. '
-                                     'Each element in the list should be a '
-                                     'tuple (ch_name, ch_label), where ch_name '
-                                     'is a channel of the acquisition interface, '
-                                     'and ch_label is a given label for that '
-                                     'channel (e.g. "output").')
+        self.active = Parameter(
+            set_cmd=None,
+            initial_value=False,
+            vals=vals.Bool(),
+            docstring="Whether the pulse sequence is being executed. "
+            "Can be started/stopped via layout.start/layout.stop",
+        )
 
-        self.add_parameter(name='samples',
-                           set_cmd=None,
-                           initial_value=1,
-                           docstring='Number of times to acquire the pulse sequence')
+        self.force_setup = Parameter(
+            set_cmd=None,
+            initial_value=True,
+            vals=vals.Bool(),
+            docstring="Setup all instruments if the pulse sequence has changed. "
+            "If False, only the instruments are setup if their "
+            "respective pulses have changed",
+        )
 
-        self.add_parameter(name='active',
-                           set_cmd=None,
-                           initial_value=False,
-                           vals=vals.Bool(),
-                           docstring='Whether the pulse sequence is being executed. '
-                                     'Can be started/stopped via layout.start/layout.stop')
-
-        self.add_parameter('save_trace_channels',
-                           set_cmd=None,
-                           initial_value=['output'],
-                           vals=vals.Lists(vals.Strings()),
-                           docstring='List of channel labels to acquire. '
-                                     'Channel labels are defined in '
-                                     'layout.acquisition_channels')
+        self.save_trace_channels = Parameter(
+            set_cmd=None,
+            initial_value=["output"],
+            vals=vals.Lists(vals.Strings()),
+            docstring="List of channel labels to acquire. "
+            "Channel labels are defined in layout.acquisition_channels",
+        )
         self.is_acquiring = Parameter(
             set_cmd=None,
             initial_value=False,
             docstring="Whether or not the Layout is performing an acquisition. "
-                      "Ensures no two acquisitions are run simultaneously.")
+                      "Ensures no two acquisitions are run simultaneously."
+        )
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -579,9 +600,10 @@ class Layout(Instrument):
         # Handle saving of pulse sequence
         if store_pulse_sequences_folder is not None:
             self.store_pulse_sequences_folder = store_pulse_sequences_folder
-        elif silq.config.properties.get('store_pulse_sequences_folder') is not None:
-            self.store_pulse_sequences_folder = \
+        elif silq.config.properties.get("store_pulse_sequences_folder") is not None:
+            self.store_pulse_sequences_folder = (
                 silq.config.properties.store_pulse_sequences_folder
+            )
         else:
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
@@ -634,17 +656,29 @@ class Layout(Instrument):
         else:
             return None
 
-    @property
-    def sample_rate(self):
+    @parameter
+    def sample_rate_get(self, parameter):
         """Union[float, None]: Acquisition sample rate
 
         If `Layout.acquisition_interface` is not setup, return None
 
         """
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.sample_rate()
+            return self.acquisition_interface.sample_rate.get_latest()
         else:
             return None
+
+    @parameter
+    def sample_rate_set(self, parameter, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -919,8 +953,12 @@ class Layout(Instrument):
                 return next(connection for connection in self.connections
                             if connection.label == connection_label)
             except StopIteration:
+                allowed_labels = [
+                    connection.label for connection in self.connections
+                    if connection_label is not None
+                ]
                 raise StopIteration(f'Cannot find connection with label {connection_label}. '
-                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
+                                    f'Allowed labels: {allowed_labels}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
@@ -950,7 +988,8 @@ class Layout(Instrument):
             interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(
-            self, sorted_interfaces: List[InstrumentInterface] = []):
+            self, sorted_interfaces: List[InstrumentInterface] = []
+    ) -> List[InstrumentInterface]:
         """Sort interfaces by triggering order, from bottom to top.
 
         This sorting ensures that earlier instruments never trigger later ones.
@@ -1168,7 +1207,7 @@ class Layout(Instrument):
             * If a measurement is running, all instruments are stopped
             * The original pulse sequence and pulses remain unmodified
         """
-        logger.info(f'Targeting {pulse_sequence}')
+        logger.info(f'Targeting pulse sequence {pulse_sequence}')
 
         if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
             raise RuntimeError(
@@ -1176,9 +1215,6 @@ class Layout(Instrument):
                 f'maximum duration {self.maximum_pulse_sequence_duration}. '
                 f'Please change layout.maximum_pulse_sequence_duration'
             )
-
-        if self.active():
-            self.stop()
 
         # Create a copy of the pulse sequence
         try:
@@ -1257,7 +1293,7 @@ class Layout(Instrument):
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
             except:
-                logger.exception(f'Could not save pulse sequence.')
+                logger.exception(f'Could not save pulse sequence.\n {traceback.format_exc}')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1364,6 +1400,7 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
+
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
@@ -1372,13 +1409,24 @@ class Layout(Instrument):
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
+                if not self.force_setup() and not interface.requires_setup(
+                    samples=self.samples(),
+                    input_connections=input_connections,
+                    output_connections=output_connections,
+                    repeat=repeat,
+                    **setup_flags,
+                    **kwargs
+                ):
+                    logger.debug(f'Skipping setup interface {interface.name}')
+                    continue
+
                 with self.timings.record(f'setup.{interface.name}'):
+                    logger.debug(f'Setup interface {interface.name}')
                     flags = interface.setup(samples=self.samples(),
                                             input_connections=input_connections,
                                             output_connections=output_connections,
                                             repeat=repeat,
                                             **setup_flags, **kwargs)
-
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
@@ -1390,7 +1438,7 @@ class Layout(Instrument):
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+            sample_rate=self.sample_rate(), samples=self.samples())
         self.acquisition_shapes = {}
         output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
@@ -1585,14 +1633,27 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['sample_rate'] = self.sample_rate()
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())}, file)
+                sample_rate=self.sample_rate(), samples=self.samples())}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                return_slice=False
+            )}, file)
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                filter_acquire=False,
+                return_slice=False
+            )}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')

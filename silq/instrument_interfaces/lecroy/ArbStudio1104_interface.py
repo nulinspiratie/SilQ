@@ -1,12 +1,16 @@
 import numpy as np
 import logging
 from typing import List
+import time
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection, CombinedConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     PulseImplementation, MarkerPulse
-from silq.tools.general_tools import arreqclose_in_list
+from silq import config
+from silq.tools.pulse_tools import pulse_to_waveform_sequence
+
+from qcodes.utils.helpers import arreqclose_in_list
 
 
 logger = logging.getLogger(__name__)
@@ -61,7 +65,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO check Arbstudio output TTL high voltage
 
         self.pulse_implementations = [SinePulseImplementation(
-            pulse_requirements=[('frequency', {'min': 1e6, 'max': 125e6})]),
+            pulse_requirements=[('frequency', {'min': 1e2, 'max': 125e6})]),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
             MarkerPulseImplementation(),
@@ -88,8 +92,8 @@ class ArbStudio1104Interface(InstrumentInterface):
         active_channels = [pulse.connection.output['channel'].name for pulse in
                            self.pulse_sequence]
         # Transform into set to ensure that elements are unique
-        return list({pulse.connection.output['channel'].name
-                     for pulse in self.pulse_sequence})
+        active_channels = list(set(active_channels))
+        return active_channels
 
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
@@ -131,8 +135,13 @@ class ArbStudio1104Interface(InstrumentInterface):
                 if not remaining_pulses:
                     # Add final DC pulse at amplitude zero
                     dc_pulse = self.get_pulse_implementation(
-                        DCPulse(t_start=t, t_stop=self.pulse_sequence.duration,
-                                amplitude=0, connection=connection))
+                        DCPulse(
+                            'final_pulse',
+                            t_start=t,
+                            t_stop=self.pulse_sequence.duration,
+                            amplitude=0,
+                            connection=connection)
+                    )
                     self.pulse_sequence.add(dc_pulse)
 
                     # Check if trigger pulse is necessary.
@@ -212,10 +221,20 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.instrument.load_waveforms(channels=active_channels_id)
         self.instrument.load_sequence(channels=active_channels_id)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Start instrument"""
-        self.instrument.run(channels=[self._channels[channel].id for channel in
-                                      self.active_channels()])
+        try:
+            self.instrument.run(channels=[self._channels[channel].id for channel in
+                                          self.active_channels()])
+        except AssertionError:
+            logger.error('Driver connection error when starting arbstudio, retrying.')
+            time.sleep(3)
+            self.instrument.run(channels=[self._channels[channel].id for channel in
+                                          self.active_channels()])
 
     def stop(self):
         """Stop instrument"""
@@ -308,6 +327,7 @@ class ArbStudio1104Interface(InstrumentInterface):
 
 class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
+    max_waveform_points = 300e3
 
     def target_pulse(self, pulse, interface, **kwargs):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
@@ -316,7 +336,7 @@ class SinePulseImplementation(PulseImplementation):
         targeted_pulse.implementation.final_delay = interface.pulse_final_delay()
         return targeted_pulse
 
-    def implement(self, sampling_rates, input_pulse_sequence, **kwargs):
+    def implement(self, sampling_rates, input_pulse_sequence, plot=False, **kwargs):
         """
         Implements the sine pulse for the ArbStudio for SingleConnection.
         Args:
@@ -331,42 +351,49 @@ class SinePulseImplementation(PulseImplementation):
         """
         # Find all trigger pulses occuring within this pulse
         trigger_pulses = input_pulse_sequence.get_pulses(
-            t_start=('>', self.t_start), t_stop=('<', self.t_stop),
+            t_start=('>', self.pulse.t_start), t_stop=('<', self.pulse.t_stop),
             trigger=True)
-        assert len(
-            trigger_pulses) == 0, "Cannot implement sine pulse if the arbstudio receives " \
-                                  "intermediary triggers"
+        assert len(trigger_pulses) == 0, \
+            "Cannot implement sine pulse if the arbstudio receives intermediary triggers"
 
-        if isinstance(self.connection, SingleConnection):
-            channels = [self.connection.output['channel'].name]
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
         else:
-            raise Exception(f"No implementation for connection {self.connection}")
+            raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        assert self.frequency < min(sampling_rates[ch] for ch in channels)/2, \
-            'Sine frequency is higher than the Nyquist limit for channels {channels}'
+        # assert self.pulse.frequency < min(sampling_rates[ch] for ch in channels)/2, \
+        #     'Sine frequency is higher than the Nyquist limit for channels {channels}'
+
+        assert self.pulse.frequency > 0, "Pulse frequency must be larger than zero."
 
         waveforms, sequences = {}, {}
-
-        # If the sampling rate is too high, the waveform for the full
-        # duration requires too many points. We therefore find a duration
-        # that does not create too many points, and generate the waveform.
-        # TODO implement full waveform if sampling rate is not too high
-        self.waveform_duration = 1e-6
-        assert self.waveform_duration * self.frequency > 10, \
-            f"sine pulse frequency {self.frequency} too low, increase " \
-            f"waveform duration"
-        assert self.waveform_duration < self.duration, "Waveform duration too long"
-
         for ch in channels:
-            # TODO choose number of points to minimize the phase accumulation
-            # Start t_list from t_start to ensure phase is taken into account
-            t_list = np.arange(self.t_start,
-                               self.t_start + self.waveform_duration,
-                               1 / sampling_rates[ch])
-            if len(t_list) % 2:
-                t_list = t_list[:-1]
+            sample_rate = sampling_rates[ch]
+            points_per_period = int(sample_rate / self.pulse.frequency)
+            points_per_period = points_per_period - points_per_period % 2
 
-            waveforms[ch] = [self.get_voltage(t_list)]
+            if points_per_period > self.max_waveform_points:
+                raise RuntimeError(
+                    f"Sine waveform points {points_per_period} is above maximum "
+                    f"{self.max_waveform_points}. Could not segment sine waveform"
+                )
+            elif points_per_period > 1000:
+                # Temporarily modify pulse frequency to ensure waveforms have full period
+                original_frequency = self.pulse.frequency
+                modified_frequency = sample_rate / points_per_period
+                self.pulse.frequency = modified_frequency
+
+                t_list = self.pulse.t_start + np.arange(points_per_period) / sample_rate
+                voltages = self.pulse.get_voltage(t_list)
+
+                self.pulse.frequency = original_frequency
+            else:
+                periods = 50000 // points_per_period
+                waveform_points = int(periods * points_per_period)
+                t_list = self.pulse.t_start + np.arange(waveform_points) / sample_rate
+                voltages = self.pulse.get_voltage(t_list)
+
+            waveforms[ch] = [voltages]
             sequences[ch] = np.zeros(1, dtype=int)
 
         return waveforms, sequences
