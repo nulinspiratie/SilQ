@@ -12,7 +12,7 @@ from pathlib import Path
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
-from silq.pulses.pulse_modules import PulseSequence
+from silq.pulses.pulse_modules import PulseSequence, find_matching_pulse_sequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 import qcodes as qc
@@ -1170,6 +1170,16 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
+            # Set parent of targeted pulse to interface.pulse_sequence
+            t_start = targeted_pulse.t_start
+            # We find the matching pulse sequence because it could be nested
+            targeted_pulse.parent = find_matching_pulse_sequence(
+                pulse, interface.pulse_sequence
+            )
+            # Reset t_start because it will shift if the pulse_sequence does not
+            # start at t=0
+            targeted_pulse.t_start = t_start
+
             # Do not copy pulse
             self.targeted_pulse_sequence.quick_add(
                 targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
@@ -1177,14 +1187,16 @@ class Layout(Instrument):
 
             # Do not copy pulse
             interface.pulse_sequence.quick_add(
-                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
             )
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[pulse.connection.input['instrument']]
             # Do not copy pulse
             input_interface.input_pulse_sequence.quick_add(
-                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
             )
 
     def _target_pulse_sequence(
@@ -1269,12 +1281,14 @@ class Layout(Instrument):
 
 
         # Finish setting up the pulse sequences
-        self.targeted_pulse_sequence.finish_quick_add()
+        # kwarg connect=False is added because else the pulse sequence duration
+        # might be changed to that of the last pulse, while it should be fixed
+        self.targeted_pulse_sequence.finish_quick_add(connect=False)
         for interface in self._interfaces.values():
             # Finish adding pulses, which performs final steps such as sorting
             # and checking for overlaps
-            interface.pulse_sequence.finish_quick_add()
-            interface.input_pulse_sequence.finish_quick_add()
+            interface.pulse_sequence.finish_quick_add(connect=False)
+            interface.input_pulse_sequence.finish_quick_add(connect=False)
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
