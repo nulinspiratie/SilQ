@@ -555,10 +555,13 @@ class Keysight81180AInterface(InstrumentInterface):
                 sample_rate=sample_rate,
                 pulse_name=f"DC_{label}_initial",
             )
-            t = t_start
+
+        # Ensure t starts at exactly the right time
+        t = self.point[channel] / sample_rate
 
         # Determine waveform points
-        points = int((t_stop - t) * sample_rate)
+        # Round up because otherwise the final pulse may have too many points
+        points = int(np.ceil((t_stop - t) * sample_rate))
 
         # Add remaining points of the pulse sequence if it is sufficiently short
         remaining_points = int((pulse_sequence.t_stop - t_stop) * sample_rate)
@@ -580,15 +583,18 @@ class Keysight81180AInterface(InstrumentInterface):
 
         waveform_array = np.zeros(points)
         for pulse in pulses:
-            pulse_points = int((pulse.t_stop - pulse.t_start) * sample_rate)
-            t_list = pulse.t_start + np.arange(pulse_points) / sample_rate
-            voltages = pulse.get_voltage(t_list)
-
-            start_idx = int((pulse.t_start - t) * sample_rate)
+            # Determine start_idx of pulse
+            # Round up to ensure the corresponding t_start is not before the pulse
+            start_idx = int(np.ceil((pulse.t_start - t) * sample_rate))
             # If for whatever reason the pulse starts before t, ensure the index
             # is at least zero
-            if start_idx < 0:
-                start_idx = 0
+            start_idx = max(start_idx, 0)
+
+            # t_start is first waveform point starting at/after pulse.t_start
+            t_start = t + start_idx / sample_rate
+            pulse_points = int(np.floor((pulse.t_stop - t_start) * sample_rate))
+            t_list = t_start + np.arange(pulse_points) / sample_rate
+            voltages = pulse.get_voltage(t_list)
 
             waveform_array[start_idx:start_idx+len(voltages)] = voltages
 
@@ -733,8 +739,8 @@ class Keysight81180AInterface(InstrumentInterface):
         channel_pulses = self.pulse_sequence.get_pulses(output_channel=channel)
         target_single_waveform = np.zeros(len(single_waveform))
         for pulse in channel_pulses:
-            start_idx = int(round(pulse.t_start * sample_rate))
-            stop_idx = int(round(pulse.t_stop * sample_rate))
+            start_idx = int(np.ceil(pulse.t_start * sample_rate))
+            stop_idx = int(np.floor(pulse.t_stop * sample_rate))
             t_list = np.arange(start_idx, stop_idx) / sample_rate
             voltages = pulse.get_voltage(t_list)
             target_single_waveform[start_idx:stop_idx] = voltages
