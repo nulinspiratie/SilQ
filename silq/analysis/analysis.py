@@ -13,7 +13,7 @@ from qcodes import MatPlot
 
 __all__ = ['find_high_low', 'edge_voltage', 'find_up_proportion',
            'count_blips', 'analyse_traces', 'analyse_EPR',
-           'analyse_threshold_up_proportion', 'analyse_flips']
+           'determine_threshold_up_proportion', 'analyse_flips']
 
 logger = logging.getLogger(__name__)
 
@@ -717,33 +717,70 @@ def analyse_EPR(empty_traces: np.ndarray,
             'mean_high_blip_duration': results_read['mean_high_blip_duration']}
 
 
-def analyse_threshold_up_proportion(up_proportions_arrs: np.ndarray,
-                                    shots_per_frequency: int):
-    if shots_per_frequency < 25:
-        num_shots = 25   # to make sure algorithm works
-    else:
-        num_shots = shots_per_frequency
+def determine_threshold_up_proportion(up_proportions_arr: np.ndarray,
+                                      shots_per_frequency: int):
+    """ Determine threshold up-proportion for nuclear readout
+
+    Using kernel density estimation, 'determine_threshold_up_proportion' function
+    determines the probability density distribution of measured electron spin-up
+    proportions within the 0 to 1 up proportion space in the form of a Gaussian function.
+    It is later analysed for the peaks in the density distribution and based on their
+    relative position within 0 to 1 up proportion space, the density minimum is found,
+    which is considered to be the threshold for determining the nuclear spin state.
+
+    Args:
+        up_proportions_arr: 1D Array of up proportions, calculated from
+            `analyse_traces`. Up proportion is the proportion of traces that
+            contain blips. The length is number of samples.
+        shots_per_frequency: Integer number of ESR shots/traces, which are
+            used to determine the up proportion.
+
+    Returns:
+        (float) threshold up-proportion
+    """
+
+    num_shots = max(shots_per_frequency, 25)
+    # Algorithm fails if the number of shots is less than 25 (not exact number, can still be adjusted).
+    # The reason for this is that in the following division of up_proportion space by the number of shots
+    # there are too few points to perform kernel density estimation.
+
     proportion_space = np.linspace(0, 1, num=num_shots + 1, endpoint=True)
-    up_proportions_arrs = up_proportions_arrs.reshape(1, -1)
-    kernel = gaussian_kde(up_proportions_arrs)
+    up_proportions_arr = up_proportions_arr.reshape(1, -1)    # don't think it's needed
+    kernel = gaussian_kde(up_proportions_arr)
     gaussian_up_proportions = kernel(proportion_space)
+
+    # Finding indexes of density distribution peaks. Might still require some fine adjustments in
+    # 'thres' and 'min_dist' parameters.
     peak_idxs = peakutils.peak.indexes(gaussian_up_proportions,
-                                       thres=0.5/up_proportions_arrs.shape[-1],
+                                       thres=0.5/up_proportions_arr.shape[-1],
                                        min_dist=num_shots/5)
+    # If no peaks are detected (something failed), by default we set threshold to 0.5.
+    middle_point = (num_shots + 1) // 2
     if len(peak_idxs) == 0:
         logger.debug(f'Adaptive thresholding routine: 0 peaks were '
                      f'found, using threshold 0.5')
-        trough_idx = (num_shots + 1) // 2
+        trough_idx = middle_point
+    # If only one peak is detected (nuclear spin did not flip), depending on whether
+    # it is in the lower (<0.5) or the upper (>=0.5) half of proportion space,
+    # the minimum index of density distribution is found respectively above or below
+    # this peak's index.
+    # Since the density distribution values reach 1e-20 at the edges of the
+    # proportion space (i.e. at 0 or 1), to smooth a bit the threshold jumps between
+    # the measurement points, rounding to the 4th digit is implemented.
     elif len(peak_idxs) == 1:
-        if (len(proportion_space) - peak_idxs[0]) / len(proportion_space) > 0.5:
-            trough_slice = slice(*[peak_idxs[0], len(proportion_space)])
-            trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4)) + peak_idxs[0]
+        if peak_idxs[0] < middle_point:
+            trough_slice = slice(*[peak_idxs[0], num_shots + 1])
+            search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+            trough_idx = peak_idxs[0] + np.argmin(search_space)
         else:
             trough_slice = slice(*[0, peak_idxs[0]])
-            trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4))
+            search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+            trough_idx = np.argmin(search_space)
+    # If more than one peak is detected, then minimum is found between the lowest and the highest peak.
     else:
         trough_slice = slice(*[min(peak_idxs), max(peak_idxs)])
-        trough_idx = np.argmin(np.round(gaussian_up_proportions[trough_slice], 4)) + peak_idxs[0]
+        search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+        trough_idx = peak_idxs[0] + np.argmin(search_space)
 
     threshold_up_proportion = proportion_space[trough_idx]
 
@@ -813,8 +850,8 @@ def analyse_flips(
           up_proportion rows remain in subspace
     """
     if (len(up_proportions_arrs) == 1) and (threshold_up_proportion is None):
-        threshold_up_proportion = analyse_threshold_up_proportion(
-            up_proportions_arrs=up_proportions_arrs,
+        threshold_up_proportion = determine_threshold_up_proportion(
+            up_proportions_arr=up_proportions_arrs,
             shots_per_frequency=shots_per_frequency)
         threshold_up_proportion_low = threshold_up_proportion
         threshold_up_proportion_high = threshold_up_proportion
