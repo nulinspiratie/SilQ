@@ -676,7 +676,6 @@ class MultiSinePulse(Pulse):
         frequency: main (local oscillator) Pulse frequency
         frequencies: list of Pulse frequencies
         phases: list of Pulse phases
-        amplitude: Pulse amplitude. If not set, power must be set.
         amplitudes: list of Pulse amplitudes
         power: Pulse power. If not set, amplitude must be set.
         offset: amplitude offset, zero by default
@@ -699,7 +698,6 @@ class MultiSinePulse(Pulse):
                  frequency: float = None,
                  frequencies: List[float] = None,
                  phases: List[float] = None,
-                 amplitude: float = None,
                  amplitudes: List[float] = None,
                  power: float = None,
                  offset: float = None,
@@ -718,8 +716,6 @@ class MultiSinePulse(Pulse):
                                 vals=vals.Lists())
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
-        self.amplitude = Parameter(initial_value=amplitude, unit='V',
-                                   set_cmd=None, vals=vals.Numbers())
         self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
                                     set_cmd=None, vals=vals.Lists())
         self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
@@ -733,13 +729,13 @@ class MultiSinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'frequencies', 'phases', 'power', 'amplitude', 'amplitudes',
+            ['frequency', 'frequencies', 'phases', 'power', 'amplitudes',
              'offset', 'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
-            self.phase_reference = 'absolute'
+            self.phase_reference = 'relative'
         if self.offset is None:
             self.offset = 0
 
@@ -750,13 +746,8 @@ class MultiSinePulse(Pulse):
             properties_str += f', f={self.frequencies} Hz'
             properties_str += f', phases={self.phases} deg'
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
-
-            if self.power is not None:
-                properties_str += f', power={self.power} dBm'
-            if self.amplitude is not None:
-                properties_str += f', A_LO={self.amplitude} V'
-            if self.amplitudes is not None:
-                properties_str += f', A={self.amplitudes} V'
+            properties_str += f', power={self.power} dBm'
+            properties_str += f', A={self.amplitudes} V'
             if self.offset:
                 properties_str += f', offset={self.offset} V'
             if self.frequency_sideband is not None:
@@ -795,8 +786,6 @@ class MultiSinePulse(Pulse):
         for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
             waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset
-        # We need to insure the waveform is limited by +- 1V:
-        waveform = waveform/len(self.frequencies)
         return waveform
 
 

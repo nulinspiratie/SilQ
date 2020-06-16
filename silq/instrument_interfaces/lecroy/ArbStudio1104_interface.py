@@ -433,9 +433,6 @@ class MultiSinePulseImplementation(PulseImplementation):
         else:
             raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        assert [frequency > 0 for frequency in self.pulse.frequencies], \
-            "All pulse frequencies must be larger than zero."
-
         waveforms, sequences = {}, {}
         for ch in channels:
             total_points = self.pulse.duration * sampling_rates[ch]

@@ -194,8 +194,12 @@ class E8267DInterface(InstrumentInterface):
 
         # Find minimum and maximum frequency
         min_frequency = max_frequency = None
+        multiple_frequencies = None
         for pulse in self.pulse_sequence:
             frequency_deviation = getattr(pulse, 'frequency_deviation', None)
+            multi_freq = getattr(pulse, 'frequencies', None)
+            if multi_freq is not None:
+                multiple_frequencies = multi_freq
             frequency_sideband = pulse.frequency_sideband
 
             pulse_min_frequency = pulse_max_frequency = pulse.frequency
@@ -236,10 +240,8 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
-        multiple_frequencies = getattr(pulse, 'frequencies', None)
-
         if frequency_sidebands or (self.FM_mode() == 'IQ' and
-                                   ((min_frequency != max_frequency) or (multiple_frequencies is not None))):
+                                   ((self.frequency_deviation != 0) or (multiple_frequencies is not None))):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
@@ -338,6 +340,8 @@ class SinePulseImplementation(PulseImplementation):
                           frequency=frequency_IQ,
                           amplitude=1 + interface.I_amplitude_correction(),
                           phase=self.pulse.phase + interface.I_phase_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'I'}),
@@ -347,6 +351,8 @@ class SinePulseImplementation(PulseImplementation):
                           frequency=frequency_IQ,
                           phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
                           amplitude=1 + interface.Q_amplitude_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
@@ -502,8 +508,12 @@ class MultiSinePulseImplementation(PulseImplementation):
             raise ValueError('FM_mode should be IQ and '
                              'IQ_modulation should be ON for MultiSinePulses')
         else:
-            amplitudes_I = list(np.array(self.pulse.amplitudes) + interface.I_amplitude_correction())
-            amplitudes_Q = list(np.array(self.pulse.amplitudes) + interface.Q_amplitude_correction())
+
+            # To insure the waveform is limited by +- 1V:
+            amplitudes_I = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+                                interface.I_amplitude_correction())
+            amplitudes_Q = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+                                interface.Q_amplitude_correction())
             frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
             phases_I = list(np.array(self.pulse.phases) + interface.I_phase_correction())
             phases_Q = list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
@@ -513,6 +523,11 @@ class MultiSinePulseImplementation(PulseImplementation):
             assert all(0 <= ampQ <= 1 for ampQ in amplitudes_Q), f"Not all amplitudes in amplitudes_Q list: " \
                                                                  f"{amplitudes_Q} are between 0 and 1V"
 
+            max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
+            max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
+            assert (max_input_I <= 1) and (max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
+                                                              f"voltages are above 1V."
+
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
                            t_start=self.pulse.t_start - interface.envelope_padding(),
@@ -520,6 +535,8 @@ class MultiSinePulseImplementation(PulseImplementation):
                            frequencies=frequencies_IQ,
                            amplitudes=amplitudes_I,
                            phases=phases_I,
+                           phase_reference=self.pulse.phase_reference,
+                           offset=self.pulse.offset,
                            connection_requirements={
                                'input_instrument': interface.instrument_name(),
                                'input_channel': 'I'}),
@@ -529,6 +546,8 @@ class MultiSinePulseImplementation(PulseImplementation):
                            frequencies=frequencies_IQ,
                            amplitudes=amplitudes_Q,
                            phases=phases_Q,
+                           phase_reference=self.pulse.phase_reference,
+                           offset=self.pulse.offset,
                            connection_requirements={
                                    'input_instrument': interface.instrument_name(),
                                    'input_channel': 'Q'})])
