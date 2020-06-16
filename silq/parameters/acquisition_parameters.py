@@ -1968,7 +1968,7 @@ class EDSRParameter(NMRParameter):
 
     def __init__(self, name: str = 'EDSR',
                  names: List[str] = ['flips', 'flip_probability', 'up_proportions',
-                                     'success_probability', 'EDSR_up_proportion'],
+                                     'state_probability', 'EDSR_up_proportion'],
                  **kwargs):
         super().__init__(name=name,
                          names=names,
