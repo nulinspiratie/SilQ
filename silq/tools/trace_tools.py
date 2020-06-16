@@ -73,7 +73,10 @@ def extract_pulse_slices_from_trace_file(traces_file: h5py.File,
             pulse sequence
     """
     if "pulse_slices" in traces_file:
-        return dict(traces_file["pulse_slices"])
+        pulse_slices = dict(traces_file["pulse_slices"].attrs)
+        for key, val in pulse_slices.items():
+            pulse_slices[key] = slice(*val)
+        return pulse_slices
 
     elif "pulse_sequence" in traces_file:
         capture_full_traces = traces_file.attrs["capture_full_trace"]
