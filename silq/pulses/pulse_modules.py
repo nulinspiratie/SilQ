@@ -316,6 +316,8 @@ class PulseSequence(ParameterNode):
             docstring="All pulses, including those from nested pulse sequences"
         )
 
+        self.modifiers = []
+
         # Remember last pulse of pulse sequence, to ensure t_stop of pulse sequence
         # is kept up to date via signalling
         self._last_pulse = None
@@ -598,6 +600,9 @@ class PulseSequence(ParameterNode):
 
             # Ensure all stop times match
             self._link_pulse_sequences()
+
+        for modifier in self.modifiers:
+            modifier(self)
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=[]):
