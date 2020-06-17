@@ -518,10 +518,8 @@ class MultiSinePulseImplementation(PulseImplementation):
             phases_I = list(np.array(self.pulse.phases) + interface.I_phase_correction())
             phases_Q = list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
 
-            assert all(0 <= ampI <= 1 for ampI in amplitudes_I), f"Not all amplitudes in amplitudes_I list: " \
-                                                                 f"{amplitudes_I} are between 0 and 1V"
-            assert all(0 <= ampQ <= 1 for ampQ in amplitudes_Q), f"Not all amplitudes in amplitudes_Q list: " \
-                                                                 f"{amplitudes_Q} are between 0 and 1V"
+            assert all(0 <= amp <= 1 for amp in self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
+                                                                        f"{self.pulse.amplitudes} are between 0 and 1V."
 
             max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
             max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
