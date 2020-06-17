@@ -1937,7 +1937,7 @@ class NMRParameter(AcquisitionParameter):
                 results['results_read'].append(read_result)
 
             if self.threshold_up_proportion is None:
-                threshold_up_proportion[f_idx] = analysis.determine_threshold_up_proportion(
+                threshold_up_proportion[f_idx] = analysis.determine_threshold_up_proportion_single_state(
                     up_proportions_arr=up_proportions[f_idx],
                     shots_per_frequency=self.ESR['shots_per_frequency'])
             else:
