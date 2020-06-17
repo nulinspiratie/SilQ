@@ -560,8 +560,8 @@ class SinePulse(Pulse):
             be existent in interface. Not used if not set.
         phase_reference: What point in the the phase is with respect to.
             Can be two modes:
-            - 'absolute': phase is with respect to `Pulse.t_start`.
-            - 'relative': phase is with respect to t=0 (phase-coherent).
+            - 'absolute': phase is with respect to t=0 (phase-coherent).
+            - 'relative': phase is with respect to `Pulse.t_start`.
 
         **kwargs: Additional parameters of `Pulse`.
 
@@ -686,8 +686,8 @@ class FrequencyRampPulse(Pulse):
         phase: Pulse phase. By default is set to zero.
         phase_reference: What point in the the phase is with respect to.
             Can be two modes:
-                - 'absolute': phase is with respect to `Pulse.t_start`.
-                - 'relative': phase is with respect to t=0 (phase-coherent).
+                - 'absolute': phase is with respect to t=0 (phase-coherent).
+                - 'relative': phase is with respect to `Pulse.t_start`.
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
         offset: amplitude offset, zero by default
