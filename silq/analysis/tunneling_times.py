@@ -301,6 +301,46 @@ def get_first_blips(
     return results
 
 
+class ExponentialModel(GenericLikelihoodModel):
+    parameter_names = ['tau']
+
+    def __init__(self, endog, exog=None, **kwargs):
+        if exog is None:
+            exog = np.zeros_like(endog)
+
+        self.results = None
+        self.initial_parameters = None
+        self.parameters = None
+
+        super(ExponentialModel, self).__init__(endog, exog, **kwargs)
+
+    def find_initial_parameters(self):
+        # Choose the 20th percentile for tunnel time
+        return dict(tau=np.percentile(self.endog, 20))
+
+    def fit_function(self, t, tau, **kwargs):
+        if tau <= 0:
+            return 1e-15
+        result = np.exp(-t / tau) / tau
+        return result
+
+    def nloglikeobs(self, params):
+        params = dict(zip(self.parameter_names, params))
+        return -np.log(self.fit_function(self.endog, **params))
+
+    def fit(self, initial_parameters=None, maxiter=10000, maxfun=5000, silent=False, **kwargs):
+        if initial_parameters is None:
+            initial_parameters = self.find_initial_parameters()
+        self.initial_parameters = initial_parameters
+
+        start_params = [self.initial_parameters[name] for name in self.parameter_names]
+        self.results = super(ExponentialModel, self).fit(
+            start_params=start_params, maxiter=maxiter, maxfun=maxfun, disp=not silent, **kwargs
+        )
+        self.parameters = dict(zip(self.parameter_names, self.results.params))
+
+        return self.results
+
 
 class DoubleExponentialModel(GenericLikelihoodModel):
     parameter_names = ['A_1', 'tau_1', 'tau_2']
@@ -394,10 +434,14 @@ class TunnelTimesAnalysis:
 
         self.t_skip = t_skip
 
+        self.fig = None
+        self.axes = None
+
         # Perform fitting
         self.model = None
-        self.fit_results = None
+        self.fit_result = None
         self.results = self.fit(silent=silent)
+
 
         if not silent:
             self.print_results()
@@ -515,11 +559,20 @@ class TunnelTimesAnalysis:
             tunnel_times = self.tunnel_times
 
         self.model = DoubleExponentialModel(tunnel_times)
-        self.fit_results = self.model.fit(silent=silent)
+        self.fit_result = self.model.fit(silent=silent)
 
         results = copy(self.model.parameters)
 
         results = self.get_ancillary_parameters(**results)
+
+        if results['tau_1'] < 1e-8:
+            logger.warning('Could not fit a double exponential, using single exponential')
+
+            self.model = ExponentialModel(tunnel_times)
+            self.fit_result = self.model.fit(silent=silent)
+
+            results = copy(self.model.parameters)
+
         return results
 
     def print_results(self):
@@ -529,21 +582,32 @@ class TunnelTimesAnalysis:
             else:
                 print(f"{key}: {value:.3g}")
 
-    def plot_tunnel_times(self, tunnel_times=None, t_cutoff=None, bins=41):
+    def plot_tunnel_times(self, tunnel_times=None, t_cutoff=None, bins=41,
+                          plot_fast=True, fig=None, axes=None):
         if tunnel_times is None:
             tunnel_times = self.tunnel_times
 
-        if t_cutoff is None:
-            if self.results is None:
-                t_cutoff = 5e-3
-            else:
-                t_cutoff = 15 * self.results['tau_1']
+        if isinstance(self.model, ExponentialModel):
+            plot_fast = False
 
-        tunnel_times_fast = np.array([t for t in tunnel_times if t <= t_cutoff])
+        if plot_fast:
+            if t_cutoff is None:
+                if self.results is None:
+                    t_cutoff = 5e-3
+                else:
+                    t_cutoff = 15 * self.results['tau_1']
 
-        fig, axes = plt.subplots(2, 1, figsize=(6, 4))
+            tunnel_times_fast = np.array([t for t in tunnel_times if t <= t_cutoff])
+            tunnel_times_arrays = [tunnel_times_fast, tunnel_times]
+            if axes is None:
+                fig, axes = plt.subplots(2, 1, figsize=(6, 4))
+        else:
+            tunnel_times_arrays = [tunnel_times]
+            if axes is None:
+                fig, ax = plt.subplots(2, 1, figsize=(6, 2.5))
+                axes = [ax]
 
-        for ax, tunnel_times_arr in zip(axes, [tunnel_times_fast, tunnel_times]):
+        for ax, tunnel_times_arr in zip(axes, tunnel_times_arrays):
             # Normalize probabilities to tunnel times
             y, x, _ = ax.hist(tunnel_times_arr*1e3, bins=bins)
             x /= 1e3
@@ -552,10 +616,22 @@ class TunnelTimesAnalysis:
             x = (x[:-1] + x[1:]) / 2
             probabilities = self.model.fit_function(x, **self.model.parameters) * dx
             probabilities *= len(tunnel_times)
-            ax.plot(x*1e3, probabilities)
+            ax.plot(x*1e3, probabilities, lw=2)
             ax.set_yscale('log')
+            ax.set_xlabel('Time (ms)')
+            ax.set_ylabel('Counts / bin')
+            if isinstance(self.model, ExponentialModel):
+                ax.legend(['Exponential fit', 'Measured bins'])
+            else:
+                ax.legend(['Double exponential fit', 'Measured bins'])
 
-        fig.tight_layout()
+            ax.set_xlim(0, ax.get_xlim()[1])
+
+        if fig is not None:
+            fig.tight_layout()
+
+        self.fig = fig
+        self.axes = axes
 
         return fig, axes
 
@@ -580,7 +656,8 @@ def analyse_tunnel_times_measurement(
                 silent=True
             )
 
-            probability_spin_up = tunnel_times_analysis.results["p_1"]
+            # If no double exponential could be fitted, probability is zero
+            probability_spin_up = tunnel_times_analysis.results.get("p_1", 0)
             if probability_spin_up > 0.5:
                 tunnel_times_analyses['high'] = tunnel_times_analysis
                 print(f"Target nucleus: {['D', 'U'][k]}")
@@ -590,22 +667,37 @@ def analyse_tunnel_times_measurement(
     assert tunnel_times_analyses['low'] is not None, "Both readouts have high spin-up fraction"
     assert tunnel_times_analyses['high'] is not None, "Both readouts have low spin-up fraction"
 
+    initialization_error = tunnel_times_analyses['low'].results.get('p_1', 0)
+    if 'tau' in tunnel_times_analyses['low'].results:
+        tau_down = tunnel_times_analyses['low'].results['tau']
+    else:
+        tau_down = tunnel_times_analyses['low'].results['tau_2']
+
     # Print results
     print(
         f"tau_up = {tunnel_times_analyses['high'].results['tau_1']*1e6:.0f} us\n"
-        f"tau_down = {tunnel_times_analyses['high'].results['tau_2']*1e6:.0f} us\n"
+        f"tau_down = {tau_down*1e6:.0f} us\n"
         f"P(spin-up) = {tunnel_times_analyses['high'].results['p_1']:.2f}\n"
         f"P(spin-down) = {tunnel_times_analyses['high'].results['p_2']:.2f}\n"
-        f"P(initialize_spin_up) = {tunnel_times_analyses['low'].results['p_1']:.3f}\n"
+        f"P(initialize_spin_up) = {initialization_error:.3f}\n"
         f"t_read_optimum = {tunnel_times_analyses['high'].results['t_read_optimum']*1e6:.0f} us\n"
         f"contrast_optimum = {tunnel_times_analyses['high'].results['contrast_optimum']:.2f}\n"
     )
 
     if detailed:
         print("\n\n\nDetailed results:")
-        for key, val in tunnel_times_analyses.items():
-            print(f"\n{key} tunnel statistics")
-            val.print_results()
-            val.plot_tunnel_times()
+        fig, axes = plt.subplots(3, 1, figsize=(6,5.5))
 
+        print(f"\nHigh spin-up - tunnel statistics")
+        tunnel_times_analyses['high'].print_results()
+        tunnel_times_analyses['high'].plot_tunnel_times(axes=axes[:2])
+        axes[0].set_title('High spin-up measurement - Zoom-in')
+        axes[1].set_title('High spin-up measurement')
+
+        print(f"\nLow spin-up - tunnel statistics")
+        tunnel_times_analyses['low'].print_results()
+        tunnel_times_analyses['low'].plot_tunnel_times(axes=axes[2:], plot_fast=False)
+        axes[2].set_title('Low spin-up measurement')
+
+        fig.tight_layout()
     return tunnel_times_analyses
