@@ -824,7 +824,8 @@ class FrequencyRampPulse(Pulse):
             t = t - self.t_start
 
         return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2 +
-                                               self.phase / 360))
+                                               self.phase / 360)) + self.offset
+
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
