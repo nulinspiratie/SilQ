@@ -729,6 +729,24 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
     relative position within 0 to 1 up proportion space, the density minimum is found,
     which is considered to be the threshold for determining the nuclear spin state.
 
+    WARNING:
+        If no peaks in the density distribution are detected (something failed), threshold
+        is set to 0.5 by default.
+        If only one peak is detected (e.g. nuclear spin did not flip or transition detuned),
+        depending on whether it is in the lower (<0.5) or the upper (>=0.5) half of
+        proportion space, the minimum of density distribution is found respectively above or
+        below this peak.
+        If more than one peak is detected, then minimum is found between the lowest and the
+        highest peak.
+        Since the density distribution values reach 1e-20 at the edges of the proportion space
+        (i.e. at 0 or 1), to smooth a bit the threshold jumps between the measurement points,
+        rounding to the 4th digit is implemented.
+
+    NOTE: algorithm generally might fail if the number of shots is less than 25 (not exact number,
+    can still be adjusted). Therefore, if less than 25 shots are given, function still uses 25 shots.
+    This is due to the division of up proportion space by the number of shots and if there are too
+    few points to perform kernel density estimation, it fails.
+
     Args:
         up_proportions_arr: 1D Array of up proportions, calculated from
             `analyse_traces`. Up proportion is the proportion of traces that
@@ -742,7 +760,9 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
     assert isinstance(up_proportions_arr, np.ndarray), 'Up proportions must be a 1D array, not a list.'
 
     num_shots = max(shots_per_frequency, 25)
-    logger.warning("Number of shots is < 25, 25 shots is used for threshold analysis.")
+    if shots_per_frequency < 25:
+        logger.warning(f'Readout shots {shots_per_frequency} < 25. This may cause issues when finding '
+                       f'an optimal threshold up proportion, thus 25 shots are used instead.')
     # Algorithm fails if the number of shots is less than 25 (not exact number, can still be adjusted).
     # The reason for this is that in the following division of up_proportion space by the number of shots
     # there are too few points to perform kernel density estimation.
@@ -752,18 +772,20 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
     kernel = gaussian_kde(up_proportions_arr)
     gaussian_up_proportions = kernel(proportion_space)
     # 'gaussian_up_proportions' is a 1D array of spin-up proportions' density distribution within
-    # up_proportion space, i.e. has length of proportion_space.
+    # up proportion space, i.e. has length of proportion_space.
 
     # Finding indexes of density distribution peaks. Might still require some fine adjustments in
-    # 'thres' and 'min_dist' parameters.
+    # 'thres' and 'min_dist' parameters. TODO: find better values for 'thres' and 'min_dist'.
     peak_idxs = peakutils.peak.indexes(gaussian_up_proportions,
                                        thres=0.5/samples,
                                        min_dist=num_shots/5)
-    # If no peaks are detected (something failed), by default we set threshold to 0.5.
+
+    # If no peaks are detected (something failed), by default threshold is set to 0.5.
     middle_point = (num_shots + 1) // 2
     if len(peak_idxs) == 0:
         logger.debug('Adaptive thresholding routine: 0 peaks were found, using threshold 0.5')
         trough_idx = middle_point
+
     # If only one peak is detected (nuclear spin did not flip), depending on whether
     # it is in the lower (<0.5) or the upper (>=0.5) half of proportion space,
     # the minimum index of density distribution is found respectively above or below
@@ -771,6 +793,7 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
     # Since the density distribution values reach 1e-20 at the edges of the
     # proportion space (i.e. at 0 or 1), to smooth a bit the threshold jumps between
     # the measurement points, rounding to the 4th digit is implemented.
+    # TODO: Find better way to determine threshold between density distribution peaks.
     elif len(peak_idxs) == 1:
         if peak_idxs[0] < middle_point:
             trough_slice = slice(peak_idxs[0], num_shots + 1)
@@ -780,6 +803,7 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
             trough_slice = slice(0, peak_idxs[0])
             search_space = np.round(gaussian_up_proportions[trough_slice], 4)
             trough_idx = np.argmin(search_space)
+
     # If more than one peak is detected, then minimum is found between the lowest and the highest peak.
     else:
         trough_slice = slice(min(peak_idxs), max(peak_idxs))
