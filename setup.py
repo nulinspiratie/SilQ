@@ -49,7 +49,7 @@ setup(name='silq',
       long_description=readme(),
       url='https://github.com/nulinspiratie/SilQ',
       classifiers=[
-          'Development Status :: 2 - Beta',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
           'Programming Language :: Python :: 3.5',
           'Topic :: Scientific/Engineering'
