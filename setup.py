@@ -40,7 +40,7 @@ extras_require = {k: '>='.join(v) for k, v in extras.items()}
 setup(name='silq',
       version=get_version(),
       use_2to3=False,
-      author='Serwan Asaad, Mark Johnson, Stefanie Tenberg, Rostyslav Savyttskyy',
+      author='Serwan Asaad, Mark Johnson, Hannes Firgau, Stefanie Tenberg, Rostyslav Savytskyy, Irene Fernandez de Fuentes',
       author_email='serwan.asaad@gmail.com',
       maintainer='Serwan Asaad, Stefanie Tenberg',
       maintainer_email='serwan.asaad@gmail.com',
