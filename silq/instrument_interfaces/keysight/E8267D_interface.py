@@ -422,6 +422,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                           frequency=frequency_IQ,
                           amplitude=1 + interface.I_amplitude_correction(),
                           phase=0 + interface.I_phase_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'I'}),
@@ -430,6 +432,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
                           phase=-90 + interface.Q_phase_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
                           amplitude=1 + interface.Q_amplitude_correction(),
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
@@ -443,6 +447,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    frequency_stop=frequency_IQ_stop,
                                    amplitude=1 + interface.I_amplitude_correction(),
                                    phase=0 + interface.I_phase_correction(),
+                                   phase_reference=self.pulse.phase_reference,
+                                   offset=self.pulse.offset,
                                    connection_requirements={
                                        'input_instrument': interface.instrument_name(),
                                        'input_channel': 'I'}),
@@ -453,6 +459,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    frequency_stop=frequency_IQ_stop,
                                    amplitude=1 + interface.Q_amplitude_correction(),
                                    phase=-90 + interface.Q_phase_correction(),
+                                   phase_reference=self.pulse.phase_reference,
+                                   offset=self.pulse.offset,
                                    connection_requirements={
                                        'input_instrument': interface.instrument_name(),
                                        'input_channel': 'Q'})])
