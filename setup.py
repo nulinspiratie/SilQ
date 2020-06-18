@@ -30,7 +30,7 @@ extras = {
     'PythonNet': ('pythonnet', '2.1'),
     'slacker': ('slacker', '0.9.42'),
     'theano': ('theano', '0.9'),
-    'keras': ('keras', '2.0.8')
+    'keras': ('keras', '2.0.8'),
     'qutip': ('qutip', '4.5.0')
     # 'ipympl': ('ipympl', '0.0.3')
 
