@@ -638,15 +638,35 @@ class TunnelTimesAnalysis:
 
 def analyse_tunnel_times_measurement(
     data=None,
+    traces=None,
     tunnel_times_analyses=None,
     threshold_voltage=150e-3,
     t_skip=0,
     sample_rate=200e3,
-    detailed=True
+    detailed=True,
+    silent=False
 ):
-    if data is not None:
-        trace_file = data.load_traces('ESR_adiabatic')
-        results = get_first_blips(trace_file, threshold_voltage=threshold_voltage, sample_rate=sample_rate)
+    if tunnel_times_analyses is None:
+
+        if data is not None:
+            trace_file = data.load_traces('ESR_adiabatic')
+            results = get_first_blips(
+                trace_file, threshold_voltage=threshold_voltage, sample_rate=sample_rate
+            )
+        elif traces is not None:
+            if isinstance(traces, list):
+                traces = {f"readout_{k}": trace_arr for k, trace_arr in traces.items()}
+
+            assert len(traces) == 2, "Must provide two trace arrays"
+
+            results = {}
+            for key, trace_arr in traces.items():
+                results[key] = get_first_blips(
+                    trace_arr, threshold_voltage=threshold_voltage, sample_rate=sample_rate
+                )
+
+        else:
+            raise SyntaxError('Must provide either tunnel_times_analyses, data, or traces')
 
         tunnel_times_analyses = {'high': None, 'low': None}
         for k, (key, result) in enumerate(results.items()):
@@ -668,21 +688,36 @@ def analyse_tunnel_times_measurement(
     assert tunnel_times_analyses['high'] is not None, "Both readouts have low spin-up fraction"
 
     initialization_error = tunnel_times_analyses['low'].results.get('p_1', 0)
+    tau_up = tunnel_times_analyses['high'].results['tau_1']
     if 'tau' in tunnel_times_analyses['low'].results:
         tau_down = tunnel_times_analyses['low'].results['tau']
     else:
         tau_down = tunnel_times_analyses['low'].results['tau_2']
 
+    results = {
+        'tau_up': tau_up,
+        'tau_down': tau_down,
+        'tau_ratio': tau_down / tau_up,
+        'probability_spin_up': tunnel_times_analyses['high'].results['p_1'],
+        'probability_spin_down': tunnel_times_analyses['high'].results['p_2'],
+        'probability_initialize_spin_up': initialization_error,
+        't_read_optimum': tunnel_times_analyses['high'].results['t_read_optimum'],
+        'contrast_optimum': tunnel_times_analyses['high'].results['contrast_optimum'],
+        'analyses': tunnel_times_analyses
+    }
+
     # Print results
-    print(
-        f"tau_up = {tunnel_times_analyses['high'].results['tau_1']*1e6:.0f} us\n"
-        f"tau_down = {tau_down*1e6:.0f} us\n"
-        f"P(spin-up) = {tunnel_times_analyses['high'].results['p_1']:.2f}\n"
-        f"P(spin-down) = {tunnel_times_analyses['high'].results['p_2']:.2f}\n"
-        f"P(initialize_spin_up) = {initialization_error:.3f}\n"
-        f"t_read_optimum = {tunnel_times_analyses['high'].results['t_read_optimum']*1e6:.0f} us\n"
-        f"contrast_optimum = {tunnel_times_analyses['high'].results['contrast_optimum']:.2f}\n"
-    )
+    if not silent:
+        print(
+            f"tau_up = {results['tau_up']*1e6:.0f} us\n"
+            f"tau_down = {results['tau_down']*1e6:.0f} us\n"
+            f"tau_down / tau_up = {tau_down / tau_up:.0f}\n"
+            f"P(spin-up) = {results['probability_spin_up']:.2f}\n"
+            f"P(spin-down) = {results['probability_spin_down']:.2f}\n"
+            f"P(initialize_spin_up) = {results['probability_initialize_spin_up']:.3f}\n"
+            f"t_read_optimum = {results['t_read_optimum']*1e6:.0f} us\n"
+            f"contrast_optimum = {results['contrast_optimum']:.2f}\n"
+        )
 
     if detailed:
         print("\n\n\nDetailed results:")
@@ -700,4 +735,5 @@ def analyse_tunnel_times_measurement(
         axes[2].set_title('Low spin-up measurement')
 
         fig.tight_layout()
-    return tunnel_times_analyses
+
+    return results
