@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy as np
+import warnings
 from matplotlib import pyplot as plt
 from typing import Union
 import numpy as np
@@ -9,11 +10,14 @@ from collections import Counter
 from copy import copy
 import h5py
 from statsmodels.base.model import GenericLikelihoodModel
+import itertools
+
 
 from .analysis import find_high_low, count_blips
 from .fit_toolbox import DoubleExponentialFit, ExponentialFit
 from silq.tools.trace_tools import extract_pulse_slices_from_trace_file
 
+from qcodes import DataSet
 
 logger = logging.getLogger(__name__)
 
@@ -211,12 +215,12 @@ def contrast_optimal(t, tau_up, tau_down):
     return np.exp(-t/tau_down) - np.exp(-t/tau_up)
 
 
-def get_first_blips(
+def get_blips(
         traces: Union[h5py.File, np.ndarray],
         threshold_voltage: float,
         sample_rate: float,
         pulse_slice=None,
-        silent=False
+        silent=False,
 ):
     """Get first blips from an array"""
     if isinstance(traces, h5py.File):
@@ -225,19 +229,20 @@ def get_first_blips(
         )
         results = {}
         for pulse_name, pulse_slice in pulse_slices.items():
-            result = results[pulse_name] = get_first_blips(
+            result = results[pulse_name] = get_blips(
                 traces=traces['traces']['output'],
                 threshold_voltage=threshold_voltage,
                 sample_rate=sample_rate,
                 pulse_slice=pulse_slice,
-                silent=True
+                silent=True,
             )
             result['pulse_slice'] = pulse_slice
 
-            print(
-                f"Traces without blips: {result['N_traces_no_blips']}/{result['N_traces']} "
-                f"({result['N_traces_no_blips'] / result['N_traces']*100:.1f}%)"
-            )
+            if not silent:
+                print(
+                    f"Traces without blips: {result['N_traces_no_blips']}/{result['N_traces']} "
+                    f"({result['N_traces_no_blips'] / result['N_traces']*100:.1f}%)"
+                )
 
         if len(pulse_slices) == 1:
             # Only one pulse, return results of first pulse
@@ -250,12 +255,12 @@ def get_first_blips(
     if traces.ndim > 2:
         results = {}
         for trace_arr in traces:
-            result = get_first_blips(
+            result = get_blips(
                 trace_arr,
                 threshold_voltage=threshold_voltage,
                 sample_rate=sample_rate,
                 pulse_slice=pulse_slice,
-                silent=True
+                silent=True,
             )
             for key, val in result.items():
                 if isinstance(val, (int, float)):
@@ -275,13 +280,13 @@ def get_first_blips(
             threshold_voltage=threshold_voltage,
             sample_rate=sample_rate,
             t_skip=0,
-            ignore_final=True
+            ignore_final=True,
         )
-        first_blip_events = [
+        first_blip_durations = [
             elem[0][1] / sample_rate for elem in blip_results['blip_events'] if len(elem)
         ]
 
-        N_traces_blips = len(first_blip_events)
+        N_traces_blips = len(first_blip_durations)
         N_traces_no_blips = samples - N_traces_blips
         N_traces = N_traces_blips + N_traces_no_blips
 
@@ -289,7 +294,9 @@ def get_first_blips(
             'N_traces_blips': N_traces_blips,
             'N_traces_no_blips': N_traces_no_blips,
             'N_traces': N_traces,
-            'first_blip_events': first_blip_events,
+            'first_blip_durations': first_blip_durations,
+            'low_blip_durations': list(blip_results['low_blip_durations']),
+            'high_blip_durations': list(blip_results['high_blip_durations']),
         }
 
     if not silent:
@@ -310,6 +317,7 @@ class ExponentialModel(GenericLikelihoodModel):
 
         self.results = None
         self.initial_parameters = None
+        self.fixed_parameters = None
         self.parameters = None
 
         super(ExponentialModel, self).__init__(endog, exog, **kwargs)
@@ -328,16 +336,32 @@ class ExponentialModel(GenericLikelihoodModel):
         params = dict(zip(self.parameter_names, params))
         return -np.log(self.fit_function(self.endog, **params))
 
-    def fit(self, initial_parameters=None, maxiter=10000, maxfun=5000, silent=False, **kwargs):
+    def fit(
+            self,
+            initial_parameters=None,
+            fixed_parameters=None,
+            maxiter=10000,
+            maxfun=5000,
+            silent=False,
+            **kwargs
+    ):
         if initial_parameters is None:
             initial_parameters = self.find_initial_parameters()
         self.initial_parameters = initial_parameters
+        self.fixed_parameters = fixed_parameters or {}
 
-        start_params = [self.initial_parameters[name] for name in self.parameter_names]
-        self.results = super(ExponentialModel, self).fit(
-            start_params=start_params, maxiter=maxiter, maxfun=maxfun, disp=not silent, **kwargs
-        )
-        self.parameters = dict(zip(self.parameter_names, self.results.params))
+        if 'tau' not in self.fixed_parameters:
+            self.results = super(ExponentialModel, self).fit(
+                start_params=list(self.initial_parameters.values()),
+                maxiter=maxiter,
+                maxfun=maxfun,
+                disp=not silent,
+                **kwargs
+            )
+            self.parameters = dict(zip(self.parameter_names, self.results.params))
+        else:
+            # Only free parameter `tau` is already provided, no fitting needed
+            self.parameters = self.fixed_parameters
 
         return self.results
 
@@ -351,6 +375,7 @@ class DoubleExponentialModel(GenericLikelihoodModel):
 
         self.results = None
         self.initial_parameters = None
+        self.fixed_parameters = None
         self.parameters = None
 
         super(DoubleExponentialModel, self).__init__(endog, exog, **kwargs)
@@ -359,12 +384,13 @@ class DoubleExponentialModel(GenericLikelihoodModel):
     def calculate_A_2(A_1, tau_1, tau_2):
         return (1 - A_1 * tau_1) / tau_2
 
-    def find_initial_parameters(self):
+    def find_initial_parameters(self, fixed_parameters={}):
         results = dict(
-            tau_1 = 100e-6,
-            tau_2 = 1e-3
+            tau_1 = fixed_parameters.get('tau_1', 100e-6),
+            tau_2 = fixed_parameters.get('tau_2', 1e-3)
         )
         results['A_1'] = 1/results['tau_1']/2
+        # A_2 is a dependent parameter
         return results
 
     def fit_function(self, t, A_1, tau_1, tau_2, **kwargs):
@@ -375,19 +401,37 @@ class DoubleExponentialModel(GenericLikelihoodModel):
         return result
 
     def nloglikeobs(self, params):
-        params = dict(zip(self.parameter_names, params))
+        params = dict(zip(self.initial_parameters, params))
+        params.update(**self.fixed_parameters)
         return -np.log(self.fit_function(self.endog, **params))
 
-    def fit(self, initial_parameters=None, maxiter=10000, maxfun=5000, silent=False, **kwargs):
+    def fit(
+            self,
+            initial_parameters=None,
+            fixed_parameters=None,
+            maxiter=10000,
+            maxfun=5000,
+            silent=False,
+            **kwargs
+    ):
+        self.fixed_parameters = fixed_parameters or {}
         if initial_parameters is None:
-            initial_parameters = self.find_initial_parameters()
-        self.initial_parameters = initial_parameters
+            initial_parameters = self.find_initial_parameters(self.fixed_parameters)
+        # Remove all parameters that are already in fixed_parameters
+        self.initial_parameters = {
+            key: val for key, val in initial_parameters.items()
+            if key not in self.fixed_parameters
+        }
 
-        start_params = [self.initial_parameters[name] for name in self.parameter_names]
         self.results = super(DoubleExponentialModel, self).fit(
-            start_params=start_params, maxiter=maxiter, maxfun=maxfun, disp=not silent, **kwargs
+            start_params=list(initial_parameters.values()),
+            maxiter=maxiter,
+            maxfun=maxfun,
+            disp=not silent,
+            **kwargs
         )
-        self.parameters = dict(zip(self.parameter_names, self.results.params))
+        self.parameters = dict(zip(self.initial_parameters, self.results.params))
+        self.parameters.update(**self.fixed_parameters)
 
         # # Swap parameters if tau_1 > tau_2
         # if self.parameters['tau_1'] > self.parameters['tau_2']:
@@ -420,6 +464,9 @@ class TunnelTimesAnalysis:
             threshold_voltage=None,
             silent=False,
             t_skip=0,
+            ignore_pre_t_skip=False,
+            num_exponentials=(2, 1),
+            fixed_parameters=None
     ):
         results = self.parse_tunnel_times(
             tunnel_times=tunnel_times, traces=traces, results=results,
@@ -432,7 +479,12 @@ class TunnelTimesAnalysis:
 
         self.original_tunnel_times = copy(self.tunnel_times)
 
+        self.ignore_pre_t_skip = ignore_pre_t_skip
         self.t_skip = t_skip
+
+        self.num_exponentials = num_exponentials
+
+        self.fixed_parameters = fixed_parameters
 
         self.fig = None
         self.axes = None
@@ -449,7 +501,8 @@ class TunnelTimesAnalysis:
     @staticmethod
     def parse_tunnel_times(
             tunnel_times=None, traces=None, results=None,
-            threshold_voltage=None, sample_rate=None
+            threshold_voltage=None, sample_rate=None,
+            silent=True
     ):
         if tunnel_times is not None:
             return {
@@ -460,18 +513,21 @@ class TunnelTimesAnalysis:
                 'N_traces': len(tunnel_times)
             }
         elif traces is not None:
-            results = get_first_blips(
-                traces, threshold_voltage=threshold_voltage, sample_rate=sample_rate
+            results = get_blips(
+                traces,
+                threshold_voltage=threshold_voltage,
+                sample_rate=sample_rate,
+                silent=silent
             )
             return {
-                'tunnel_times': results['first_blip_events'],
+                'tunnel_times': results['first_blip_durations'],
                 'N_traces_blips': results['N_traces_blips'],
                 'N_traces_no_blips': results['N_traces_no_blips'],
                 'N_traces': results['N_traces']
             }
         elif results is not None:
             return {
-                'tunnel_times': results['first_blip_events'],
+                'tunnel_times': results['first_blip_durations'],
                 'N_traces_blips': results['N_traces_blips'],
                 'N_traces_no_blips': results['N_traces_no_blips'],
                 'N_traces': results['N_traces']
@@ -486,15 +542,22 @@ class TunnelTimesAnalysis:
     @t_skip.setter
     def t_skip(self, t_skip):
         self._t_skip = t_skip
-        self.tunnel_times = copy(self.original_tunnel_times)
-        self.tunnel_times -= t_skip
-        self.tunnel_times[self.tunnel_times < 0] = 0
 
-        optimal_t_skip = self.optimal_t_skip()
-        if optimal_t_skip is not None and t_skip < optimal_t_skip:
-            logger.warning(
-                f't_skip {t_skip*1e6} us below optimum {optimal_t_skip*1e6:.0f} us'
-            )
+        if t_skip is not None:
+            self.tunnel_times = copy(self.original_tunnel_times)
+            self.tunnel_times -= t_skip
+            if self.ignore_pre_t_skip:
+                self.tunnel_times = np.array([t for t in self.tunnel_times if t > 0])
+            else:
+                self.tunnel_times[self.tunnel_times < 0] = 0
+
+            optimal_t_skip = self.optimal_t_skip()
+            if optimal_t_skip is not None and t_skip < optimal_t_skip:
+                logger.warning(
+                    f't_skip {t_skip*1e6} us below optimum {optimal_t_skip*1e6:.0f} us'
+                )
+        else:
+            self.tunnel_times = self.original_tunnel_times
 
     def optimal_t_skip(self):
         min_events = 30  # Minimum number of events at single tunnel time
@@ -505,21 +568,21 @@ class TunnelTimesAnalysis:
         max_tunnel_times = max(tunnel_times_count.values())
 
         if max_tunnel_times < min_events:
-            logger.warning('Could not determine optimal t_skip, too few data points')
+            logger.debug('Could not determine optimal t_skip, too few data points')
             return None
 
         for tunnel_time, counts in tunnel_times_count.items():
             if counts < threshold_factor * max_tunnel_times:
                 continue
             elif tunnel_time > max_tunnel_time:
-                logger.warning(
+                logger.debug(
                     f'Could not determine optimal t_skip, exceeded {max_tunnel_time}'
                 )
                 return None
             else:
                 return tunnel_time
         else:
-            logger.warning(f'Could not determine optimal t_skip, unknown reason')
+            logger.debug(f'Could not determine optimal t_skip, unknown reason')
             return None
 
     def get_ancillary_parameters(self, A_1, tau_1, tau_2):
@@ -558,20 +621,33 @@ class TunnelTimesAnalysis:
         if tunnel_times is None:
             tunnel_times = self.tunnel_times
 
-        self.model = DoubleExponentialModel(tunnel_times)
-        self.fit_result = self.model.fit(silent=silent)
+        num_exponentials = self.num_exponentials
+        if isinstance(num_exponentials, int):
+            num_exponentials = num_exponentials,
 
-        results = copy(self.model.parameters)
+        models = {2: DoubleExponentialModel, 1: ExponentialModel}
 
-        results = self.get_ancillary_parameters(**results)
+        for num_exponential in num_exponentials:
+            self.model = models[num_exponential](tunnel_times)
 
-        if results['tau_1'] < 1e-8:
-            logger.warning('Could not fit a double exponential, using single exponential')
-
-            self.model = ExponentialModel(tunnel_times)
-            self.fit_result = self.model.fit(silent=silent)
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message="Inverting hessian failed")
+                self.fit_result = self.model.fit(silent=silent, fixed_parameters=self.fixed_parameters)
 
             results = copy(self.model.parameters)
+
+            if num_exponential == 2:
+                # Add ancillary results
+                results = self.get_ancillary_parameters(**results)
+
+                tau_vals = (results['tau_1'], results['tau_2'])
+
+                if tau_vals[0] < 1e-8 or (tau_vals[1] - tau_vals[0]) < 1e-6:
+                    logger.warning('Could not fit a double exponential, using single exponential')
+                    continue
+
+            self.num_exponentials = num_exponential
+            break
 
         return results
 
@@ -583,7 +659,7 @@ class TunnelTimesAnalysis:
                 print(f"{key}: {value:.3g}")
 
     def plot_tunnel_times(self, tunnel_times=None, t_cutoff=None, bins=41,
-                          plot_fast=True, fig=None, axes=None):
+                          plot_fast=True, fig=None, axes=None, title=''):
         if tunnel_times is None:
             tunnel_times = self.tunnel_times
 
@@ -601,13 +677,17 @@ class TunnelTimesAnalysis:
             tunnel_times_arrays = [tunnel_times_fast, tunnel_times]
             if axes is None:
                 fig, axes = plt.subplots(2, 1, figsize=(6, 4))
+
+            titles = [f'{title} - Zoom-in', title]
         else:
             tunnel_times_arrays = [tunnel_times]
             if axes is None:
-                fig, ax = plt.subplots(2, 1, figsize=(6, 2.5))
+                fig, ax = plt.subplots(1, 1, figsize=(6, 2.5))
                 axes = [ax]
 
-        for ax, tunnel_times_arr in zip(axes, tunnel_times_arrays):
+            titles = [title]
+
+        for k, (ax, tunnel_times_arr) in enumerate(zip(axes, tunnel_times_arrays)):
             # Normalize probabilities to tunnel times
             y, x, _ = ax.hist(tunnel_times_arr*1e3, bins=bins)
             x /= 1e3
@@ -626,6 +706,7 @@ class TunnelTimesAnalysis:
                 ax.legend(['Double exponential fit', 'Measured bins'])
 
             ax.set_xlim(0, ax.get_xlim()[1])
+            ax.set_title(titles[k])
 
         if fig is not None:
             fig.tight_layout()
@@ -637,74 +718,130 @@ class TunnelTimesAnalysis:
 
 
 def analyse_tunnel_times_measurement(
-    data=None,
-    traces=None,
-    tunnel_times_analyses=None,
+    data: Union[DataSet, h5py.File, dict, list],
     threshold_voltage=150e-3,
     t_skip=0,
     sample_rate=200e3,
     detailed=True,
-    silent=False
+    silent=False,
+    first_blips_only=True
 ):
-    if tunnel_times_analyses is None:
+    if silent:
+        detailed = False
 
-        if data is not None:
-            trace_file = data.load_traces('ESR_adiabatic')
-            results = get_first_blips(
-                trace_file, threshold_voltage=threshold_voltage, sample_rate=sample_rate
+    if isinstance(data, DataSet):
+        data = data.load_traces()
+
+    ### Extract blips
+    if isinstance(data, h5py.File):
+        blip_results = get_blips(
+            data,
+            threshold_voltage=threshold_voltage,
+            sample_rate=sample_rate,
+            silent=silent
+        )
+    elif isinstance(data, (dict, list)):
+        # Ensure data is a list
+        if isinstance(data, list):
+            data = {f"readout_{k}": trace_arr for k, trace_arr in enumerate(data)}
+
+        blip_results = {}
+        for key, trace_arr in data.items():
+            blip_results[key] = get_blips(
+                trace_arr,
+                threshold_voltage=threshold_voltage,
+                sample_rate=sample_rate,
+                silent=silent
             )
-        elif traces is not None:
-            if isinstance(traces, list):
-                traces = {f"readout_{k}": trace_arr for k, trace_arr in traces.items()}
-
-            assert len(traces) == 2, "Must provide two trace arrays"
-
-            results = {}
-            for key, trace_arr in traces.items():
-                results[key] = get_first_blips(
-                    trace_arr, threshold_voltage=threshold_voltage, sample_rate=sample_rate
-                )
-
-        else:
-            raise SyntaxError('Must provide either tunnel_times_analyses, data, or traces')
-
-        tunnel_times_analyses = {'high': None, 'low': None}
-        for k, (key, result) in enumerate(results.items()):
-            tunnel_times_analysis = TunnelTimesAnalysis(
-                results=result, t_skip=t_skip,
-                sample_rate=sample_rate, threshold_voltage=threshold_voltage,
-                silent=True
-            )
-
-            # If no double exponential could be fitted, probability is zero
-            probability_spin_up = tunnel_times_analysis.results.get("p_1", 0)
-            if probability_spin_up > 0.5:
-                tunnel_times_analyses['high'] = tunnel_times_analysis
-                print(f"Target nucleus: {['D', 'U'][k]}")
-            else:
-                tunnel_times_analyses['low'] = tunnel_times_analysis
-
-    assert tunnel_times_analyses['low'] is not None, "Both readouts have high spin-up fraction"
-    assert tunnel_times_analyses['high'] is not None, "Both readouts have low spin-up fraction"
-
-    initialization_error = tunnel_times_analyses['low'].results.get('p_1', 0)
-    tau_up = tunnel_times_analyses['high'].results['tau_1']
-    if 'tau' in tunnel_times_analyses['low'].results:
-        tau_down = tunnel_times_analyses['low'].results['tau']
     else:
-        tau_down = tunnel_times_analyses['low'].results['tau_2']
+        raise SyntaxError('Must provide either data, or traces')
+
+    assert len(blip_results) <= 2, "Cannot handle more than two blip results"
+
+    ### Determine tunnel time analyses
+    tunnel_times_analyses = {'tunnel_out': None, 'tunnel_in': None, 'individual': []}
+
+    # Determine combined tunnel in/out times
+    for in_out in ['out', 'in']:
+        if in_out == 'in':
+            key = 'high_blip_durations'
+        elif first_blips_only:
+            key = 'first_blip_durations'
+        else:
+            key = 'low_blip_durations'
+
+        tunnel_times = [result[key] for result in blip_results.values()]
+        # Flatten list of tunnel times lists
+        tunnel_times = list(itertools.chain(*tunnel_times))
+        tunnel_times_analysis = TunnelTimesAnalysis(
+            tunnel_times=tunnel_times,
+            t_skip=t_skip,
+            ignore_pre_t_skip=True,
+            sample_rate=sample_rate,
+            threshold_voltage=threshold_voltage,
+            num_exponentials=(2, 1) if in_out == 'out' else (1, ),
+            silent=True
+        )
+        tunnel_times_analyses[f'tunnel_{in_out}'] = tunnel_times_analysis
+
+    ### Analyse individual trace arrays using existing tunnel out times
+    tunnel_out_analysis = tunnel_times_analyses['tunnel_out']
+    # Tunnel times and number of exponentials are fixed by tunnel_out_analysis
+    fixed_parameters = {
+        key: val for key, val in tunnel_out_analysis.results.items()
+        if key.startswith('tau')
+    }
+    for k, (key, result) in enumerate(blip_results.items()):
+        tunnel_times_analysis = TunnelTimesAnalysis(
+            results=result,
+            t_skip=t_skip,
+            sample_rate=sample_rate,
+            threshold_voltage=threshold_voltage,
+            num_exponentials=tunnel_out_analysis.num_exponentials,
+            fixed_parameters=fixed_parameters,
+            silent=True
+        )
+        tunnel_times_analyses['individual'].append(tunnel_times_analysis)
+
+    if tunnel_out_analysis.num_exponentials == 1:
+        tau_up = tau_down = 1
+    else:
+        tau_up = tunnel_out_analysis.results['tau_1']
+        tau_down = tunnel_out_analysis.results['tau_2']
 
     results = {
         'tau_up': tau_up,
         'tau_down': tau_down,
         'tau_ratio': tau_down / tau_up,
-        'probability_spin_up': tunnel_times_analyses['high'].results['p_1'],
-        'probability_spin_down': tunnel_times_analyses['high'].results['p_2'],
-        'probability_initialize_spin_up': initialization_error,
-        't_read_optimum': tunnel_times_analyses['high'].results['t_read_optimum'],
-        'contrast_optimum': tunnel_times_analyses['high'].results['contrast_optimum'],
+        'tau_in': tunnel_times_analyses['tunnel_in'].results['tau'],
+        'probability_spin_up': np.nan,
+        'probability_spin_down': np.nan,
+        'probability_initialize_spin_up': np.nan,
+        't_read_optimum': tunnel_out_analysis.results.get('t_read_optimum', np.nan),
+        'contrast_optimum': tunnel_out_analysis.results.get('contrast_optimum', np.nan),
         'analyses': tunnel_times_analyses
     }
+
+    # Determine properties dependent on number of trace arrays
+    high_analysis = low_analysis = None
+    if tunnel_times_analysis.num_exponentials == 2:
+        if len(blip_results) == 1:
+            # Single array provided, can be either high up proportion or not
+            tunnel_times_analysis = tunnel_times_analyses['individual'][0]
+            results['probability_spin_up'] = tunnel_times_analysis.results['p_1']
+            results['probability_spin_down'] = tunnel_times_analysis.results['p_2']
+        elif len(blip_results) == 2:
+            # We assume that one trace array has high up proportion and the other
+            # is used to determine dark counts
+            analyses = tunnel_times_analyses['individual']
+            # Find analysis with high up proportion
+            high_idx = analyses[1].results['p_1'] > analyses[0].results['p_1']
+            high_analysis = analyses[high_idx]
+            low_analysis = analyses[(1+high_idx) % 2]
+
+            results['probability_spin_up'] = high_analysis.results['p_1']
+            results['probability_spin_down'] = high_analysis.results['p_2']
+            results['probability_initialize_spin_up'] = low_analysis.results['p_1']
 
     # Print results
     if not silent:
@@ -712,6 +849,7 @@ def analyse_tunnel_times_measurement(
             f"tau_up = {results['tau_up']*1e6:.0f} us\n"
             f"tau_down = {results['tau_down']*1e6:.0f} us\n"
             f"tau_down / tau_up = {tau_down / tau_up:.0f}\n"
+            f"tau_in = {results['tau_in']*1e6:.0f} us\n"
             f"P(spin-up) = {results['probability_spin_up']:.2f}\n"
             f"P(spin-down) = {results['probability_spin_down']:.2f}\n"
             f"P(initialize_spin_up) = {results['probability_initialize_spin_up']:.3f}\n"
@@ -720,19 +858,24 @@ def analyse_tunnel_times_measurement(
         )
 
     if detailed:
-        print("\n\n\nDetailed results:")
-        fig, axes = plt.subplots(3, 1, figsize=(6,5.5))
+        print('\n***Detailed results***')
+        for in_out in ['in', 'out']:
+            title = f'Tunnel {in_out} statistics'
+            print(f"\n{title}")
+            tunnel_times_analyses[f'tunnel_{in_out}'].print_results()
+            tunnel_times_analyses[f'tunnel_{in_out}'].plot_tunnel_times(title=title)
 
-        print(f"\nHigh spin-up - tunnel statistics")
-        tunnel_times_analyses['high'].print_results()
-        tunnel_times_analyses['high'].plot_tunnel_times(axes=axes[:2])
-        axes[0].set_title('High spin-up measurement - Zoom-in')
-        axes[1].set_title('High spin-up measurement')
+        if high_analysis is not None:
+            fig, axes = plt.subplots(3, 1, figsize=(6,5.5))
+            title = f'High spin-up - tunnel statistics'
+            print(f"\n{title}")
+            high_analysis.print_results()
+            high_analysis.plot_tunnel_times(axes=axes[:2], plot_fast=True, title=title)
 
-        print(f"\nLow spin-up - tunnel statistics")
-        tunnel_times_analyses['low'].print_results()
-        tunnel_times_analyses['low'].plot_tunnel_times(axes=axes[2:], plot_fast=False)
-        axes[2].set_title('Low spin-up measurement')
+            title = f'Low spin-up - tunnel statistics'
+            print(f"\n{title}")
+            low_analysis.print_results()
+            low_analysis.plot_tunnel_times(axes=axes[2:], plot_fast=False, title=title)
 
         fig.tight_layout()
 
