@@ -804,7 +804,7 @@ def analyse_tunnel_times_measurement(
         tunnel_times_analyses['individual'].append(tunnel_times_analysis)
 
     if tunnel_out_analysis.num_exponentials == 1:
-        tau_up = tau_down = 1
+        tau_up = tau_down = tunnel_out_analysis.results['tau']
     else:
         tau_up = tunnel_out_analysis.results['tau_1']
         tau_down = tunnel_out_analysis.results['tau_2']
