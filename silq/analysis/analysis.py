@@ -767,17 +767,19 @@ def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarra
     # The reason for this is that in the following division of up_proportion space by the number of shots
     # there are too few points to perform kernel density estimation.
 
-    up_proportions_arr = up_proportions_arr.reshape(1, -1)
     proportion_space = np.linspace(0, 1, num=num_shots + 1, endpoint=True)
+    up_proportions_arr = up_proportions_arr.reshape(1, -1)  # 'gaussian_kde' function requires at least 2D array
     kernel = gaussian_kde(up_proportions_arr)
     gaussian_up_proportions = kernel(proportion_space)
     # 'gaussian_up_proportions' is a 1D array of spin-up proportions' density distribution within
     # up proportion space, i.e. has length of proportion_space.
 
+    samples = up_proportions_arr.shape[-1]  # other dimension is empty
+
     # Finding indexes of density distribution peaks. Might still require some fine adjustments in
     # 'thres' and 'min_dist' parameters. TODO: find better values for 'thres' and 'min_dist'.
     peak_idxs = peakutils.peak.indexes(gaussian_up_proportions,
-                                       thres=0.5/up_proportions_arr.shape[-1],
+                                       thres=0.5/samples,
                                        min_dist=num_shots/5)
 
     # If no peaks are detected (something failed), by default threshold is set to 0.5.
