@@ -33,7 +33,7 @@ qc.config.user.update({'silq_config': config})
 
 silq_env_var = 'SILQ_EXP_FOLDER'
 
-if 'ipykernel' in sys.modules:
+if 'ipykernel' in sys.modules and using_ipython():
     # Load iPython magic (configured via qc.config.core.register_magic)
     from qcodes.utils.magic import register_magic_class
 
@@ -425,7 +425,8 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
         while current_date <= date_time + timedelta(days=max_date_delta):
             date_str = date_time.strftime("%Y-%m-%d")
             pulse_sequence_path = os.path.join(
-                self.default_io.base_location, r'pulse_sequences\data', date_str
+                self.default_io.base_location, r'pulse_sequences', 'data',
+                date_str
             )
             pulse_sequence_files = os.listdir(pulse_sequence_path)
             # Sort by their idx (i.e. #095 at start of filename)
@@ -528,7 +529,6 @@ def _clear_all_acquisition_parameter_settings(measurement=None):
 
 qc.Measurement.final_actions = [
     _stop_layout,
-    _clear_all_acquisition_parameter_settings
 ]
 
 
