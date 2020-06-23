@@ -130,6 +130,16 @@ class SGS100AInterface(InstrumentInterface):
             docstring="Whether to force IQ modulation.",
         )
 
+        self.marker_per_pulse = Parameter(
+            initial_value=True,
+            vals=vals.Bool(),
+            set_cmd=None,
+            docstring='Use a separate marker per pulse. If False, a single '
+                      'marker pulse is requested for the first pulse to the last '
+                      'pulse. In this case, envelope padding will be added to '
+                      'either side of the single marker pulse.'
+        )
+
         # Add parameters that are not set via setup
         self.additional_settings = ParameterNode()
         for parameter_name in [
@@ -158,10 +168,14 @@ class SGS100AInterface(InstrumentInterface):
             update: Update the interface parameters
 
         Returns:
-            Dictionary with three items:
+            Dictionary with following items:
             - ``IQ_modulation``: Use IQ modulation
+            - ``IQ_channels``: IQ channels to use. Can be 'I', 'Q', 'IQ'
             - ``frequency``: carrier frequency
             - ``power`: output power
+            - ``marker_per_pulse``: Create marker pulse for each pulse.
+              If False, a single marker pulse is created spanning all pulses.
+              Reverted to True with warning if IQ_modulation is False
         """
         settings = {}
 
@@ -248,6 +262,11 @@ class SGS100AInterface(InstrumentInterface):
 
         settings["IQ_channels"] = self.IQ_channels()
 
+        settings['marker_per_pulse'] = self.marker_per_pulse()
+        if not settings['marker_per_pulse'] and not settings['IQ_modulation']:
+            logger.warning("Must use marker_per_pulse if IQ_modulation is off")
+            settings['marker_per_pulse'] = True
+
         if update:
             self.frequency = settings["frequency"]
             self.power = settings["power"]
@@ -271,24 +290,45 @@ class SGS100AInterface(InstrumentInterface):
         settings = self.determine_instrument_settings()
 
         additional_pulses = []
-        marker_pulse = None
-        for pulse in self.pulse_sequence:
-            if marker_pulse is not None and pulse.t_start == marker_pulse.t_stop:
-                # Marker pulse already exists, extend the duration
-                marker_pulse.t_stop = pulse.t_stop
-            else:
-                # Request a new marker pulse
-                marker_pulse = MarkerPulse(
-                    t_start=pulse.t_start,
-                    t_stop=pulse.t_stop,
+
+        # Handle marker pulses first
+        if settings['marker_per_pulse']:
+            # Add a marker pulse per pulse
+            marker_pulse = None
+            for pulse in self.pulse_sequence:
+                if marker_pulse is not None and pulse.t_start == marker_pulse.t_stop:
+                    # Marker pulse already exists, extend the duration
+                    marker_pulse.t_stop = pulse.t_stop
+                else:
+                    # Request a new marker pulse
+                    marker_pulse = MarkerPulse(
+                        t_start=pulse.t_start,
+                        t_stop=pulse.t_stop,
+                        amplitude=self.marker_amplitude(),
+                        connection_requirements={
+                            "input_instrument": self.instrument_name(),
+                            "input_channel": "pulse_mod",
+                        },
+                    )
+                    additional_pulses.append(marker_pulse)
+        else:
+            # Add single marker pulse before first pulse to after last pulse
+            t_start = min(self.pulse_sequence.t_start_list) - self.envelope_padding()
+            t_stop = max(self.pulse_sequence.t_stop_list) + self.envelope_padding()
+
+            additional_pulses.append(
+                MarkerPulse(
+                    t_start=t_start,
+                    t_stop=t_stop,
                     amplitude=self.marker_amplitude(),
                     connection_requirements={
                         "input_instrument": self.instrument_name(),
                         "input_channel": "pulse_mod",
                     },
-                )
-                additional_pulses.append(marker_pulse)
+                ))
 
+        # Now add additional pulses requested by each pulse in pulse sequence
+        for pulse in self.pulse_sequence:
             # Handle any additional pulses such as those for IQ modulation
             additional_pulses += pulse.implementation.get_additional_pulses(
                 self, **settings
@@ -340,6 +380,7 @@ class SinePulseImplementation(PulseImplementation):
         frequency: float,
         IQ_modulation: bool,
         IQ_channels: str,
+        marker_per_pulse: bool,
         power: float,
     ):
         if not IQ_modulation:
@@ -351,12 +392,21 @@ class SinePulseImplementation(PulseImplementation):
 
         frequency_IQ = self.pulse.frequency - frequency
         additional_pulses = []
+
+        t_start = self.pulse.t_start
+        t_stop = self.pulse.t_stop
+        # Add envelope paddings if marker_per_pulse is True to ensure the IQ
+        # sine pulses are active during the entire marker pulse
+        if marker_per_pulse:
+            t_start -= interface.envelope_padding(),
+            t_stop += interface.envelope_padding(),
+
         if 'I' in IQ_channels:
             additional_pulses.append(
                 SinePulse(
                     name="sideband_I",
-                    t_start=self.pulse.t_start - interface.envelope_padding(),
-                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                    t_start=t_start,
+                    t_stop=t_stop,
                     frequency=frequency_IQ,
                     amplitude=amplitude,
                     phase=self.pulse.phase,
@@ -370,8 +420,8 @@ class SinePulseImplementation(PulseImplementation):
             additional_pulses.append(
                 SinePulse(
                     name="sideband_Q",
-                    t_start=self.pulse.t_start - interface.envelope_padding(),
-                    t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                    t_start=t_start,
+                    t_stop=t_stop,
                     frequency=frequency_IQ,
                     phase=self.pulse.phase - 90,
                     amplitude=amplitude,
@@ -398,6 +448,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         frequency: float,
         IQ_modulation: bool,
         IQ_channels: str,
+        marker_per_pulse: bool,
         power: float,
     ):
         assert IQ_modulation
