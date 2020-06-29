@@ -222,9 +222,14 @@ class SGS100AInterface(InstrumentInterface):
             settings["IQ_modulation"] = False
             settings["frequency"] = min_frequency
 
+        settings['marker_per_pulse'] = self.marker_per_pulse()
+        if not settings['marker_per_pulse'] and not settings['IQ_modulation']:
+            logger.warning("Must use marker_per_pulse if IQ_modulation is off")
+            settings['marker_per_pulse'] = True
+
         # If IQ modulation is used, ensure pulses are spaced by more than twice
         # the envelope padding
-        if settings["IQ_modulation"]:
+        if settings["IQ_modulation"] and settings['marker_per_pulse']:
             # Perform an efficient check of spacing between pulses
             t_start_list = self.pulse_sequence.t_start_list
             t_stop_list = self.pulse_sequence.t_stop_list
@@ -241,7 +246,7 @@ class SGS100AInterface(InstrumentInterface):
                     (pulse1, pulse2)
                     for pulse1 in self.pulse_sequence
                     for pulse2 in self.pulse_sequence
-                    if 0 < pulse1.t_start - pulse2.t_stop < 2 * self.envelope_padding()
+                    if 0 <= pulse1.t_start - pulse2.t_stop < 2 * self.envelope_padding()
                 ]
                 raise RuntimeError(
                     f"Spacing between successive microwave pulses is less than "
@@ -261,11 +266,6 @@ class SGS100AInterface(InstrumentInterface):
             settings["power"] = next(iter(powers))
 
         settings["IQ_channels"] = self.IQ_channels()
-
-        settings['marker_per_pulse'] = self.marker_per_pulse()
-        if not settings['marker_per_pulse'] and not settings['IQ_modulation']:
-            logger.warning("Must use marker_per_pulse if IQ_modulation is off")
-            settings['marker_per_pulse'] = True
 
         if update:
             self.frequency = settings["frequency"]
@@ -398,8 +398,8 @@ class SinePulseImplementation(PulseImplementation):
         # Add envelope paddings if marker_per_pulse is True to ensure the IQ
         # sine pulses are active during the entire marker pulse
         if marker_per_pulse:
-            t_start -= interface.envelope_padding(),
-            t_stop += interface.envelope_padding(),
+            t_start -= interface.envelope_padding()
+            t_stop += interface.envelope_padding()
 
         if 'I' in IQ_channels:
             additional_pulses.append(
