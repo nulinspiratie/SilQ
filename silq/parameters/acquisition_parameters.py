@@ -23,7 +23,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'VariableReadParameter', 'BlipsParameter',
+           'NMRParameter', 'EDSRParameter', 'VariableReadParameter', 'BlipsParameter',
            'FlipNucleusParameter', 'FlipFlopParameter', 'NeuralNetworkParameter',
            'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
@@ -1970,7 +1970,7 @@ class EDSRParameter(NMRParameter):
     Parameter for EDSR measurements based on NMR parameter and pulse sequence
 
     Refer to NMRParameter for details. In addition to all properties copied from NMRParameter,
-    EDSRParameter has additional analysis of electron readout right after EDSR(NMR) pulse during
+    EDSRParameter includes analysis of electron readout right after EDSR(NMR) pulse during
     NMR['post_pulse'] = DCPulse('read') that needs to be present in NMRPulseSequence.
 
     Args:
@@ -1981,7 +1981,8 @@ class EDSRParameter(NMRParameter):
 
     def __init__(self, name: str = 'EDSR',
                  names: List[str] = ['flips', 'flip_probability', 'up_proportions',
-                                     'state_probability', 'EDSR_up_proportion'],
+                                     'state_probability', 'threshold_up_proportion',
+                                     'EDSR_up_proportion'],
                  **kwargs):
         super().__init__(name=name,
                          names=names,
