@@ -49,9 +49,9 @@ class Fit():
     def __getitem__(self, item) -> float:
         """Retrieve fitted parameter value"""
         if self.fit_result is not None:
-             return self.fit_result.best_values[item]
+            return self.fit_result.best_values[item]
         else:
-              raise RuntimeError("No fit result to get parameters from.")
+            raise RuntimeError("No fit result to get parameters from.")
 
     def __call__(
             self, sweep_vals: Union[float, np.ndarray] = None, **kwargs
