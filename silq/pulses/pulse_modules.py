@@ -4,13 +4,21 @@ from copy import copy, deepcopy
 copy_alias = copy  # Alias for functions that have copy as a kwarg
 from blinker import Signal
 from matplotlib import pyplot as plt
+from functools import partial
 
 from qcodes.instrument.parameter_node import parameter
 from qcodes import ParameterNode, Parameter
 from qcodes.utils import validators as vals
+from qcodes.instrument.parameter_node import __deepcopy__ as _deepcopy_parameterNode
 
 __all__ = ['PulseRequirement', 'PulseSequence', 'PulseImplementation']
 
+
+def __deepcopy__(self, memodict={}):
+    duration = getattr(self.parameters['duration'], '_duration', None)
+    self_copy = _deepcopy_parameterNode(self, memodict=memodict)
+    self_copy.parameters['duration']._duration = duration
+    return self_copy
 
 class PulseRequirement():
     """`Pulse` attribute requirement for a `PulseImplementation`
@@ -224,6 +232,8 @@ class PulseSequence(ParameterNode):
             simplify_snapshot=True
         )
 
+        self.__deepcopy__ = partial(__deepcopy__, self)
+
         self.name = Parameter(vals=vals.Strings(), set_cmd=None, initial_value=name)
         self.full_name = Parameter(vals=vals.Strings(), initial_value=name)
         self.enabled = Parameter(vals=vals.Bool(), set_cmd=None, initial_value=enabled)
@@ -249,6 +259,7 @@ class PulseSequence(ParameterNode):
 
         self.t_start = Parameter(unit='s', set_cmd=None, initial_value=0)
         self.duration = Parameter(unit='s', set_cmd=None)
+        self.parameters['duration']._duration = None
         self.t_stop = Parameter(unit='s', set_cmd=None)
 
         self.final_delay = Parameter(unit='s', set_cmd=None, vals=vals.Numbers())
@@ -304,6 +315,8 @@ class PulseSequence(ParameterNode):
             set_cmd=None,
             docstring="All pulses, including those from nested pulse sequences"
         )
+
+        self.modifiers = []
 
         # Remember last pulse of pulse sequence, to ensure t_stop of pulse sequence
         # is kept up to date via signalling
@@ -587,6 +600,9 @@ class PulseSequence(ParameterNode):
 
             # Ensure all stop times match
             self._link_pulse_sequences()
+
+        for modifier in self.modifiers:
+            modifier(self)
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=[]):
@@ -1049,6 +1065,7 @@ class PulseSequence(ParameterNode):
         self.my_disabled_pulses.clear()
         if clear_pulse_sequences:
             self['pulse_sequences']._latest = {'value': (), 'raw_value': ()}
+
         self.duration = None  # Reset duration to t_stop of last pulse
 
     @staticmethod
