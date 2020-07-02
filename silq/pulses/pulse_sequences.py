@@ -296,7 +296,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
     def _add_RF_pulse_sequence_single_stage(self, RF_pulse_sequence):
         # Determine if a stage pulse is needed or not
-        stage_pulse_needed = ~any(
+        stage_pulse_needed = not any(
             pulse.connection_label == 'stage' for pulse in RF_pulse_sequence
         )
         if stage_pulse_needed:
