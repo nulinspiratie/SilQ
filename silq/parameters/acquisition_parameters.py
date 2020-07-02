@@ -117,7 +117,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                  continuous: bool = False,
                  properties_attrs: List[str] = None,
                  wrap_set: bool = False,
-                 save_traces: bool = False,
+                 save_traces: bool = True,
                  **kwargs):
         SettingsClass.__init__(self)
 
@@ -531,6 +531,7 @@ class DCParameter(AcquisitionParameter):
     def __init__(self,
                  name: str = 'DC',
                  unit: str = 'V',
+                 save_traces: bool = False,
                  **kwargs):
         self.pulse_sequence = PulseSequence([
             DCPulse(name='DC', acquire=True),
@@ -541,6 +542,7 @@ class DCParameter(AcquisitionParameter):
                          units=[unit, unit],
                          snapshot_value=False,
                          continuous=True,
+                         save_traces=save_traces,
                          **kwargs)
         self.samples = 1
 
@@ -808,7 +810,7 @@ class DCSweepParameter(AcquisitionParameter):
         Convert pulse sequence and generator into `PulseSequenceGenerator`
     """
     connect_to_config = True  # Whether pulses should connect to config (speedup)
-    def __init__(self, name='DC_sweep', **kwargs):
+    def __init__(self, name='DC_sweep', save_traces=False, **kwargs):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
@@ -825,6 +827,7 @@ class DCSweepParameter(AcquisitionParameter):
         super().__init__(name=name, names=['DC_voltage'],
                          units=['V'],
                          snapshot_value=False, setpoint_names=(('None',),),
+                         save_traces=save_traces,
                          shapes=((1,),), **kwargs)
         self.samples = 1
 
