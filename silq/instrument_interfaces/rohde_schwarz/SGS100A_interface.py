@@ -229,33 +229,34 @@ class SGS100AInterface(InstrumentInterface):
 
         # If IQ modulation is used, ensure pulses are spaced by more than twice
         # the envelope padding
-        if settings["IQ_modulation"] and settings['marker_per_pulse']:
-            # Perform an efficient check of spacing between pulses
-            t_start_list = self.pulse_sequence.t_start_list
-            t_stop_list = self.pulse_sequence.t_stop_list
-
-            t_start_2D = np.tile(t_start_list, (len(t_stop_list), 1))
-            t_stop_2D = np.tile(t_start_list, (len(t_start_list), 1)).transpose()
-            t_difference_2D = t_start_2D - t_stop_2D
-
-            overlap_elems = t_difference_2D > 0
-            overlap_elems &= t_difference_2D < 2 * self.envelope_padding()
-
-            if np.any(overlap_elems):
-                overlapping_pulses = [
-                    (pulse1, pulse2)
-                    for pulse1 in self.pulse_sequence
-                    for pulse2 in self.pulse_sequence
-                    if 0 <= pulse1.t_start - pulse2.t_stop < 2 * self.envelope_padding()
-                ]
-                raise RuntimeError(
-                    f"Spacing between successive microwave pulses is less than "
-                    f"2*envelope_padding: {overlapping_pulses}"
-                )
-
+        if settings["IQ_modulation"]:
             # Set microwave power to the maximum power of all the pulses.
             # Pulses with lower power will have less IQ modulation amplitude
             settings["power"] = max(pulse.power for pulse in self.pulse_sequence)
+
+            if settings['marker_per_pulse']:
+                # Perform an efficient check of spacing between pulses
+                t_start_list = self.pulse_sequence.t_start_list
+                t_stop_list = self.pulse_sequence.t_stop_list
+
+                t_start_2D = np.tile(t_start_list, (len(t_stop_list), 1))
+                t_stop_2D = np.tile(t_start_list, (len(t_start_list), 1)).transpose()
+                t_difference_2D = t_start_2D - t_stop_2D
+
+                overlap_elems = t_difference_2D > 0
+                overlap_elems &= t_difference_2D < 2 * self.envelope_padding()
+
+                if np.any(overlap_elems):
+                    overlapping_pulses = [
+                        (pulse1, pulse2)
+                        for pulse1 in self.pulse_sequence
+                        for pulse2 in self.pulse_sequence
+                        if 0 <= pulse1.t_start - pulse2.t_stop < 2 * self.envelope_padding()
+                    ]
+                    raise RuntimeError(
+                        f"Spacing between successive microwave pulses is less than "
+                        f"2*envelope_padding: {overlapping_pulses}"
+                    )
         else:
             powers = {pulse.power for pulse in self.pulse_sequence}
             if len(powers) > 1:
