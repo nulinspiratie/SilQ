@@ -1796,3 +1796,176 @@ class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
             post_stage_pulse.name = 'post_stage'
             post_stage_pulse.t_start = t
             post_stage_pulse.t_stop = stage_pulse.t_stop
+
+class CDDPulseSequence(ElectronReadoutPulseSequence):
+    """This class outputs a CDD-like pulse sequence. CDD is a type of DD pulse sequence, where a building block pulse sequence is embedded
+    within it self, following a concatenation rule. 
+        Class settings:
+            
+            - self.settings.zero_cdd is the pulse sequence to be embedded ir zero orden of concatenation sequence
+            - self.settings.first_cdd is the rule for the first order of concatenation sequence
+            - self.settings.concatenation_level determines the number of times we want to concatenate the building block sequence
+            - self.settings.pulses contains the type of pulse sequences for the x,y and z gates
+            
+            Refer to T2PulseSequence/ElectronReadoutPulsesequence for the rest of the settings
+            
+        One of the fundamental differences for this pulse sequence is that the inter_delays between pulses can be nontrivial. The interdelay
+        between pulses, needs therefore to be determined by looping over each element of the pulse sequence list, and defining the
+        inter_delay time for each case. For example:
+            
+            + Two consecutive gates with no free evolution in between--> inter_delay = duration_pulse 
+            + Two free evolution periods--> inter_delay = 2*dt
+            
+        You can find below more details about how the inter_delay is calculated between pulses
+            
+            """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.pulse_settings.update({
+            'RF_initial_pulse': 0,
+            'RF_refocusing_pulse': 0,
+            'RF_final_pulse': 0,
+            'final_phase': 0,
+            'artificial_frequency': 0,
+            'zero_cdd': '',
+            'first_cdd': '' ,
+            'concatenation_level': 1,
+            'pulses': {'x': SinePulse('pi', frequency=1e07, phase=0 , amplitude=0.8, duration=2.2e-6, connection_label='x'),
+                       'y': SinePulse('pi', frequency=1e07, phase=90 , amplitude=0.8, duration=4e-6, connection_label='y'),
+                       'z': SinePulse('pi', frequency=1e07, phase=90 , amplitude=0.8, duration=4e-6, connection_label='z')}
+           
+        })        
+        # Dictionary containing the Pauli matrices identities for gate products
+        self.identities = {'xx':'',
+             'yy':'',
+             'zz':'',
+             'zx':'y',
+             'xz':'y',
+             'xy':'z',
+             'yz':'x',
+             } 
+        
+        self.tau: float = Parameter('tau', unit='s', initial_value=2e-3, parent=False) # Experiment total time
+
+        self.n = self.pulse_settings['concatenation_level'] # Level of concatenation
+        
+
+    @parameter
+    def tau_set(self, parameter, val):
+        parameter._latest['value'] = val
+        parameter._latest['raw_value'] = val
+        self.generate()
+        
+    def cdd_pulse_sequence(self) -> str:
+    
+        # This function calculates and returns the concatenated pulse sequence for a given concatenation level
+        
+        p0 = self.pulse_settings['zero_cdd']
+        p1 = self.pulse_settings['first_cdd']
+        
+        for i in range(self.settings['concatenation_level']):
+            pn = p1.replace('f',p0)
+            p0 = pn            
+        cdd_pulse = p0
+        return cdd_pulse
+    
+     
+    def cdd_replace_pauli_identities(self) -> str: 
+        
+        # This function returns the pulse_sequence after performing the Pauli identity operations    
+        # Theoretically, the order in which this identities are applied doesn't matter because the 
+        # identities are cyclical (ideal pulses)
+    
+        cdd_pulse = self.cdd_pulse_sequence()
+        
+        for key, elem in self.identities.items():
+            cdd_pulse_new =cdd_pulse.replace(key,elem)
+            cdd_pulse = cdd_pulse_new
+            
+        return cdd_pulse
+    
+    def inter_delays(self,cdd_pulse_sequence: str,tauN : float)-> str:        
+        
+        # This function returns an array containing the inter_delays for the pulse sequence.
+    
+        inter_delays = [] 
+        delay = 0
+        for elem in cdd_pulse_sequence:
+            if elem == 'f':
+                delay = delay+tauN
+            else:
+                inter_delays.append(delay)
+                delay = 0
+                
+        inter_delays.append(tauN+delay)               
+        return inter_delays
+
+    def add_RF_pulses(self):    
+        
+        # Create a pulse list from string to loop over it
+        cdd_pulse_sequence = list(self.cdd_replace_pauli_identities())
+    
+
+        # Nesting the pulses in RF_pulses        
+        self.settings['RF_pulses'] = [[
+            self.settings['RF_initial_pulse'],
+            *[self.settings['pulses'][pulse] for pulse in cdd_pulse_sequence if pulse != 'f'],
+            self.settings['RF_final_pulse']
+        ]]
+        
+        
+        tau0 = (self.tau/(max(self.settings['first_cdd'].count('f'),1)))*((1/max(self.settings['zero_cdd'].count('f'),1))**(self.n))  # Free-evolution time (tau/N)
+        
+        inter_delay = self.inter_delays(cdd_pulse_sequence,tau0)      #Getting the inter_delay array
+        
+        assert len(inter_delay) == len(self.settings['RF_pulses'][0])-1
+              
+        num_refocusing = len(inter_delay)-1 # Number of refocusing pulses
+        
+        # Ideally the pulses would have zero width and the inter_delay between them would be either dt, 2dt or 0
+        #      depending on the number of free evolutions in between. In this part of the code we consider the fact
+        #      that the pulses have a finite width, substract to the inter_delay calculated previously, the
+        #      duration of the previous and next pulse.
+        
+        accumulate_previous = 0
+        
+        for k, (RF_pulse, next_RF_pulse) in enumerate(zip(
+                    self.settings['RF_pulses'][0][:-1],
+                    self.settings['RF_pulses'][0][1:]
+            )):  
+            
+        # For the initial and final free evolution time before the pi/2 pulse we do tau/(2*N)
+            if num_refocusing > 0 and (k == 0 or k ==  num_refocusing):
+                inter_delay[k] -= tau0/2      
+                
+        # For zero inter_delay time, we need to 
+        # 1) Modify the previous inter_delay, which didn't account for the consecutive pulses
+        # 2) Accumulate the width of the consecutive pulses for the next free-evolution 
+        
+            if inter_delay[k] == 0:
+                inter_delay[k-1] -= next_RF_pulse.duration/2 
+                accumulate_previous += RF_pulse.duration/2+next_RF_pulse.duration/2
+                continue          
+            
+            
+            inter_delay[k] -= max(accumulate_previous,RF_pulse.duration /2)  
+            inter_delay[k] -= next_RF_pulse.duration / 2            
+          
+            accumulate_previous = 0
+    
+            if inter_delay[k] < 0:
+                    raise RuntimeError(
+                        f'RF pulse inter_delay {inter_delay} is shorter than RF pulse duration'
+                    )
+                   
+                
+        self.settings['inter_delay'] = inter_delay
+    
+         # Calculate phase of final pulse
+        final_phase = self.settings['final_phase']
+        final_phase += 360 * self.tau * self.settings['artificial_frequency']
+        final_phase = round(final_phase % 360)
+        self.settings['RF_pulses'][0][-1].phase = final_phase
+ 
+        super().add_RF_pulses()
