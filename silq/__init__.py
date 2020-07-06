@@ -529,7 +529,6 @@ def _clear_all_acquisition_parameter_settings(measurement=None):
 
 qc.Measurement.final_actions = [
     _stop_layout,
-    _clear_all_acquisition_parameter_settings
 ]
 
 
