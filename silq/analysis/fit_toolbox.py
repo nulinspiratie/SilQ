@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional
 import numpy as np
 from lmfit import Parameters, Model
 from lmfit.model import ModelResult
@@ -27,11 +27,12 @@ class Fit():
 
     Args:
         ydata: Data values to be fitted
-        xvals: Sweep values
+        xvals: Sweep values, automatically extracted from ydata if not
+        explicitly provided and ydata is a DataArray.
         fit: Automatically perform a fit if ydata is passed
         print: Print results
-        plot: Plot data and fit
-        initial_parameters: Dict of initial guesses for fit parameters
+        plot: Axis on which to  the fit
+        initial_parameters: Dict plotof initial guesses for fit parameters
         fixed_parameters: Dict of fixed values for fit parameters
         parameter_constraints: Parameter constraints
             e.g. {'frequency' : {'min' : 0}}
@@ -46,9 +47,19 @@ class Fit():
     plot_kwargs = {'linestyle': '--', 'color': 'k', 'lw': 2}
     sweep_parameter = None
 
-    def __init__(self, ydata=None, *, xvals=None, fit=True, print=False, plot=None,
-                 initial_parameters=None, fixed_parameters=None, parameter_constraints=None,
-                 **kwargs):
+    def __init__(
+            self,
+            ydata: Union[DataArray, np.ndarray]=None,
+            *,
+            xvals: Optional[Union[DataArray, np.ndarray]] = None,
+            fit: bool = True,
+            print: bool = False,
+            plot: Optional[Axis] = None,
+            initial_parameters: Optional[dict] = None,
+            fixed_parameters: Optional[dict] = None,
+            parameter_constraints: Optional[dict] = None,
+            **kwargs
+    ):
         self.model = Model(self.fit_function, **kwargs)
         self.fit_result = None
 
@@ -61,7 +72,7 @@ class Fit():
 
         if ydata is not None:
             assert ydata.ndim == 1
-            
+
             if xvals is None:
                 assert isinstance(ydata, DataArray), 'Please provide xvals'
                 xvals = ydata.set_arrays[0]
