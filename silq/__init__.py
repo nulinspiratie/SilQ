@@ -374,7 +374,6 @@ def _save_config(self, location=None):
 qc.DataSet.save_config = _save_config
 
 from silq.tools.trace_tools import load_traces as _load_traces
-qc.DataSet.load_traces = _load_traces
 
 qc.DataSet.load_traces = _load_traces
 
