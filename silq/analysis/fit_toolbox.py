@@ -901,35 +901,26 @@ class AMSineFit(Fit):
             fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
-        if 'frequency' not in initial_parameters:
-            frequency = fft_freqs[frequency_idx]
-            initial_parameters['frequency'] = frequency
+        initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
+        if plot:
+            plt.figure()
+            plt.plot(fft_freqs, fft_flips_abs, 'o')
+            plt.plot(fft_freqs[frequency_idx], fft_flips_abs[frequency_idx], 'o', ms=8)
 
-            if plot:
-                plt.figure()
-                plt.plot(fft_freqs, fft_flips_abs, 'o')
-                plt.plot(frequency, fft_flips_abs[frequency_idx], 'o', ms=8)
-        if 'phase' not in initial_parameters:
-            phase = np.pi / 2 + np.angle(fft_flips[frequency_idx])
-            initial_parameters['phase'] = phase
-        if 'offset' not in initial_parameters:
-            initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+        initial_parameters.setdefault('phase', np.pi / 2 + np.angle(fft_flips[frequency_idx]))
 
-        if 'amplitude_AM' not in initial_parameters:
-            initial_parameters['amplitude_AM'] = 0.1
+        initial_parameters.setdefault('offset', (max(ydata) + min(ydata)) / 2)
 
-        if 'frequency_AM' not in initial_parameters:
-            frequency_AM = fft_freqs[frequency_idx]
-            initial_parameters['frequency_AM'] = frequency_AM
+        initial_parameters.setdefault('amplitude_AM', 0.1)
 
-            if plot:
-                plt.figure()
-                plt.plot(fft_freqs, fft_flips_abs, 'o')
-                plt.plot(frequency_AM, fft_flips_abs[frequency_idx], 'o', ms=8)
+        initial_parameters.setdefault('frequency_AM', fft_freqs[frequency_idx])
 
-        if 'phase_AM' not in initial_parameters:
-            phase_AM = 0
-            initial_parameters['phase_AM'] = phase_AM
+        if plot:
+            plt.figure()
+            plt.plot(fft_freqs, fft_flips_abs, 'o')
+            plt.plot(fft_freqs[frequency_idx], fft_flips_abs[frequency_idx], 'o', ms=8)
+
+        initial_parameters.setdefault('phase_AM', 0)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
@@ -959,11 +950,9 @@ class ExponentialSineFit(Fit):
     def find_initial_parameters(self, xvals, ydata, initial_parameters={},
                                 plot=False):
         parameters = Parameters()
-        if 'amplitude' not in initial_parameters:
-            initial_parameters['amplitude'] = (max(ydata) - min(ydata)) / 2
+        initial_parameters.setdefault('amplitude', (max(ydata) - min(ydata)) / 2)
 
-        if 'tau' not in initial_parameters:
-            initial_parameters['tau'] = xvals[-1] / 2
+        initial_parameters.setdefault('tau', xvals[-1] / 2)
 
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
@@ -971,22 +960,18 @@ class ExponentialSineFit(Fit):
         fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
-        if 'frequency' not in initial_parameters:
-            frequency = fft_freqs[frequency_idx]
-            initial_parameters['frequency'] = frequency
+        initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
 
-            if plot:
-                plt.figure()
-                plt.plot(fft_freqs, fft_flips_abs)
-                plt.plot(frequency, fft_flips_abs[frequency_idx], 'o', ms=8)
-        if 'phase' not in initial_parameters:
-            phase = np.pi / 2 + np.angle(fft_flips[frequency_idx])
-            initial_parameters['phase'] = phase
-        if 'offset' not in initial_parameters:
-            initial_parameters['offset'] = (max(ydata) + min(ydata)) / 2
+        if plot:
+            plt.figure()
+            plt.plot(fft_freqs, fft_flips_abs)
+            plt.plot(fft_freqs[frequency_idx], fft_flips_abs[frequency_idx], 'o', ms=8)
 
-        if not 'exponent_factor' in initial_parameters:
-            initial_parameters['exponent_factor'] = 1
+        initial_parameters.setdefault('phase', np.pi / 2 + np.angle(fft_flips[frequency_idx]))
+
+        initial_parameters.setdefault('offset', (max(ydata) + min(ydata)) / 2)
+
+        initial_parameters.setdefault('exponent_factor', 1)
 
         for key in initial_parameters:
             parameters.add(key, initial_parameters[key])
