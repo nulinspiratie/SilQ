@@ -5,6 +5,8 @@ lecroy_driver
 __pycache__
 data
 ~$*
+build
+dist
 
 *.egg-info
 experiments_folder.txt

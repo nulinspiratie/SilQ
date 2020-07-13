@@ -1459,7 +1459,7 @@ class Layout(Instrument):
             `Layout.save_traces`
         """
         try:
-            logger.info(f'Performing acquisition, {"stop" if stop else "continue"]} when finished')
+            logger.info(f'Performing acquisition, {"stop" if stop else "continue"} when finished')
             if not self.active():
                 self.start()
 
