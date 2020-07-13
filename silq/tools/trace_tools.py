@@ -183,6 +183,8 @@ def load_pulse_traces(dataset: qc.DataSet = None,
     # Verify that pulse trace segment sizes don't exceed a threshold
     total_pulse_pts = sum(pulse_slice.stop - pulse_slice.start
                           for pulse_slice in pulse_slices.values())
+                          
+    # The traces from all channels are assumed to have the same dimension (sampling rate etc.)
     traces = traces_file['traces'][channels[0]]
 
     # Determine size of array slices
