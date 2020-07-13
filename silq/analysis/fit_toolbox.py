@@ -43,7 +43,7 @@ class Fit():
         - The fit function can be evaluated with the fitted parameter values
           using ``fit({sweep_values})``
     """
-    plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
+    plot_kwargs = {'linestyle': '--', 'color': 'k', 'lw': 2}
     sweep_parameter = None
 
     def __init__(self, ydata=None, *, xvals=None, fit=True, print=False, plot=None,
