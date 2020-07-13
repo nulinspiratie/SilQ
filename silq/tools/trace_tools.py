@@ -140,7 +140,7 @@ def load_pulse_traces(dataset: qc.DataSet = None,
                       traces_file: h5py.File = None,
                       name: str = None,
                       channels: Sequence[str] = ('output', ),
-                      array_slices = (),
+                      array_slices: tuple = (),
                       maximum_array_size: float = 50e6) -> Dict[str, np.ndarray]:
     """Load segmented pulse traces from a trace file stored with a dataset
 
@@ -153,6 +153,10 @@ def load_pulse_traces(dataset: qc.DataSet = None,
             it contains multiple trace files.
         channels: List of digitizer channels from which to retrieve traces.
             Must be a subset of all saved channels
+        array_slices: Optional array slices along dimensions.
+            Useful for not loading the entire traces array at once as the 
+            total size can exceed available memory.
+            Each element in the tuple can either be an index, or a `slice`.
         maximum_array_size: Maximum entries of all pulse trace arrays.
             If size exceeds this value, an error is raised
 
