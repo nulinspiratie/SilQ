@@ -60,6 +60,8 @@ class Fit():
         self.parameters = None
 
         if ydata is not None:
+            assert ydata.ndim == 1
+            
             if xvals is None:
                 assert isinstance(ydata, DataArray), 'Please provide xvals'
                 xvals = ydata.set_arrays[0]
