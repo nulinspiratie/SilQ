@@ -22,7 +22,10 @@ class Fit():
     after which it will fit the data to `Fit.fit_function`.
 
     Note:
-        The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+        - The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+        - Fitted parameters can be accessed via ``fit['{parameter_name}']``
+        - The fit function can be evaluated with the fitted parameter values
+          using ``fit({sweep_values})``
     """
     plot_kwargs = {'linestyle': '--', 'color': 'cyan', 'lw': 3}
     sweep_parameter = None
@@ -42,6 +45,41 @@ class Fit():
             self.get_parameters(**kwargs)
             if fit:
                 self.perform_fit(print=print, plot=plot, **kwargs)
+
+    def __getitem__(self, item) -> float:
+        """Retrieve fitted parameter value"""
+        if self.fit_result is not None:
+            return self.fit_result.best_values[item]
+        else:
+            raise RuntimeError("No fit result to get parameters from.")
+
+    def __call__(
+            self, sweep_vals: Union[float, np.ndarray] = None, **kwargs
+    ) -> Union[float, np.ndarray]:
+        """Evaluate fit for sweep values and optionally override fitted parameters
+
+        The fitted parameter values are used by default
+
+        Args:
+            sweep_vals: Value(s) to sweep. Can be either a number or array of
+                numbers. If not provided, sweep values should be added as kwarg
+            **kwargs: Optional parameter values to override the fitted values
+
+        Returns:
+             Value or array of values corresponding to evaluated fit function
+        """
+
+        params = kwargs
+        if sweep_vals is not None:
+            params[self.sweep_parameter] = sweep_vals
+        return self.fit_result.eval(**params)
+
+    def _ipython_key_completions_(self):
+        """Tab completion for IPython, i.e. fit["{parameter_name}"] """
+        try:
+            return list(self.fit_result.best_values)
+        except Exception:
+            return []
 
     def fit_function(self, *args, **kwargs):
         raise NotImplementedError('This should be implemented in a subclass')
