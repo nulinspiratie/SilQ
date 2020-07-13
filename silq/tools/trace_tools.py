@@ -156,7 +156,8 @@ def load_pulse_traces(dataset: qc.DataSet = None,
         array_slices: Optional array slices along dimensions.
             Useful for not loading the entire traces array at once as the 
             total size can exceed available memory.
-            Each element in the tuple can either be an index, or a `slice`.
+            Each element in the tuple corresponds to the respective dimension,
+            and can either be an index, or a `slice`.
         maximum_array_size: Maximum entries of all pulse trace arrays.
             If size exceeds this value, an error is raised
 
