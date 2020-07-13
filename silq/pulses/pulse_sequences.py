@@ -580,6 +580,7 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
             'RF_initial_pulse': 0,
             'RF_refocusing_pulse': 0,
             'RF_final_pulse': 0,
+            'RF_inter_pulse': None,
             'final_phase': 0,
             'artificial_frequency': 0,
             'num_refocusing': 0
@@ -615,6 +616,21 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
                     f'RF pulse inter_delay {inter_delay} is shorter than RF pulse duration'
                 )
             self.settings['inter_delay'].append(inter_delay)
+
+        # Replace all inter_delays by offresonant pulses
+        if self.settings['RF_inter_pulse'] is not None and self.settings['RF_inter_pulse'].enabled:
+            RF_pulses = []
+            for RF_pulse, inter_delay in zip(self.settings['RF_pulses'][0], self.settings['inter_delay']):
+                RF_pulses.append(RF_pulse)
+                RF_pulse_inter = self.settings['RF_inter_pulse'].copy()
+                RF_pulse_inter.duration = inter_delay
+                RF_pulses.append(RF_pulse_inter)
+
+            # Add final RF pulse (inter_delay has one less element than RF_pulses)
+            RF_pulses.append(self.settings['RF_pulses'][0][-1])
+
+            self.settings['RF_pulses'][0] = RF_pulses
+            self.settings['inter_delay'] = 0
 
         # Calculate phase of final pulse
         final_phase = self.settings['final_phase']
