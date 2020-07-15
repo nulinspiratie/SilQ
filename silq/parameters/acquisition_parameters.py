@@ -2009,21 +2009,13 @@ class EDSRParameter(NMRParameter):
         """
         results = super().analyse(traces)
 
-        # Extract points for read DC pulse after EDSR pulse
-        EDSR_read_traces_name = f"{self.NMR['post_pulse'].name}"
-        EDSR_read_traces = traces[EDSR_read_traces_name]['output']
-        EDSR_trace_points = EDSR_read_traces.shape[1]
-
-        self.EDSR_traces = np.zeros((self.samples, EDSR_trace_points))
-        self.EDSR_traces = EDSR_read_traces
         EDSR_read_result = analysis.analyse_traces(
-            traces=EDSR_read_traces,
+            traces=traces[self.NMR['post_pulse'].name]['output'],
             sample_rate=self.sample_rate,
             t_read=self.t_read,
             t_skip=self.t_skip,
             threshold_voltage=self.threshold_up_proportion)
-        EDSR_up_proportion = EDSR_read_result['up_proportion']
-        results['EDSR_up_proportion'] = EDSR_up_proportion
+        results['EDSR_up_proportion'] = EDSR_read_result['up_proportion']
 
         return results
 
