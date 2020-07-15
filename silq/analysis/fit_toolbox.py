@@ -32,7 +32,7 @@ class Fit():
         fit: Automatically perform a fit if ydata is passed
         print: Print results
         plot: Axis on which to  the fit
-        initial_parameters: Dict plotof initial guesses for fit parameters
+        initial_parameters: Dict plot of initial guesses for fit parameters
         fixed_parameters: Dict of fixed values for fit parameters
         parameter_constraints: Parameter constraints
             e.g. {'frequency' : {'min' : 0}}
