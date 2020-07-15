@@ -21,7 +21,7 @@ class Fit():
     This will find its initial parameters via `Fit.find_initial_parameters`,
     after which it will fit the data to `Fit.fit_function`.
 
-    If either xvals and ydata are passed, or only ydata is passed but is is a
+    If both xvals and ydata are passed, or only ydata is passed but it is a
     Qcodes DataArray, the fit is automatically performed.
     Otherwise Fit.perform_fit must be called.
 
