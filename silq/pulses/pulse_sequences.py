@@ -591,7 +591,11 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
     def tau_set(self, parameter, val):
         parameter._latest['value'] = val
         parameter._latest['raw_value'] = val
-        self.generate()
+        # TODO this fails if there is more than one layer of nesting
+        if isinstance(self.parent, PulseSequence):
+            self.parent.generate()
+        else:
+            self.generate()
 
     def add_RF_pulses(self):
         self.settings['RF_pulses'] = [[
