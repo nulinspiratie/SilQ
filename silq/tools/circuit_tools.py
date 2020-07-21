@@ -27,7 +27,13 @@ def convert_circuit(circuit, target_type: Type = str):
         expand_subcircuit = lambda match: match.group(0).replace(
             match.group(0), match.group(1) * int(match.group(2))
         )
-        expanded_circuit = re.sub(r'\(([A-Za-z]+)\)\^([0-9])', expand_subcircuit, expanded_circuit)
+        expanded_circuit = re.sub(r'\(([A-Za-z]+)\)\^([0-9]+)', expand_subcircuit, expanded_circuit)
+
+        # Expand any expressions {gate}^exponent (notice missing parentheses
+        expand_subcircuit = lambda match: match.group(0).replace(
+            match.group(0), ('G'+match.group(1)) * int(match.group(2))
+        )
+        expanded_circuit = re.sub(r'G([a-z0-9:]+)\^([0-9]+)', expand_subcircuit, expanded_circuit)
 
         # Remove all single parentheses without exponent
         expanded_circuit = re.sub(r"\(|\)", "", expanded_circuit)
