@@ -8,6 +8,7 @@ from typing import Union, Dict, Any, List, Sequence, Iterable, Tuple
 from copy import copy
 import collections
 from matplotlib import pyplot as plt
+from scipy.stats import gaussian_kde
 
 from silq.tools.general_tools import property_ignore_setter
 
@@ -24,6 +25,7 @@ __all__ = [
     "analyse_traces",
     "analyse_EPR",
     "determine_threshold_up_proportion",
+    "determine_threshold_up_proportion_single_state",
     "analyse_flips",
     "Analysis",
     "AnalyseEPR",
@@ -1155,6 +1157,106 @@ class AnalyseElectronReadout(Analysis):
         return self.results
 
 
+def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarray,
+                                                   shots_per_frequency: int):
+    """ Determine threshold up-proportion for single nuclear state readout using
+        single up proportion array of samples
+
+    Using kernel density estimation, 'determine_threshold_up_proportion_single_state'
+    function determines the probability density distribution of measured electron spin-up
+    proportions within the 0 to 1 up proportion space in the form of a Gaussian function.
+    It is later analysed for the peaks in the density distribution and based on their
+    relative position within 0 to 1 up proportion space, the density minimum is found,
+    which is considered to be the threshold for determining the nuclear spin state.
+
+    WARNING:
+        If no peaks in the density distribution are detected (something failed), threshold
+        is set to 0.5 by default.
+        If only one peak is detected (e.g. nuclear spin did not flip or transition detuned),
+        depending on whether it is in the lower (<0.5) or the upper (>=0.5) half of
+        proportion space, the minimum of density distribution is found respectively above or
+        below this peak.
+        If more than one peak is detected, then minimum is found between the lowest and the
+        highest peak.
+        Since the density distribution values reach 1e-20 at the edges of the proportion space
+        (i.e. at 0 or 1), to smooth a bit the threshold jumps between the measurement points,
+        rounding to the 4th digit is implemented.
+
+    NOTE: algorithm generally might fail if the number of shots is less than 25 (not exact number,
+    can still be adjusted). Therefore, if less than 25 shots are given, function still uses 25 shots.
+    This is due to the division of up proportion space by the number of shots and if there are too
+    few points to perform kernel density estimation, it fails.
+
+    Args:
+        up_proportions_arr: 1D Array of up proportions, calculated from
+            `analyse_traces`. Up proportion is the proportion of traces that
+            contain blips. The length is number of samples.
+        shots_per_frequency: Integer number of ESR shots/traces, which are
+            used to determine the up proportion.
+
+    Returns:
+        (float) threshold up-proportion
+    """
+    assert isinstance(up_proportions_arr, np.ndarray), 'Up proportions must be a 1D array, not a list.'
+
+    num_shots = max(shots_per_frequency, 25)
+    if shots_per_frequency < 25:
+        logger.warning(f'Readout shots {shots_per_frequency} < 25. This may cause issues when finding '
+                       f'an optimal threshold up proportion, thus 25 shots are used instead.')
+    # Algorithm fails if the number of shots is less than 25 (not exact number, can still be adjusted).
+    # The reason for this is that in the following division of up_proportion space by the number of shots
+    # there are too few points to perform kernel density estimation.
+
+    proportion_space = np.linspace(0, 1, num=num_shots + 1, endpoint=True)
+    up_proportions_arr = up_proportions_arr.reshape(1, -1)  # 'gaussian_kde' function requires at least 2D array
+    kernel = gaussian_kde(up_proportions_arr)
+    gaussian_up_proportions = kernel(proportion_space)
+    # 'gaussian_up_proportions' is a 1D array of spin-up proportions' density distribution within
+    # up proportion space, i.e. has length of proportion_space.
+
+    samples = up_proportions_arr.shape[-1]  # other dimension is empty
+
+    # Finding indexes of density distribution peaks. Might still require some fine adjustments in
+    # 'thres' and 'min_dist' parameters. TODO: find better values for 'thres' and 'min_dist'.
+    peak_idxs = peakutils.peak.indexes(gaussian_up_proportions,
+                                       thres=0.5/samples,
+                                       min_dist=num_shots/5)
+
+    # If no peaks are detected (something failed), by default threshold is set to 0.5.
+    middle_point = (num_shots + 1) // 2
+    if len(peak_idxs) == 0:
+        logger.debug('Adaptive thresholding routine: 0 peaks were found, using threshold 0.5')
+        trough_idx = middle_point
+
+    # If only one peak is detected (nuclear spin did not flip), depending on whether
+    # it is in the lower (<0.5) or the upper (>=0.5) half of proportion space,
+    # the minimum index of density distribution is found respectively above or below
+    # this peak's index.
+    # Since the density distribution values reach 1e-20 at the edges of the
+    # proportion space (i.e. at 0 or 1), to smooth a bit the threshold jumps between
+    # the measurement points, rounding to the 4th digit is implemented.
+    # TODO: Find better way to determine threshold between density distribution peaks.
+    elif len(peak_idxs) == 1:
+        if peak_idxs[0] < middle_point:
+            trough_slice = slice(peak_idxs[0], num_shots + 1)
+            search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+            trough_idx = peak_idxs[0] + np.argmin(search_space)
+        else:
+            trough_slice = slice(0, peak_idxs[0])
+            search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+            trough_idx = np.argmin(search_space)
+
+    # If more than one peak is detected, then minimum is found between the lowest and the highest peak.
+    else:
+        trough_slice = slice(min(peak_idxs), max(peak_idxs))
+        search_space = np.round(gaussian_up_proportions[trough_slice], 4)
+        trough_idx = peak_idxs[0] + np.argmin(search_space)
+
+    threshold_up_proportion = proportion_space[trough_idx]
+
+    return threshold_up_proportion
+
+
 def determine_threshold_up_proportion(
     up_proportions_arrs: np.ndarray,
     threshold_up_proportion: Union[float, Tuple[float, float]] = None,
@@ -1673,6 +1775,7 @@ class AnalyseMultiStateReadout(Analysis):
 
 def analyse_flips_old(
     up_proportions_arrs: List[np.ndarray],
+    shots_per_frequency: int,
     threshold_up_proportion: Union[Sequence, float] = None,
     labels: List[str] = None,
     label_pairs: List[List[str]] = "neighbouring",
@@ -1765,7 +1868,13 @@ def analyse_flips_old(
     max_flips = up_proportions_arrs.shape[-1] - 1  # number of samples - 1
 
     # Determine threshold_up_proportion_low/high
-    if isinstance(threshold_up_proportion, collections.Sequence):
+    if (len(up_proportions_arrs) == 1) and (threshold_up_proportion is None):
+        threshold_up_proportion = determine_threshold_up_proportion_single_state(
+            up_proportions_arr=up_proportions_arrs,
+            shots_per_frequency=shots_per_frequency)
+        threshold_low = threshold_up_proportion
+        threshold_high = threshold_up_proportion
+    elif isinstance(threshold_up_proportion, collections.Sequence):
         if len(threshold_up_proportion) != 2:
             raise SyntaxError(
                 f"threshold_up_proportion must be either single "

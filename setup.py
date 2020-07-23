@@ -30,7 +30,8 @@ extras = {
     'PythonNet': ('pythonnet', '2.1'),
     'slacker': ('slacker', '0.9.42'),
     'theano': ('theano', '0.9'),
-    'keras': ('keras', '2.0.8')
+    'keras': ('keras', '2.0.8'),
+    'qutip': ('qutip', '4.5.0')
     # 'ipympl': ('ipympl', '0.0.3')
 
 }
@@ -39,7 +40,7 @@ extras_require = {k: '>='.join(v) for k, v in extras.items()}
 setup(name='silq',
       version=get_version(),
       use_2to3=False,
-      author='Serwan Asaad, Stefanie Tenberg',
+      author='Serwan Asaad, Mark Johnson, Hannes Firgau, Stefanie Tenberg, Rostyslav Savytskyy, Irene Fernandez de Fuentes',
       author_email='serwan.asaad@gmail.com',
       maintainer='Serwan Asaad, Stefanie Tenberg',
       maintainer_email='serwan.asaad@gmail.com',
@@ -48,7 +49,7 @@ setup(name='silq',
       long_description=readme(),
       url='https://github.com/nulinspiratie/SilQ',
       classifiers=[
-          'Development Status :: 1 - Alpha',
+          'Development Status :: 4 - Beta',
           'Intended Audience :: Science/Research',
           'Programming Language :: Python :: 3.5',
           'Topic :: Scientific/Engineering'

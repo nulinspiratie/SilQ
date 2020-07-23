@@ -23,9 +23,9 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'VariableReadParameter',
-           'BlipsParameter', 'FlipNucleusParameter', 'FlipFlopParameter',
-           'NeuralNetworkParameter', 'NeuralRetuneParameter','ESRRamseyDetuningParameter']
+           'NMRParameter', 'EDSRParameter', 'VariableReadParameter', 'BlipsParameter',
+           'FlipNucleusParameter', 'FlipFlopParameter', 'NeuralNetworkParameter',
+           'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
 logger = logging.getLogger(__name__)
 h5fmt = hdf5_format.HDF5Format()
@@ -1739,7 +1739,8 @@ class NMRParameter(AcquisitionParameter):
     """
     def __init__(self, name: str = 'NMR',
                  names: List[str] = ['flips', 'flip_probability',
-                                     'up_proportions', 'state_probability'],
+                                     'up_proportions', 'state_probability',
+                                     'threshold_up_proportion'],
                  **kwargs):
         """
         Parameter used to determine the Rabi frequency
@@ -1764,7 +1765,8 @@ class NMRParameter(AcquisitionParameter):
 
         for name in self._names:
             if name in ['flips', 'flip_probability',
-                        'up_proportions', 'state_probability']:
+                        'up_proportions', 'state_probability',
+                        'threshold_up_proportion']:
                 if len(self.ESR_frequencies) == 1:
                     names.append(name)
                 else:
@@ -1916,6 +1918,7 @@ class NMRParameter(AcquisitionParameter):
                                      points_per_shot))
         up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
         state_probability = np.zeros(len(self.ESR_frequencies))
+        threshold_up_proportion = np.zeros(len(self.ESR_frequencies))
         for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
             for sample in range(self.samples):
                 # Create array containing all read traces
@@ -1936,22 +1939,87 @@ class NMRParameter(AcquisitionParameter):
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
 
-            state_probability[f_idx] = np.mean(up_proportions[f_idx] >= self.threshold_up_proportion)
+            if self.threshold_up_proportion is None:
+                threshold_up_proportion[f_idx] = analysis.determine_threshold_up_proportion_single_state(
+                    up_proportions_arr=up_proportions[f_idx],
+                    shots_per_frequency=self.ESR['shots_per_frequency'])
+            else:
+                threshold_up_proportion[f_idx] = self.threshold_up_proportion
+
+            state_probability[f_idx] = np.mean(up_proportions[f_idx] >= threshold_up_proportion[f_idx])
 
             if len(self.ESR_frequencies) > 1:
                 results[f'up_proportions_{f_idx}'] = up_proportions[f_idx]
                 results[f'state_probability_{f_idx}'] = state_probability[f_idx]
+                results[f'threshold_up_proportion_{f_idx}'] = threshold_up_proportion[f_idx]
             else:
                 results['up_proportions'] = up_proportions[f_idx]
                 results['state_probability'] = state_probability[f_idx]
+                results['threshold_up_proportion'] = threshold_up_proportion[f_idx]
 
         # Add singleton dimension because analyse_flips_old handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
         results_flips = analysis.analyse_flips_old(
             up_proportions_arrs=up_proportions,
-            threshold_up_proportion=self.threshold_up_proportion)
+            threshold_up_proportion=self.threshold_up_proportion,
+            shots_per_frequency=self.ESR['shots_per_frequency'])
         # Add results, only choosing first element so its no longer an array
         results.update({k: v[0] for k, v in results_flips.items()})
+        return results
+
+
+class EDSRParameter(NMRParameter):
+    """
+    Parameter for EDSR measurements based on NMR parameter and pulse sequence
+
+    Refer to NMRParameter for details. In addition to all properties copied from NMRParameter,
+    EDSRParameter includes analysis of electron readout right after EDSR(NMR) pulse during
+    NMR['post_pulse'] = DCPulse('read') that needs to be present in NMRPulseSequence.
+
+    Args:
+        Refer to NMRParameter
+    Parameters:
+        Refer to NMRParameter
+    """
+
+    def __init__(self, name: str = 'EDSR',
+                 names: List[str] = ['flips', 'flip_probability', 'up_proportions',
+                                     'state_probability', 'threshold_up_proportion',
+                                     'EDSR_up_proportion'],
+                 **kwargs):
+        super().__init__(name=name,
+                         names=names,
+                         **kwargs)
+
+    @property
+    def names(self):
+        names = super().names
+        names.append('EDSR_up_proportion')
+        return names
+
+    @names.setter
+    def names(self, names):
+        self._names = names
+
+    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
+        """
+        Reading out electron spin-up proportion after EDSR (NMR) pulse during 'read' DCPulse.
+
+        Returns:
+            (Dict[str, Any]): Dict containing:
+            * all results from NMRParameter
+            * **EDSR_up_proportion**: electron spin-up proportion right after EDSR (NMR) pulse.
+        """
+        results = super().analyse(traces)
+
+        EDSR_read_result = analysis.analyse_traces(
+            traces=traces[self.NMR['post_pulse'].name]['output'],
+            sample_rate=self.sample_rate,
+            t_read=self.t_read,
+            t_skip=self.t_skip,
+            threshold_voltage=self.threshold_up_proportion)
+        results['EDSR_up_proportion'] = EDSR_read_result['up_proportion']
+
         return results
 
 
