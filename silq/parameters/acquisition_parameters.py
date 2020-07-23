@@ -23,7 +23,7 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'VariableReadParameter', 'BlipsParameter',
+           'NMRParameter', 'EDSRParameter', 'VariableReadParameter', 'BlipsParameter',
            'FlipNucleusParameter', 'FlipFlopParameter', 'NeuralNetworkParameter',
            'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
@@ -1965,6 +1965,61 @@ class NMRParameter(AcquisitionParameter):
             shots_per_frequency=self.ESR['shots_per_frequency'])
         # Add results, only choosing first element so its no longer an array
         results.update({k: v[0] for k, v in results_flips.items()})
+        return results
+
+
+class EDSRParameter(NMRParameter):
+    """
+    Parameter for EDSR measurements based on NMR parameter and pulse sequence
+
+    Refer to NMRParameter for details. In addition to all properties copied from NMRParameter,
+    EDSRParameter includes analysis of electron readout right after EDSR(NMR) pulse during
+    NMR['post_pulse'] = DCPulse('read') that needs to be present in NMRPulseSequence.
+
+    Args:
+        Refer to NMRParameter
+    Parameters:
+        Refer to NMRParameter
+    """
+
+    def __init__(self, name: str = 'EDSR',
+                 names: List[str] = ['flips', 'flip_probability', 'up_proportions',
+                                     'state_probability', 'threshold_up_proportion',
+                                     'EDSR_up_proportion'],
+                 **kwargs):
+        super().__init__(name=name,
+                         names=names,
+                         **kwargs)
+
+    @property
+    def names(self):
+        names = super().names
+        names.append('EDSR_up_proportion')
+        return names
+
+    @names.setter
+    def names(self, names):
+        self._names = names
+
+    def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None):
+        """
+        Reading out electron spin-up proportion after EDSR (NMR) pulse during 'read' DCPulse.
+
+        Returns:
+            (Dict[str, Any]): Dict containing:
+            * all results from NMRParameter
+            * **EDSR_up_proportion**: electron spin-up proportion right after EDSR (NMR) pulse.
+        """
+        results = super().analyse(traces)
+
+        EDSR_read_result = analysis.analyse_traces(
+            traces=traces[self.NMR['post_pulse'].name]['output'],
+            sample_rate=self.sample_rate,
+            t_read=self.t_read,
+            t_skip=self.t_skip,
+            threshold_voltage=self.threshold_up_proportion)
+        results['EDSR_up_proportion'] = EDSR_read_result['up_proportion']
+
         return results
 
 

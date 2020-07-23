@@ -373,39 +373,7 @@ def _save_config(self, location=None):
 
 qc.DataSet.save_config = _save_config
 
-
-def _load_traces(self, name: str = None, mode: str = 'r'):
-    """Load traces HDF5 file from a dataset
-
-    Args:
-        name: Optional name to specify traces file. Should be used if more than
-            one parameter is used in the measurement that saves traces.
-        mode: Open mode (default is 'r' for read-only)
-        """
-    data_path = self.io.to_path(self.location)
-    trace_path = os.path.join(data_path, 'traces')
-    trace_filenames = os.listdir(trace_path)
-    trace_filenames = [filename for filename in trace_filenames if
-                       filename.endswith('.hdf5')]
-
-    assert trace_filenames, f"No trace files found in {trace_path}"
-
-    if name is None and len(trace_filenames) == 1:
-        trace_filename = trace_filenames[0]
-    else:
-        assert name is not None, (
-            f"No unique trace file found: {trace_filenames}. "
-            f"Trace filename must be provided"
-        )
-        filtered_trace_filenames = [filename for filename in trace_filenames
-                                    if name in filename]
-        assert len(filtered_trace_filenames) == 1, \
-            f"No unique trace file found: {trace_filenames}."
-        trace_filename = filtered_trace_filenames[0]
-
-    trace_filepath = os.path.join(trace_path, trace_filename)
-    trace_file = h5py.File(trace_filepath, mode)
-    return trace_file
+from silq.tools.trace_tools import load_traces as _load_traces
 
 qc.DataSet.load_traces = _load_traces
 
@@ -441,18 +409,23 @@ def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
                 if pulse_sequence_date_time > current_date:
                     pulse_sequence_filepath = os.path.join(pulse_sequence_path,
                                                            pulse_sequence_file)
-                    with open(pulse_sequence_filepath, 'rb') as f:
-                        pulse_sequence = pickle.load(f)
 
-                    # Pulse sequence duration needs to be reset
                     try:
-                        duration = pulse_sequence['duration']._latest['raw_value']
-                        pulse_sequence['duration']._latest['value'] = duration
-                    except:
-                        pass
+                        with open(pulse_sequence_filepath, 'rb') as f:
+                            pulse_sequence = pickle.load(f)
 
-                    current_date = pulse_sequence_date_time
-                    yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+                        # Pulse sequence duration needs to be reset
+                        try:
+                            duration = pulse_sequence['duration']._latest['raw_value']
+                            pulse_sequence['duration']._latest['value'] = duration
+                        except:
+                            pass
+
+                        current_date = pulse_sequence_date_time
+                        yield pulse_sequence, f"{date_str}/{pulse_sequence_file}"
+
+                    except EOFError:
+                        logger.warning(f'Could not load pulse sequence {f}')
             else:
                 # Goto next date
                 current_date = datetime.combine(
