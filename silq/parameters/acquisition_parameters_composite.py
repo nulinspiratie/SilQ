@@ -495,6 +495,13 @@ class NMRParameterComposite(AcquisitionParameterComposite):
             ax.plot([k, k], sorted(up_proportion_tuple)[-2:], color=color, zorder=-1)
 
         plot.tight_layout()
+
+        # print contrast
+        sorted_up_proportions = np.sort(np.array(up_proportion_arrays), axis=0)
+        up_proportion = np.mean(sorted_up_proportions[-1])
+        dark_counts = np.mean(sorted_up_proportions[:-1])
+        contrast = up_proportion - dark_counts
+        print(f'Contrast = {up_proportion:.2f} - {dark_counts:.2f} = {contrast:.2f}')
         return plot
 
 
