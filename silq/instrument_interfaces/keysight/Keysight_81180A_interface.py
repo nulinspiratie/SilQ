@@ -275,6 +275,7 @@ class Keysight81180AInterface(InstrumentInterface):
                 sequence_steps = self.add_pulse_waveforms(
                     ch,
                     **waveform,
+                    t_start=pulse.t_start,
                     t_stop=pulse.t_stop,
                     sample_rate=sample_rate,
                     pulse_name=pulse.name,
@@ -373,6 +374,7 @@ class Keysight81180AInterface(InstrumentInterface):
         sequence_steps = self.add_pulse_waveforms(
             channel_name,
             **waveform,
+            t_start=DC_pulse.t_start,
             t_stop=DC_pulse.t_stop,
             sample_rate=sample_rate,
             pulse_name=pulse_name,
@@ -431,6 +433,7 @@ class Keysight81180AInterface(InstrumentInterface):
         loops: int,
         waveform_initial: Union[np.ndarray, None],
         waveform_tail: Union[np.ndarray, None],
+        t_start: float,
         t_stop: float,
         sample_rate: float,
         pulse_name=None,
@@ -631,15 +634,20 @@ class SinePulseImplementation(PulseImplementation):
         original_frequency = self.pulse.frequency
         self.pulse.frequency = optimum["modified_frequency"]
 
-        # Get waveform points for repeated segment
-        t_list = self.pulse.t_start + np.arange(optimum["points"]) / sample_rate
-        waveform_array = self.pulse.get_voltage(t_list)
-
+        waveform_pts = optimum["points"]
         # Potentially include a waveform tail
-        waveform_tail_pts = int(optimum["final_delay"] * sample_rate)
+        waveform_tail_pts = int(round(optimum["final_delay"] * sample_rate))
         # Waveform must be multiple of 32, if number of points is less than
         # this, there is no point in adding the waveform
-        if waveform_tail_pts >= 32:
+        if waveform_tail_pts < 32:
+            waveform_tail_array = None
+        elif waveform_loops == 1:
+            # Add waveform tail to main waveform
+            waveform_pts += waveform_tail_pts
+            waveform_pts = 32 * (waveform_pts // 32)
+            waveform_tail_pts = 0
+            waveform_tail_array = None
+        else:
             if waveform_tail_pts < 320:  # Waveform must be at least 320 points
                 # Find minimum number of loops of main waveform that are needed
                 # to increase tail to be at least 320 points long
@@ -665,8 +673,10 @@ class SinePulseImplementation(PulseImplementation):
                 # Cannot subtract loops from the main waveform because then
                 # the main waveform would not have any loops remaining
                 waveform_tail_array = None
-        else:
-            waveform_tail_array = None
+
+        # Get waveform points for repeated segment
+        t_list = self.pulse.t_start + np.arange(waveform_pts) / sample_rate
+        waveform_array = self.pulse.get_voltage(t_list)
 
         # Reset pulse frequency to original
         self.pulse.frequency = original_frequency
