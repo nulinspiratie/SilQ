@@ -241,7 +241,7 @@ def attribute_from_config(item: str, config: dict):
         # Check if item is in properties config
         value = config[item]
     else:
-        raise AttributeError
+        raise AttributeError(f'Item {item} not found in config')
 
     if type(value) is DotDict:
         value = dict(value)
@@ -645,3 +645,16 @@ def find_approximate_divisor(
             }
     else:
         return None
+        
+        
+def slice_length(s, l):
+    """Returns the range of a slice `s` for an array of length `l`.
+    """
+    
+    if isinstance(s, slice):
+        start = s.start if s.start is not None else 0
+        stop = s.stop if s.stop is not None else l
+        step = s.step if s.step is not None else 1
+        return int((stop - start) / step)
+    else:
+        return 1
