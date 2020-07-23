@@ -525,7 +525,8 @@ class NMRPulseSequence(PulseSequenceGenerator):
             'stage_pulse': DCPulse('empty'),
             'NMR_pulse': SinePulse('NMR'),
             'NMR_pulses': ['NMR_pulse'],
-            'intermediate_pulses' : [],
+            'post_pulse': DCPulse('read', acquire=True),
+            'intermediate_pulses': [],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3}
@@ -541,8 +542,6 @@ class NMRPulseSequence(PulseSequenceGenerator):
         self.pulse_settings['pre_pulses'] = self.pre_pulses = []
         self.pulse_settings['pre_ESR_pulses'] = self.pre_ESR_pulses = []
         self.pulse_settings['post_pulses'] = self.post_pulses = []
-
-        self.generate()
 
     def add_NMR_pulses(self, pulse_sequence=None):
         if pulse_sequence is None:
@@ -579,11 +578,19 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
             self.primary_NMR_pulses.append(single_stage_NMR_pulses[0])
 
-            for NMR_subpulse in single_stage_NMR_pulses:
+            NMR_pulse = None
+            for kk, NMR_subpulse in enumerate(single_stage_NMR_pulses):
                 NMR_pulse, = self.add(NMR_subpulse)
                 t_connect(NMR_pulse['t_start'])
-                t_connect = partial(NMR_pulse['t_stop'].connect,
-                                    offset=self.NMR['inter_delay'])
+
+                if kk < len(single_stage_NMR_pulses) - 1:
+                    # Determine delay between NMR pulses
+                    if isinstance(self.NMR['inter_delay'], Iterable):
+                        inter_delay = self.NMR['inter_delay'][kk]
+                    else:
+                        inter_delay = self.NMR['inter_delay']
+
+                    t_connect = partial(NMR_pulse['t_stop'].connect, offset=inter_delay)
 
             if NMR_pulse is not None:
                 NMR_pulse['t_stop'].connect(NMR_stage_pulse['t_stop'],
@@ -596,6 +603,10 @@ class NMRPulseSequence(PulseSequenceGenerator):
                     int_pulse, = self.add(intermediate_pulse)
                     t_connect(int_pulse['t_start'])
                     t_connect = partial(int_pulse['t_stop'].connect, offset=0)
+            elif self.NMR['post_pulse'] is not None:
+                # Add final pulse
+                post_pulse, = self.add(self.NMR['post_pulse'])
+                NMR_stage_pulse['t_stop'].connect(post_pulse['t_start'])
 
         return pulse_sequence
 

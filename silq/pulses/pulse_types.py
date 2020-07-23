@@ -560,9 +560,8 @@ class SinePulse(Pulse):
             be existent in interface. Not used if not set.
         phase_reference: What point in the the phase is with respect to.
             Can be two modes:
-
-            - 'absolute': phase is with respect to `Pulse.t_start`.
-            - 'relative': phase is with respect to t=0 (phase-coherent).
+            - 'absolute': phase is with respect to t=0 (phase-coherent).
+            - 'relative': phase is with respect to `Pulse.t_start`.
 
         **kwargs: Additional parameters of `Pulse`.
 
@@ -603,7 +602,7 @@ class SinePulse(Pulse):
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
         self._connect_parameters_to_config(
-            ['frequency', 'phase', 'power', 'amplitude', 'phase', 'offset',
+            ['frequency', 'phase', 'power', 'amplitude', 'offset',
              'frequency_sideband', 'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
@@ -684,6 +683,11 @@ class FrequencyRampPulse(Pulse):
             initial frequency or stay at current frequency. Useful if the
             pulse doesn't immediately stop at the end (this depends on how
             the corresponding instrument/interface is programmed).
+        phase: Pulse phase. By default is set to zero.
+        phase_reference: What point in the the phase is with respect to.
+            Can be two modes:
+                - 'absolute': phase is with respect to t=0 (phase-coherent).
+                - 'relative': phase is with respect to `Pulse.t_start`.
         amplitude: Pulse amplitude. If not set, power must be set.
         power: Pulse power. If not set, amplitude must be set.
         offset: amplitude offset, zero by default
@@ -786,6 +790,8 @@ class FrequencyRampPulse(Pulse):
             if self.frequency_sideband is not None:
                 properties_str += f', f_sb={freq_to_str(self.frequency_sideband)}' \
                                   f'{self.sideband_mode}'
+            properties_str += f', phase={self.phase} deg '
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
 
             if self.power is not None:
                 properties_str += f', power={self.power} dBm'
@@ -804,7 +810,7 @@ class FrequencyRampPulse(Pulse):
         return super()._get_repr(properties_str)
 
     def get_voltage(self, t):
-        frequency_rate = self.frequency_deviation / self.duration
+        frequency_rate = 2 * self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
         amplitude = self.amplitude
         if amplitude is None:
@@ -813,11 +819,13 @@ class FrequencyRampPulse(Pulse):
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
                 amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
-
-        if self.phase_reference == 'relative':
+        # Check if phase_reference is defined for backwards-compatibility
+        if not hasattr(self, 'phase_reference') or self.phase_reference == 'relative':
             t = t - self.t_start
 
-        return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2))
+        return amplitude * np.sin(2 * np.pi * (frequency_start * t + frequency_rate * np.power(t,2) / 2 +
+                                               self.phase / 360)) + self.offset
+
 
 class DCPulse(Pulse):
     """DC (fixed-voltage) `Pulse`.
