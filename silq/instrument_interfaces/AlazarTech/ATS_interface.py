@@ -56,6 +56,8 @@ class ATSInterface(InstrumentInterface):
         # Override untargeted pulse adding (measurement pulses can be added)
         self.pulse_sequence.allow_untargeted_pulses = True
 
+        default_settings = {'channel_range': 2, 'coupling': 'DC', **default_settings}
+
         # Define channels
         self._acquisition_channels = {
             'ch'+idx: Channel(instrument_name=self.instrument_name(),
@@ -72,7 +74,7 @@ class ATSInterface(InstrumentInterface):
             **self._acquisition_channels,
             **self._aux_channels,
             'trig_in':  Channel(instrument_name=self.instrument_name(),
-                                name='trig_in', input_trigger=True),
+                                name='trig_in', id='trig_in', input_trigger=True),
             'software_trig_out': Channel(instrument_name=self.instrument_name(),
                                          name='software_trig_out')}
 
@@ -163,7 +165,7 @@ class ATSInterface(InstrumentInterface):
         self.add_parameter(name='sample_rate',
                            unit='samples/sec',
                            get_cmd=partial(self.setting, 'sample_rate'),
-                           set_cmd=lambda x:self.update_settings(sample_rate=x),
+                           set_cmd=lambda x:self.default_settings().update(sample_rate=x),
                            vals=vals.Numbers(),
                            docstring='Acquisition sampling rate (Hz)')
 
@@ -180,6 +182,7 @@ class ATSInterface(InstrumentInterface):
 
         self.traces = {}
         self.pulse_traces = {}
+
 
     @property
     def _acquisition_controller(self):
@@ -306,7 +309,7 @@ class ATSInterface(InstrumentInterface):
         self.configuration_settings({
             k: v for k,v in self.default_settings().items()
             if k in self._configuration_settings_names})
-        self.configuration_settings({
+        self.acquisition_settings({
             k: v for k, v in self.default_settings().items()
             if k in self._acquisition_settings_names})
 
@@ -338,10 +341,13 @@ class ATSInterface(InstrumentInterface):
                 self.update_settings(external_trigger_range=5)
                 trigger_range = 5
             else:
-                trigger_channel = self._acquisition_channels[
-                    self.trigger_channel()]
-                trigger_id = trigger_channel.id
-                trigger_range = self.setting('channel_range' + trigger_id)
+                trigger_range = self.setting('channel_range')
+                if isinstance(trigger_range, list):
+                    # Different channel ranges, choose one corresponding to
+                    # trigger channel
+                    trigger_channel = self._acquisition_channels[self.trigger_channel()]
+                    trigger_idx = 'ABCD'.index(trigger_channel.id)
+                    trigger_range = trigger_range[trigger_idx]
 
             trigger_pulses = self.input_pulse_sequence.get_pulses(
                 input_channel=self.trigger_channel())
@@ -360,25 +366,23 @@ class ATSInterface(InstrumentInterface):
                 # and 255 (+trigger_range)
                 trigger_level = int(128 + 127 * (self.trigger_threshold() /
                                                  trigger_range))
+                trigger_channel = self._channels[self.trigger_channel()]
 
                 self.update_settings(trigger_operation='J',
                                      trigger_engine1='J',
-                                     trigger_source1=self.trigger_channel(),
+                                     trigger_source1=trigger_channel.id,
                                      trigger_slope1=self.trigger_slope(),
                                      trigger_level1=trigger_level,
                                      external_trigger_coupling='DC',
                                      trigger_delay=0)
             else:
-                print('Cannot setup ATS trigger because there are no '
-                      'acquisition pulses')
+                print('Cannot setup ATS trigger because there are no acquisition '
+                      f'pulses on self.trigger_channel {self.trigger_channel()}')
         else:
             pass
 
     def setup_ATS(self):
         """ Configure ATS using ``ATS.config`` """
-
-        self.update_settings(channel_range=2,
-                             coupling='DC')
         self.instrument.config(**self.configuration_settings())
 
     def setup_acquisition_controller(self):
