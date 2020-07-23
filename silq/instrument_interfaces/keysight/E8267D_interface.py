@@ -523,8 +523,10 @@ class MultiSinePulseImplementation(PulseImplementation):
             amplitudes_Q = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
                                 interface.Q_amplitude_correction())
             frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
-            phases_I = list(np.array(self.pulse.phases) + interface.I_phase_correction())
-            phases_Q = list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
+            # Shifting all phases in order to start after envelope padding:
+            dphases = -2 * np.pi * interface.envelope_padding() * np.array(frequencies_IQ)
+            phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
+            phases_Q = list(np.array(self.pulse.phases) + dphases - 90 + interface.Q_phase_correction())
 
             assert all(0 <= amp <= 1 for amp in self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
                                                                         f"{self.pulse.amplitudes} are between 0 and 1V."
