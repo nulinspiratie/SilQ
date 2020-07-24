@@ -241,7 +241,7 @@ class E8267DInterface(InstrumentInterface):
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
         if frequency_sidebands or (self.FM_mode() == 'IQ' and
-                                   ((self.frequency_deviation != 0) or (multiple_frequencies is not None))):
+                                   ((self.frequency_deviation() != 0) or (multiple_frequencies is not None))):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
