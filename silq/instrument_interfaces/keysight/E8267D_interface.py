@@ -154,6 +154,11 @@ class E8267DInterface(InstrumentInterface):
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
                                      'frequency_sideband not None')
+        # TODO expand docstring
+        self.add_parameter('force_IQ',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           docstring='Whether to enforce IQ modulation.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
@@ -240,8 +245,9 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
 
-        if frequency_sidebands or (self.FM_mode() == 'IQ' and
-                                   ((self.frequency_deviation() != 0) or (multiple_frequencies is not None))):
+        if frequency_sidebands or self.force_IQ() or (
+                self.FM_mode() == 'IQ' and (
+                (self.frequency_deviation() != 0) or (multiple_frequencies is not None))):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
