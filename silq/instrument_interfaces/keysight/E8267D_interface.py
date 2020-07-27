@@ -338,7 +338,7 @@ class SinePulseImplementation(PulseImplementation):
                 amplitude_FM = None
                 frequency_IQ = self.pulse.frequency - interface.frequency()
 
-        if frequency_IQ is not None:
+        if frequency_IQ is not None and frequency_IQ != 0:
             additional_pulses.extend([
                 SinePulse(name='sideband_I',
                           t_start=self.pulse.t_start - interface.envelope_padding(),
@@ -362,6 +362,27 @@ class SinePulseImplementation(PulseImplementation):
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
+        elif frequency_IQ is not None:
+            # Frequency is zero, add DC pulses instead of sine pulses
+            amplitudes = {
+                'I': np.sin(self.pulse.phase),
+                'Q': np.sin(self.pulse.phase - np.pi/2)
+            }
+
+            for quadrature, amplitude in amplitudes.items():
+                # Pulse is probably not needed if amplitude is 0, but we leave it for now.
+                # if amplitude == 0:
+                #     continue
+                additional_pulses.append(
+                    DCPulse(name=f'sideband_{quadrature}',
+                            t_start=self.pulse.t_start - interface.envelope_padding(),
+                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                            amplitude=amplitude,
+                            connection_requirements={
+                                'input_instrument': interface.instrument_name(),
+                                'input_channel': quadrature}
+                            )
+                )
 
         if amplitude_FM is not None:
             assert abs(amplitude_FM) <= 1 + 1e-13, \
