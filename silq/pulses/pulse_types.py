@@ -883,11 +883,9 @@ class SingleWaveformMultiSinePulse(Pulse):
 
         assert self.durations is not None, f'Pulse {self.name} does not have specified durations.'
         assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
-
         assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
                                                         f'number of durations and phases.'
-
-        pulse_t_id = t-self.t_start
+        pulse_t_id = t - self.t_start
         if pulse_t_id == 0:
             return 0
         for idx, (dur, phase) in enumerate(zip(self.durations, self.phases)):

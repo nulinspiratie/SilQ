@@ -610,16 +610,15 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
         assert (interface.IQ_modulation() == 'on') and \
                (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
                                               'for SingleWaveformMultiSinePulse.'
+
         frequency_IQ = self.pulse.frequency - interface.frequency()
 
-        assert frequency_IQ = 0, 'Carrier and pulse frequencies are not equal. This case is not yet' \
+        assert frequency_IQ == 0, 'Carrier and pulse frequencies are not equal. This case is not yet' \
                                   'implemented for SingleWaveformMultiSinePulse.'
-
         phases_IQ = {
             'I': self.pulse.phases,
             'Q': self.pulse.phases - 90
         }
-
         for quadrature, phases in phases_IQ.items():
             additional_pulses.append(
                 SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
