@@ -365,8 +365,8 @@ class SinePulseImplementation(PulseImplementation):
         elif frequency_IQ is not None:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
-                'I': np.sin(self.pulse.phase),
-                'Q': np.sin(self.pulse.phase - np.pi/2)
+                'I': np.sin(2 * np.pi * self.pulse.phase / 360),
+                'Q': np.sin(2 * np.pi * self.pulse.phase / 360 - 90)
             }
 
             for quadrature, amplitude in amplitudes.items():
