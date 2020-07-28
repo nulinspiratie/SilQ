@@ -11,9 +11,10 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
-           'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
-           'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
-           'CombinationPulse', 'AWGPulse', 'pulse_conditions']
+           'SingleWaveformMultiSinePulse', 'FrequencyRampPulse', 'DCPulse',
+           'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
+           'MeasurementPulse', 'CombinationPulse', 'AWGPulse',
+           'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -788,18 +789,16 @@ class MultiSinePulse(Pulse):
         return waveform
 
 
-class MultiWaveformSinePulse(Pulse):
-    """Multi-Waveform Sinusoidal pulse - contains several sine pulses of different phases
+class SingleWaveformMultiSinePulse(Pulse):
+    """SingleWaveformMultiSine pulse - contains several sine pulses of different phases
     to perform X and Y rotations within a single waveform without requiring additional triggers.
     This allows avoiding jitters/errors during triggering.
 
     Parameters:
         name: Pulse name
-        frequencies: list of Pulse frequencies
+        frequency: Pulse frequency
         phases: list of Pulse phases
-        amplitudes: list of Pulse amplitudes
-        power: Pulse power. If not set, amplitude must be set.
-        offset: amplitude offset, zero by default
+        power: Pulse power
         frequency_sideband: Mixer sideband frequency (off by default).
         sideband_mode: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
@@ -809,18 +808,13 @@ class MultiWaveformSinePulse(Pulse):
             - 'relative': phase is with respect to `Pulse.t_start`.
 
         **kwargs: Additional parameters of `Pulse`.
-
-    Notes:
-        Either amplitude or power must be set, depending on the instrument
-        that should output the pulse.
     """
     def __init__(self,
                  name: str = None,
-                 frequencies: List[float] = None,
+                 frequency: float = None,
                  phases: List[float] = None,
-                 amplitudes: List[float] = None,
                  power: float = None,
-                 offset: float = None,
+                 durations: List[float] = None,
                  frequency_sideband: float = None,
                  sideband_mode: float = None,
                  phase_reference: str = None,
@@ -828,16 +822,14 @@ class MultiWaveformSinePulse(Pulse):
 
         super().__init__(name=name, **kwargs)
 
-        self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
-                                     set_cmd=None, vals=vals.Lists())
-        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
-                                vals=vals.Lists())
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
-        self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
-                                    set_cmd=None, vals=vals.Lists())
-        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
-                                vals=vals.Numbers())
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
+                                vals=vals.Lists())
+        self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
+                                   vals=vals.Lists())
         self.frequency_sideband = Parameter(initial_value=frequency_sideband,
                                             unit='Hz', set_cmd=None,
                                             vals=vals.Numbers())
@@ -846,33 +838,30 @@ class MultiWaveformSinePulse(Pulse):
         self.phase_reference = Parameter(initial_value=phase_reference,
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
+        self.duration = sum(self.durations)
+
         self._connect_parameters_to_config(
-            ['frequencies', 'phases', 'power', 'amplitudes', 'offset',
-             'frequency_sideband', 'sideband_mode', 'phase_reference'])
+            ['frequency', 'phases', 'durations', 'power', 'frequency_sideband',
+             'sideband_mode', 'phase_reference'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
-            self.phase_reference = 'relative'
-        if self.offset is None:
-            self.offset = 0
+            self.phase_reference = 'absolute'
 
     def __repr__(self):
         properties_str = ''
         try:
-            properties_str = f'f={self.frequencies} Hz'
+            properties_str = f'f={freq_to_str(self.frequency)}'
+            properties_str += f', power={self.power} dBm'
             properties_str += f', phases={self.phases} deg'
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
-            properties_str += f', power={self.power} dBm'
-            properties_str += f', A={self.amplitudes} V'
-            if self.offset:
-                properties_str += f', offset={self.offset} V'
+            properties_str += f', durations={self.durations}'
             if self.frequency_sideband is not None:
                 properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
                                   f'{self.sideband_mode}'
-
             properties_str += f', t_start={self.t_start}'
-            properties_str += f', duration={self.duration}'
+            properties_str += f', full_duration(w/o delays)={self.duration}'
         except:
             pass
 
@@ -892,17 +881,18 @@ class MultiWaveformSinePulse(Pulse):
         if self.phase_reference == 'relative':
             t = t - self.t_start
 
-        assert self.amplitudes is not None, f'Pulse {self.name} does not have specified amplitudes.'
-        assert self.frequencies is not None, f'Pulse {self.name} does not have specified frequencies.'
+        assert self.durations is not None, f'Pulse {self.name} does not have specified durations.'
         assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
 
-        assert len(self.amplitudes) == len(self.frequencies) == len(self.phases), \
-            f'Pulse {self.name} does not have equal number of amplitudes, frequencies and phases.'
-        waveform = 0.0
-        for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
-            waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
-        waveform += self.offset
-        return waveform
+        assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
+                                                        f'number of durations and phases.'
+
+        pulse_t_id = t-self.t_start
+        if pulse_t_id == 0:
+            return 0
+        for idx, (dur, phase) in enumerate(zip(self.durations, self.phases)):
+            if sum(self.durations[:idx]) < pulse_t_id <= sum(self.durations[:idx+1]):
+                return np.sin(2 * np.pi * (self.frequency * t + phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
