@@ -886,11 +886,18 @@ class SingleWaveformMultiSinePulse(Pulse):
         assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
                                                         f'number of durations and phases.'
         pulse_t_id = t - self.t_start
-        if pulse_t_id == 0:
-            return 0
-        for idx, (dur, phase) in enumerate(zip(self.durations, self.phases)):
-            if sum(self.durations[:idx]) < pulse_t_id <= sum(self.durations[:idx+1]):
-                return np.sin(2 * np.pi * (self.frequency * t + phase / 360))
+        waveform = np.zeros(len(t))
+        if isinstance(t, collections.Iterable):
+            for idx, (dur, phase) in enumerate(zip(self.durations, self.phases)):
+                idx_list = sum(self.durations[:idx]) < pulse_t_id < sum(self.durations[:idx + 1])
+                waveform[sum(self.durations[:idx]) < pulse_t_id < sum(self.durations[:idx + 1])] = np.sin(2 * np.pi * (self.frequency * t[pulse_t_id < dur1] + phase1 / 360))
+            return waveform
+        else:
+            if pulse_t_id == 0:
+                return 0
+            for idx, (dur, phase) in enumerate(zip(self.durations, self.phases)):
+                if sum(self.durations[:idx]) < pulse_t_id <= sum(self.durations[:idx + 1]):
+                    return np.sin(2 * np.pi * (self.frequency * t + phase / 360))
 
 
 class FrequencyRampPulse(Pulse):
