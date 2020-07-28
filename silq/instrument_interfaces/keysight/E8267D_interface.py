@@ -512,29 +512,27 @@ class MultiSinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        if (interface.IQ_modulation() == 'off') or (interface.FM_mode() == 'ramp'):
-            raise ValueError('FM_mode should be IQ and '
-                             'IQ_modulation should be ON for MultiSinePulses')
-        else:
+        assert (interface.IQ_modulation() == 'on') and \
+               (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
+                                              'for MultiSinePulse.'
 
-            # To insure the waveform is limited by +- 1V:
-            amplitudes_I = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
-                                interface.I_amplitude_correction())
-            amplitudes_Q = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
-                                interface.Q_amplitude_correction())
-            frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
-            # Shifting all phases in order to start after envelope padding:
-            dphases = -2 * np.pi * interface.envelope_padding() * np.array(frequencies_IQ)
-            phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
-            phases_Q = list(np.array(self.pulse.phases) + dphases - 90 + interface.Q_phase_correction())
+        # To insure the waveform is limited by +- 1V:
+        amplitudes_I = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+                            interface.I_amplitude_correction())
+        amplitudes_Q = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+                            interface.Q_amplitude_correction())
+        frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
+        # Shifting all phases in order to start after envelope padding:
+        dphases = - np.array(frequencies_IQ) * interface.envelope_padding() * 360   # in degrees
+        phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
+        phases_Q = list(np.array(self.pulse.phases) + dphases - 90 + interface.Q_phase_correction())
 
-            assert all(0 <= amp <= 1 for amp in self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
-                                                                        f"{self.pulse.amplitudes} are between 0 and 1V."
-
-            max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
-            max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
-            assert (max_input_I <= 1) and (max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
-                                                              f"voltages are above 1V."
+        assert all(0 <= amp <= 1 for amp in self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
+                                                                    f"{self.pulse.amplitudes} are between 0 and 1V."
+        max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
+        max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
+        assert (max_input_I <= 1) and (max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
+                                                          f"voltages are above 1V."
 
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
