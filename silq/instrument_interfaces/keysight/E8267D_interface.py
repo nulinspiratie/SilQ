@@ -156,6 +156,7 @@ class E8267DInterface(InstrumentInterface):
                                      'frequency_sideband not None')
         # TODO expand docstring
         self.add_parameter('force_IQ',
+                           set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool(),
                            docstring='Whether to enforce IQ modulation.')
@@ -366,7 +367,7 @@ class SinePulseImplementation(PulseImplementation):
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
                 'I': np.sin(2 * np.pi * self.pulse.phase / 360),
-                'Q': np.sin(2 * np.pi * self.pulse.phase / 360 - 90)
+                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90) / 360)
             }
 
             for quadrature, amplitude in amplitudes.items():
