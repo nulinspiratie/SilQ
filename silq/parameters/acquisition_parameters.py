@@ -494,6 +494,8 @@ class DCParameter(AcquisitionParameter):
     Args:
         name: Parameter name.
         unit: Unit of DC voltage (e.g. can be changed to nA)
+        channel_label : The layout acquisition channel label from which to
+                        read the DC signal.
 
     Parameters:
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
@@ -531,7 +533,9 @@ class DCParameter(AcquisitionParameter):
     def __init__(self,
                  name: str = 'DC',
                  unit: str = 'V',
+                 channel_label: str = 'output',
                  **kwargs):
+        self.channel_label = channel_label
         self.pulse_sequence = PulseSequence([
             DCPulse(name='DC', acquire=True),
             DCPulse(name='DC_final')])
@@ -547,8 +551,8 @@ class DCParameter(AcquisitionParameter):
     def analyse(self, traces = None):
         if traces is None:
             traces = self.traces
-        return {'DC_voltage': np.mean(traces['DC']['output']),
-                'DC_noise': np.std(traces['DC']['output'])}
+        return {'DC_voltage': np.mean(traces['DC'][self.channel_label]),
+                'DC_noise': np.std(traces['DC'][self.channel_label])}
 
 
 class TraceParameter(AcquisitionParameter):
