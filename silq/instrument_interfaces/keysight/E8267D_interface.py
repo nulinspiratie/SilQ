@@ -56,9 +56,7 @@ class E8267DInterface(InstrumentInterface):
             SinePulseImplementation(
                 pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
             ),
-            MultiSinePulseImplementation(
-                pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
-            ),
+            MultiSinePulseImplementation(),
             FrequencyRampPulseImplementation(
                 pulse_requirements=[
                     ('frequency_start', {'min': 250e3, 'max': 44e9}),
@@ -194,15 +192,16 @@ class E8267DInterface(InstrumentInterface):
 
         # Find minimum and maximum frequency
         min_frequency = max_frequency = None
-        multiple_frequencies = None
         for pulse in self.pulse_sequence:
             frequency_deviation = getattr(pulse, 'frequency_deviation', None)
-            multi_freq = getattr(pulse, 'frequencies', None)
-            if multi_freq is not None:
-                multiple_frequencies = multi_freq
+            multiple_frequencies = getattr(pulse, 'frequencies', None)
             frequency_sideband = pulse.frequency_sideband
 
-            pulse_min_frequency = pulse_max_frequency = pulse.frequency
+            if multiple_frequencies is not None:
+                pulse_min_frequency = min(multiple_frequencies)
+                pulse_max_frequency = max(multiple_frequencies)
+            else:
+                pulse_min_frequency = pulse_max_frequency = pulse.frequency
             if frequency_deviation is not None:
                 pulse_min_frequency -= pulse.frequency_deviation
                 pulse_max_frequency += pulse.frequency_deviation
