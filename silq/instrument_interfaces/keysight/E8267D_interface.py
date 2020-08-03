@@ -8,6 +8,7 @@ from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
 
 from qcodes.utils import validators as vals
 
+
 class E8267DInterface(InstrumentInterface):
     """ Interface for the Keysight E8267D
 
@@ -24,6 +25,7 @@ class E8267DInterface(InstrumentInterface):
         For a given instrument, its associated interface can be found using
             `get_instrument_interface`
     """
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -34,9 +36,9 @@ class E8267DInterface(InstrumentInterface):
             'ext2': Channel(instrument_name=self.instrument_name(),
                             name='ext2', input=True),
             'I': Channel(instrument_name=self.instrument_name(),
-                            name='I', input=True),
+                         name='I', input=True),
             'Q': Channel(instrument_name=self.instrument_name(),
-                            name='Q', input=True)
+                         name='Q', input=True)
         }
         self._output_channels = {
             'RF_out': Channel(instrument_name=self.instrument_name(),
@@ -129,7 +131,7 @@ class E8267DInterface(InstrumentInterface):
                            set_cmd=None,
                            initial_value='center',
                            vals=vals.MultiType(vals.Enum('min', 'center', 'max'),
-                                           vals.Numbers()),
+                                               vals.Numbers()),
                            docstring='The choice for the microwave frequency, '
                                      'This is used if pulses with multiple '
                                      'frequencies are used, or if frequency '
@@ -237,10 +239,9 @@ class E8267DInterface(InstrumentInterface):
 
         assert self.frequency_deviation() < 80e6 or self.FM_mode() == 'IQ', \
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
-            f"Current frequency deviation: {self.frequency_deviation()/1e6} MHz"
+            f"Current frequency deviation: {self.frequency_deviation() / 1e6} MHz"
 
-        if frequency_sidebands or (self.FM_mode() == 'IQ' and
-                                   ((self.frequency_deviation() != 0) or (multiple_frequencies is not None))):
+        if frequency_sidebands or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
@@ -382,7 +383,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
     def get_additional_pulses(self, interface: InstrumentInterface):
         assert self.pulse.t_start >= interface.envelope_padding(), \
             f"Keysight E8267D uses envelope padding " \
-            f"{interface.envelope_padding()} s before and after pulse for FM "\
+            f"{interface.envelope_padding()} s before and after pulse for FM " \
             f"and IQ modulation, so this is the minimum pulse.t_start."
 
         # Add an envelope pulse
@@ -487,7 +488,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                 'input_instrument': interface.instrument_name(),
                                 'input_channel': interface.modulation_channel()}),
                     DCPulse(t_start=self.pulse.t_stop,
-                            t_stop=self.pulse.t_stop+interface.envelope_padding(),
+                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
                             amplitude=amplitude_stop,
                             connection_requirements={
                                 'input_instrument': interface.instrument_name(),
@@ -516,22 +517,24 @@ class MultiSinePulseImplementation(PulseImplementation):
                                               'for MultiSinePulse.'
 
         # To insure the waveform is limited by +- 1V:
-        amplitudes_I = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+        amplitudes_I = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
                             interface.I_amplitude_correction())
-        amplitudes_Q = list(np.array(self.pulse.amplitudes)/len(self.pulse.amplitudes) +
+        amplitudes_Q = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
                             interface.Q_amplitude_correction())
         frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
         # Shifting all phases in order to start after envelope padding:
-        dphases = - np.array(frequencies_IQ) * interface.envelope_padding() * 360   # in degrees
+        dphases = - np.array(frequencies_IQ) * interface.envelope_padding() * 360  # in degrees
         phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
         phases_Q = list(np.array(self.pulse.phases) + dphases - 90 + interface.Q_phase_correction())
 
-        assert all(0 <= amp <= 1 for amp in self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
-                                                                    f"{self.pulse.amplitudes} are between 0 and 1V."
+        assert all(0 <= amp <= 1 for amp in
+                   self.pulse.amplitudes), f"Not all amplitudes in MultiSinePulse list: " \
+                                           f"{self.pulse.amplitudes} are between 0 and 1V."
         max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
         max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
-        assert (max_input_I <= 1) and (max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
-                                                          f"voltages are above 1V."
+        assert (max_input_I <= 1) and (
+                    max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
+                                       f"voltages are above 1V."
 
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
@@ -554,6 +557,6 @@ class MultiSinePulseImplementation(PulseImplementation):
                            phase_reference=self.pulse.phase_reference,
                            offset=self.pulse.offset,
                            connection_requirements={
-                                   'input_instrument': interface.instrument_name(),
-                                   'input_channel': 'Q'})])
+                               'input_instrument': interface.instrument_name(),
+                               'input_channel': 'Q'})])
         return additional_pulses
