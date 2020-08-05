@@ -67,7 +67,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         properties_attrs: attributes to match with
             ``silq.config.properties`` (see notes below).
         save_traces: Save acquired traces to disk
-        channel_label: The layout acquisition channel label used for analysis.
         **kwargs: Additional kwargs passed to ``MultiParameter``
 
     Parameters:
@@ -113,12 +112,12 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     layout = None
     formatter = h5fmt
+    channel_label = 'output'
 
     def __init__(self,
                  continuous: bool = False,
                  properties_attrs: List[str] = None,
                  wrap_set: bool = False,
-                 channel_label: str = 'output',
                  save_traces: bool = False,
                  **kwargs):
         SettingsClass.__init__(self)
@@ -136,8 +135,6 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 logger.warning(f'No layout found for {self}')
 
         self.silent = True
-
-        self.channel_label = channel_label
 
         self.save_traces = save_traces
 
