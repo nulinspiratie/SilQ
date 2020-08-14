@@ -421,7 +421,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
                           amplitude=1 + interface.I_amplitude_correction(),
-                          phase=0 + interface.I_phase_correction(),
+                          phase=interface.I_phase_correction(),
                           phase_reference=self.pulse.phase_reference,
                           offset=self.pulse.offset,
                           connection_requirements={
@@ -446,7 +446,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    frequency_start=frequency_IQ_start,
                                    frequency_stop=frequency_IQ_stop,
                                    amplitude=1 + interface.I_amplitude_correction(),
-                                   phase=0 + interface.I_phase_correction(),
+                                   phase=interface.I_phase_correction(),
                                    phase_reference=self.pulse.phase_reference,
                                    offset=self.pulse.offset,
                                    connection_requirements={
@@ -516,7 +516,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
                                               'for MultiSinePulse.'
 
-        # To insure the waveform is limited by +- 1V:
+        # To ensure the waveform is limited to +- 1V:
         amplitudes_I = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
                             interface.I_amplitude_correction())
         amplitudes_Q = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
@@ -532,9 +532,8 @@ class MultiSinePulseImplementation(PulseImplementation):
                                            f"{self.pulse.amplitudes} are between 0 and 1V."
         max_input_I = sum(amplitudes_I) + abs(self.pulse.offset)
         max_input_Q = sum(amplitudes_Q) + abs(self.pulse.offset)
-        assert (max_input_I <= 1) and (
-                    max_input_Q <= 1), f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) " \
-                                       f"voltages are above 1V."
+        assert (max_input_I <= 1) and (max_input_Q <= 1), \
+            f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) voltages are above 1V."
 
         additional_pulses.extend([
             MultiSinePulse(name='sideband_I',
