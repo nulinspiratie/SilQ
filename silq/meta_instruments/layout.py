@@ -1701,13 +1701,13 @@ class Layout(Instrument):
         t_list *= 1e3  # Convert to ms
         sample_list = np.arange(trace_shape[0], dtype=float)
 
-        plot = MatPlot(subplots=len(traces), **plot_kwargs)
+        plot = MatPlot(subplots=len(traces))
         for k, (ax, (channel, traces_arr)) in enumerate(zip(plot, traces.items())):
                 if traces_arr.shape[0] == 1:
-                    ax.add(traces_arr[0], x=t_list)
+                    ax.add(traces_arr[0], x=t_list, **plot_kwargs)
                     ax.set_ylabel('Amplitude (V)')
                 else:
-                    ax.add(traces_arr, x=t_list, y=sample_list)
+                    ax.add(traces_arr, x=t_list, y=sample_list, **plot_kwargs)
                 ax.set_ylabel('Sample number')
                 ax.set_xlabel('Time (ms)')
                 ax.set_title(channel)
