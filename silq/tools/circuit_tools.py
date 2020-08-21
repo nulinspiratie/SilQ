@@ -97,8 +97,11 @@ def load_circuits(
     ]
 
     if load_probabilities:
+        # Ignore when there is more than one space
+        lines = [line.replace('   ', ' ') for line in lines]
+        lines = [line.replace('  ', ' ') for line in lines]
         state_events = np.array([
-            [int(elem) for elem in line.replace('   ', ' ').split(' ')[1:]]
+            [int(elem) for elem in line.split(' ')[1:]]
             for line in lines
         ])
         state_probabilities = state_events / state_events.sum(axis=1)[:, None]
