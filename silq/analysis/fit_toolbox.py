@@ -612,6 +612,7 @@ class ExponentialFit(Fit):
     def fit_function(t: Union[float, np.ndarray],
                      tau: float,
                      amplitude: float,
+                     exponent_factor: float,
                      offset: float) -> Union[float, np.ndarray]:
         """Exponential function using time as x-coordinate
 
@@ -619,12 +620,13 @@ class ExponentialFit(Fit):
             t: Time.
             tau: Decay constant.
             amplitude:
+            exponent_factor:
             offset:
 
         Returns:
             exponential data points
         """
-        return amplitude * np.exp(-t / tau) + offset
+        return amplitude * np.exp(-np.power(t / tau, exponent_factor)) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
@@ -650,7 +652,8 @@ class ExponentialFit(Fit):
             initial_parameters['amplitude'] = ydata[1] - ydata[-1]
         if not 'offset' in initial_parameters:
             initial_parameters['offset'] = ydata[-1]
-
+        if not 'exponent_factor' in initial_parameters:
+            initial_parameters['exponent_factor'] = 1
         if not 'tau' in initial_parameters:
             exponent_val = (initial_parameters['offset']
                             + initial_parameters['amplitude'] / np.exp(1))
