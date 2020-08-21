@@ -1907,6 +1907,7 @@ class NMRParameter(AcquisitionParameter):
                 np.ravel([trace['output'] for pulse_name, trace in traces.items()
                           if pulse_name.startswith('read_initialize')]))
             threshold_voltage = high_low['threshold_voltage']
+        results['threshold_voltage'] = threshold_voltage
 
         # Extract points per shot from a single read trace
         single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
@@ -2017,7 +2018,7 @@ class EDSRParameter(NMRParameter):
             sample_rate=self.sample_rate,
             t_read=self.t_read,
             t_skip=self.t_skip,
-            threshold_voltage=self.threshold_up_proportion)
+            threshold_voltage=results['threshold_voltage'])
         results['EDSR_up_proportion'] = EDSR_read_result['up_proportion']
 
         return results
