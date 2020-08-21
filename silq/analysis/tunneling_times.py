@@ -877,6 +877,6 @@ def analyse_tunnel_times_measurement(
             low_analysis.print_results()
             low_analysis.plot_tunnel_times(axes=axes[2:], plot_fast=False, title=title)
 
-        fig.tight_layout()
+            fig.tight_layout()
 
     return results
