@@ -378,6 +378,21 @@ from silq.tools.trace_tools import load_traces as _load_traces
 qc.DataSet.load_traces = _load_traces
 
 
+# Add loading of config to dataset
+def _load_config(self):
+    """Load dataset config from config subdirectory.
+
+    The config can be accessed via ``dataset.config``
+    """
+    config_path = self.filepath / 'config'
+    if not config_path.exists():
+        raise FileNotFoundError('No config directory exists')
+
+    self.config = DictConfig('config', folder=self.filepath)
+
+qc.DataSet.load_config = _load_config
+
+
 def _get_pulse_sequence(self, idx=0, pulse_name=None, silent=False):
     """Load pulse sequence after measurement started
 
