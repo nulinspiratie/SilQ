@@ -802,12 +802,6 @@ class ESRPulseSequence(PulseSequenceGenerator):
             # Generate ESR frequencies via property
             ESR_frequencies = self.ESR_frequencies
 
-        if ESR_frequencies is None and \
-                (self._latest_pulse_settings is None or
-                 self.ESR['ESR_pulse'] != self._latest_pulse_settings['ESR']['ESR_pulse']):
-            # Generate ESR frequencies via property
-            ESR_frequencies = self.ESR_frequencies
-
         if ESR_frequencies is not None:
             logger.warning("Resetting all ESR pulses to default ESR['ESR_pulse']")
             self.ESR['ESR_pulses'] = []
@@ -1276,58 +1270,6 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
         # Create copy of current pulse settings for comparison later
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
-
-
-class T2NuclearPulseSequence(NMRPulseSequence):
-    def __init__(self, pulses=[], **kwargs):
-        super().__init__(pulses=pulses, **kwargs)
-        self.NMR.update({
-            'NMR_initial_pulse': SinePulse('NMR_PiHalf'),
-            'NMR_refocusing_pulse': SinePulse('NMR_Pi'),
-            'NMR_final_pulse': SinePulse('NMR_PiHalf'),
-            'final_phase': 0,
-            'artificial_frequency': 0,
-            'num_refocusing': 0,
-        })
-
-        self.tau = Parameter('tau', unit='s', initial_value=1e-3)
-
-    def add_NMR_pulses(self, pulse_sequence=None):
-        self.NMR['NMR_pulses'] = [[
-            self.NMR['NMR_initial_pulse'],
-            *[self.NMR['NMR_refocusing_pulse'] for _ in range(self.NMR['num_refocusing'])],
-            self.NMR['NMR_final_pulse']
-        ]]
-
-        self.NMR['inter_delay'] = []
-        for k, (NMR_pulse, next_NMR_pulse) in enumerate(zip(
-                self.NMR['NMR_pulses'][0][:-1],
-                self.NMR['NMR_pulses'][0][1:])):
-            inter_delay = self.tau / max(self.NMR['num_refocusing'], 1)
-            if self.NMR['num_refocusing'] > 0 and (k == 0 or k == self.NMR['num_refocusing']):
-                inter_delay /= 2
-
-            inter_delay -= NMR_pulse.duration / 2
-            inter_delay -= next_NMR_pulse.duration / 2
-            if inter_delay < 0:
-                raise RuntimeError(
-                    f'NMR inter_delay {inter_delay} is shorter than NMR pulse duration'
-                )
-            self.NMR['inter_delay'].append(inter_delay)
-
-        # Calculate phase of final pulse
-        final_phase = self.NMR['final_phase']
-        final_phase += 360 * self.tau * self.NMR['artificial_frequency']
-        final_phase = round(final_phase % 360)
-        self.NMR['NMR_pulses'][0][-1].phase = final_phase
-
-        super().add_NMR_pulses(pulse_sequence=pulse_sequence)
-
-    @parameter
-    def tau_set(self, parameter, val):
-        parameter._latest['value'] = val
-        parameter._latest['raw_value'] = val
-        self.generate()
 
 
 class NMRCPMGPulseSequence(NMRPulseSequence):

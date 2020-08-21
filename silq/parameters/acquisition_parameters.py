@@ -183,7 +183,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
-        return self.layout.sample_rate()
+        return self.layout.sample_rate
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=None,
@@ -648,7 +648,7 @@ class TraceParameter(AcquisitionParameter):
     def shapes(self):
         if self.trace_pulse in self.pulse_sequence:
             trace_shapes = self.pulse_sequence.get_trace_shapes(
-                self.layout.sample_rate(), self.samples)
+                self.layout.sample_rate, self.samples)
             trace_pulse_shape = tuple(trace_shapes[self.trace_pulse.full_name])
             if self.samples > 1 and self.average_mode == 'none':
                 return ((trace_pulse_shape,),) * len(self.layout.acquisition_channels())
@@ -1907,6 +1907,7 @@ class NMRParameter(AcquisitionParameter):
                 np.ravel([trace['output'] for pulse_name, trace in traces.items()
                           if pulse_name.startswith('read_initialize')]))
             threshold_voltage = high_low['threshold_voltage']
+        results['threshold_voltage'] = threshold_voltage
 
         # Extract points per shot from a single read trace
         single_read_traces_name = f"{self.ESR['read_pulse'].name}[0]"
@@ -2017,7 +2018,7 @@ class EDSRParameter(NMRParameter):
             sample_rate=self.sample_rate,
             t_read=self.t_read,
             t_skip=self.t_skip,
-            threshold_voltage=self.threshold_up_proportion)
+            threshold_voltage=results['threshold_voltage'])
         results['EDSR_up_proportion'] = EDSR_read_result['up_proportion']
 
         return results
