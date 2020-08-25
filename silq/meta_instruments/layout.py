@@ -1260,7 +1260,7 @@ class Layout(Instrument):
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
             except:
-                logger.exception(f'Could not save pulse sequence.')
+                logger.exception('Could not save pulse sequence.')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1363,7 +1363,6 @@ class Layout(Instrument):
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
-
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
@@ -1595,12 +1594,16 @@ class Layout(Instrument):
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
                 sample_rate=self.sample_rate(), samples=self.samples())}, file)
+
+        # Add index ranges (slices) of all pulses with acquire=True
         HDF5Format.write_dict_to_hdf5(
             {'pulse_slices': self.pulse_sequence.get_trace_slices(
                 sample_rate=self.sample_rate(),
                 capture_full_traces=self.acquisition_interface.capture_full_trace(),
                 return_slice=False
             )}, file)
+
+        # Add index ranges (slices) of all pulses
         HDF5Format.write_dict_to_hdf5(
             {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
                 sample_rate=self.sample_rate(),
@@ -1677,7 +1680,19 @@ class Layout(Instrument):
 
         return trace_file
 
-    def plot_traces(self, channel_filter=None, **plot_kwargs):
+    def plot_traces(self, channel_filter: str = None, **plot_kwargs):
+        """Plot acquisition traces for acquisition channels
+
+        Args:
+            channel_filter: Optional filter for channel names.
+                If passed, only channels containing this string are plotted
+            **plot_kwargs: Optional kwargs passed when adding traces
+
+        Returns:
+            MatPlot object
+        """
+        assert channel_filter is None or isinstance(channel_filter, str)
+
         traces_channels = self.acquisition_interface.traces
         # TODO add check if no traces have been acquired
 
