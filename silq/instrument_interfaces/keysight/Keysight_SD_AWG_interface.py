@@ -95,7 +95,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     @property
     def active_instrument_channels(self):
-        return self.instrument.channels[self.active_channel_ids]
+        return [ch for ch in self.instrument.channels for k in self.active_channel_ids if ch.id == k]
+        # return self.instrument.channels[self.active_channel_ids]
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
@@ -201,9 +202,9 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
             assert trigger_source in ['trig_in', *self._pxi_channels], \
                 f"Trigger source {trigger_source} not allowed."
-
-            self.active_instrument_channels.trigger_source(trigger_source)
-            self.active_instrument_channels.trigger_mode('rising')
+            for ch in self.active_instrument_channels:
+                ch.trigger_source(trigger_source)
+                ch.trigger_mode('rising')
 
             if trigger_source == 'trig_in':
                 self.instrument.trigger_direction('in')
@@ -235,7 +236,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
                 if pulse.t_start > t:  # Add waveform at 0V
                     logger.info(
-                        f'Ch{channel.id}: No pulse defined between t={t} s and next '
+                        f'{channel.name}: No pulse defined between t={t} s and next '
                         f'{pulse} (pulse.t_start={pulse.t_start} s), '
                         f'Adding DC pulse at 0V')
                     # Use maximum value because potentially total samples could
