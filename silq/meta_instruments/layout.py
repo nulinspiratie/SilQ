@@ -3,6 +3,7 @@ import numpy as np
 from collections import Iterable
 import logging
 from copy import copy
+import traceback
 import dill
 import time
 from typing import Union, List, Sequence, Dict, Any
@@ -1259,7 +1260,7 @@ class Layout(Instrument):
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
             except Exception:
-                logger.exception('Could not save pulse sequence.')
+                logger.exception(f'Could not save pulse sequence.\n {traceback.format_exc}')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
