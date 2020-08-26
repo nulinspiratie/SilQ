@@ -1,10 +1,9 @@
 import os
 import numpy as np
-from collections import OrderedDict as od, Iterable
+from collections import Iterable
 import logging
 from copy import copy
-import traceback
-import pickle, dill
+import dill
 import time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
@@ -19,8 +18,8 @@ import qcodes as qc
 from qcodes.instrument.parameter_node import parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes import Instrument, FormatLocation, MatPlot
-from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
+from qcodes.data.data_array import DataArray
 from qcodes.data.io import DiskIO
 from qcodes.data.hdf5_format import HDF5Format
 from qcodes.utils import PerformanceTimer
@@ -1259,8 +1258,8 @@ class Layout(Instrument):
                 logger.debug(f'Storing pulse sequence to {filepath}')
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
-            except:
-                logger.exception(f'Could not save pulse sequence.')
+            except Exception:
+                logger.exception('Could not save pulse sequence.')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1279,7 +1278,7 @@ class Layout(Instrument):
         if 'skip_start' in new_flags and new_flags['skip_start'] not in self.flags['skip_start']:
             self.flags['skip_start'].append(new_flags['skip_start'])
 
-        if 'post_start_actions' in new_flags:
+        if 'post_start_actions' in new_flags:ex
             self.flags['post_start_actions'] += new_flags['post_start_actions']
 
         if 'start_last' in new_flags and new_flags['start_last'] not in self.flags['start_last']:
@@ -1363,7 +1362,6 @@ class Layout(Instrument):
         if self.acquisition_interface is not None:
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
-
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
@@ -1595,12 +1593,16 @@ class Layout(Instrument):
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
                 sample_rate=self.sample_rate(), samples=self.samples())}, file)
+
+        # Add index ranges (slices) of all pulses with acquire=True
         HDF5Format.write_dict_to_hdf5(
             {'pulse_slices': self.pulse_sequence.get_trace_slices(
                 sample_rate=self.sample_rate(),
                 capture_full_traces=self.acquisition_interface.capture_full_trace(),
                 return_slice=False
             )}, file)
+
+        # Add index ranges (slices) of all pulses
         HDF5Format.write_dict_to_hdf5(
             {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
                 sample_rate=self.sample_rate(),
@@ -1677,7 +1679,19 @@ class Layout(Instrument):
 
         return trace_file
 
-    def plot_traces(self, channel_filter=None, **plot_kwargs):
+    def plot_traces(self, channel_filter: str = None, **plot_kwargs):
+        """Plot acquisition traces for acquisition channels
+
+        Args:
+            channel_filter: Optional filter for channel names.
+                If passed, only channels containing this string are plotted
+            **plot_kwargs: Optional kwargs passed when adding traces
+
+        Returns:
+            MatPlot object
+        """
+        assert channel_filter is None or isinstance(channel_filter, str)
+
         traces_channels = self.acquisition_interface.traces
         # TODO add check if no traces have been acquired
 
@@ -1698,19 +1712,20 @@ class Layout(Instrument):
         t_list = np.arange(trace_shape[1]) / self.sample_rate()
         if not self.acquisition_interface.capture_full_trace():
             t_list += min(self.acquisition_interface.pulse_sequence.t_start_list)
-        t_list *= 1e3  # Convert to ms
-        sample_list = np.arange(trace_shape[0], dtype=float)
+        t_arr = DataArray(name='Time', unit='s', preset_data=t_list, is_setpoint=True)
+        sample_arr = DataArray(name='Repetition', preset_data=np.arange(trace_shape[0], dtype=float), is_setpoint=True)
 
         plot = MatPlot(subplots=len(traces))
-        for k, (ax, (channel, traces_arr)) in enumerate(zip(plot, traces.items())):
-                if traces_arr.shape[0] == 1:
-                    ax.add(traces_arr[0], x=t_list, **plot_kwargs)
-                    ax.set_ylabel('Amplitude (V)')
-                else:
-                    ax.add(traces_arr, x=t_list, y=sample_list, **plot_kwargs)
-                ax.set_ylabel('Sample number')
-                ax.set_xlabel('Time (ms)')
-                ax.set_title(channel)
+        for k, (ax, (channel, traces)) in enumerate(zip(plot, traces.items())):
+            if traces.shape[0] == 1:
+                traces = traces[0]
+                set_arrays = (t_arr, )
+            else:
+                set_arrays = (sample_arr, t_arr)
+
+            traces_arr = DataArray(name='Amplitude', unit='V', preset_data=traces, set_arrays=set_arrays)
+            ax.add(traces_arr, **plot_kwargs)
+            ax.set_title(channel)
 
         plot.tight_layout()
 
