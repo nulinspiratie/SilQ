@@ -1727,6 +1727,7 @@ class Layout(Instrument):
             ax.add(traces_arr, **plot_kwargs)
             ax.set_title(channel)
 
+        plot.rescale_axis()
         plot.tight_layout()
 
         return plot
