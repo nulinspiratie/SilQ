@@ -184,7 +184,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
     @property
     def sample_rate(self):
         """ Acquisition sample rate """
-        return self.layout.sample_rate
+        return self.layout.sample_rate()
 
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=None,
