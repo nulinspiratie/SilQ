@@ -1,7 +1,6 @@
 import numpy as np
 import logging
 from typing import List
-from time import sleep
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection
@@ -55,13 +54,16 @@ class ArbStudio1104Interface(InstrumentInterface):
         self._output_channels = {
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k, output=True)
-        for k in [1, 2, 3, 4]}
+            for k in [1, 2, 3, 4]
+        }
 
-        self._channels = {**self._output_channels,
+        self._channels = {
+            **self._output_channels,
             'trig_in': Channel(instrument_name=self.instrument_name(),
                                name='trig_in', input_trigger=True),
             'trig_out': Channel(instrument_name=self.instrument_name(),
-                                name='trig_out', output_TTL=(0, 3.3))}
+                                name='trig_out', output_TTL=(0, 3.3))
+        }
         # TODO check Arbstudio output TTL high voltage
 
         self.pulse_implementations = [SinePulseImplementation(
@@ -114,11 +116,22 @@ class ArbStudio1104Interface(InstrumentInterface):
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Additional pulses needed by instrument after targeting of main pulses
 
+        Additional pulses are:
+        - An input trigger pulse for each pulse the arbstudio needs to output,
+          except at t = 0.
+
+        Notes:
+            DC pulses at amplitude zero are also added to the active channels to
+            bridge any gaps in time between successive pulses
+
         Args:
             connections: List of all connections in the layout
 
         Returns:
             List of additional pulses.
+
+        Todo:
+            Handle modes other than stepped
         """
         # Return empty list if no pulses are in the pulse sequence
         if not self.pulse_sequence or self.is_primary():
@@ -148,14 +161,15 @@ class ArbStudio1104Interface(InstrumentInterface):
             t = 0
             for pulse in sorted(pulses, key=lambda p: p.t_start):
                 if pulse.t_start > t:
-                    # Add DC pulse at amplitude zero
+                    # Next pulse starts some time after the current point in time.
+                    # Add DC pulse at amplitude zero to bridge the gap
                     dc_pulse = self.get_pulse_implementation(
-                        DCPulse(t_start=t, t_stop=pulse.t_start,
-                                amplitude=0,
-                                connection=connection))
+                        DCPulse(t_start=t, t_stop=pulse.t_start, amplitude=0, connection=connection)
+                    )
                     self.pulse_sequence.add(dc_pulse)
 
-                    # Check if trigger pulse is necessary.
+                    # Check if trigger pulse is necessary for the DC pulse.
+                    # Only the case if there isn't a trigger pulse yet at time t
                     if t > 0 and t not in t_trigger_pulses:
                         additional_pulses.append(self._get_trigger_pulse(t))
                         t_trigger_pulses.append(t)
@@ -196,17 +210,17 @@ class ArbStudio1104Interface(InstrumentInterface):
         """
         # TODO implement setup for modes other than stepped
 
-        assert not self.is_primary(), 'Arbstudio is currently not programmed ' \
-                                      'to function as primary instrument'
+        assert not self.is_primary(), \
+            'Arbstudio is currently not programmed to function as primary instrument'
 
-        # Clear waveforms and sequences
+        # Clear sequences
         for ch in self._output_channels.values():
-            self.instrument._waveforms = [[] for _ in range(4)]
             self.instrument.channels[ch.name].sequence([])
 
         # Generate waveforms and sequences
         self.generate_waveforms_sequences()
 
+        # Set triggering mode and source
         for ch in self.active_channels():
             channel = self.instrument.channels[ch]
 
@@ -220,6 +234,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             else:
                 channel.trigger_mode = 'stepped'
 
+        # Load waveforms and sequences
         self.load_waveforms_sequences()
 
     def start(self):
@@ -288,10 +303,14 @@ class ArbStudio1104Interface(InstrumentInterface):
                 channel_waveforms = channels_waveforms[ch]
                 channel_sequence = channels_sequence[ch]
 
-                # Only add waveforms that don't already exist
+                # Check if each waveform already exists in list so that it's
+                # only uploaded once
                 for waveform in channel_waveforms:
+                    # waveform_idx either gives the index in the list
+                    # (approximately) corresponding to the waveform, or else None
                     waveform_idx = arreqclose_in_list(waveform, self.waveforms[ch],
                                                       rtol=1e-4, atol=1e-5)
+                    # Only add waveforms that don't already exist
                     if waveform_idx is None:
                         self.waveforms[ch].append(waveform)
 
@@ -311,15 +330,28 @@ class ArbStudio1104Interface(InstrumentInterface):
                 # Increase t_pulse to match start of next pulses
                 t_pulse[ch] += pulse.duration
 
-        # Ensure that the start of this pulse corresponds to the end of
-        # the previous pulse for each channel
+        # Ensure that this channel ends at the end of the pulse sequence
         for ch in self.active_channels():
             assert abs(t_pulse[ch] - self.pulse_sequence.duration) < 1e-11, \
                 f"Final pulse of channel {ch} ends at {t_pulse[ch]} " \
                 f"instead of {self.pulse_sequence.duration}"
 
     def load_waveforms_sequences(self):
+        """Load waveforms and sequences into the arbstudio
+
+        If self.force_upload_waveform() is False, a check is performed on each
+        waveform if they have already previously been uploaded. If all waveforms
+        have already been uploaded, the waveforms are not uploaded.
+
+        If any waveforms need to be uploaded, or if self.force_upload_waveform()
+        is True, all waveforms are cleared and the waveforms are then uploaded.
+
+        Todo:
+            Only upload waveforms that have not previously been uploaded instead
+            of uploading all waveforms if not all waveforms have been uploaded
+        """
         for ch in self.active_channels():
+            # Get corresponding instrument channel object
             channel = self.instrument.channels[ch]
 
             if not self.force_upload_waveform():
@@ -349,11 +381,11 @@ class ArbStudio1104Interface(InstrumentInterface):
                 channel.clear_waveforms()
                 for waveform in self.waveforms[ch]:
                     channel.add_waveform(waveform)
-                self.instrument.load_waveforms(channels=self.active_channels_id)
+                channel.load_waveforms()
 
             # Add sequence to channel
             channel.sequence = self.sequences[ch]
-            self.instrument.load_sequence(channels=self.active_channels_id)
+            channel.load_sequence()
 
 
 class SinePulseImplementation(PulseImplementation):
@@ -391,9 +423,6 @@ class SinePulseImplementation(PulseImplementation):
             channels = [self.pulse.connection.output['channel'].name]
         else:
             raise Exception(f"No implementation for connection {self.pulse.connection}")
-
-        # assert self.pulse.frequency < min(sampling_rates[ch] for ch in channels)/2, \
-        #     'Sine frequency is higher than the Nyquist limit for channels {channels}'
 
         assert self.pulse.frequency > 0, "Pulse frequency must be larger than zero."
 
