@@ -446,11 +446,11 @@ class NMRParameterComposite(AcquisitionParameterComposite):
             val for key, val in self.results['ESR'].items()
             if key.startswith('up_proportion')
         ])
-
-        self.results["NMR"] = self.analyses.NMR.analyse(
-            up_proportions_arrs=up_proportions_arrs,
-            filtered_shots=filtered_shots
-        )
+        if self.analyses.NMR.enabled:
+            self.results["NMR"] = self.analyses.NMR.analyse(
+                up_proportions_arrs=up_proportions_arrs,
+                filtered_shots=filtered_shots
+            )
 
         return self.results
 
