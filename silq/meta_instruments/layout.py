@@ -1,10 +1,10 @@
 import os
 import numpy as np
-from collections import OrderedDict as od, Iterable
+from collections import Iterable
 import logging
 from copy import copy
 import traceback
-import pickle, dill
+import dill
 import time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
@@ -16,10 +16,11 @@ from silq.pulses.pulse_modules import PulseSequence
 from silq.pulses.pulse_types import Pulse, MeasurementPulse
 
 import qcodes as qc
+from qcodes.instrument.parameter_node import parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes import Instrument, FormatLocation, MatPlot
-from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
+from qcodes.data.data_array import DataArray
 from qcodes.data.io import DiskIO
 from qcodes.data.hdf5_format import HDF5Format
 from qcodes.utils import PerformanceTimer
@@ -563,6 +564,9 @@ class Layout(Instrument):
                            docstring='List of channel labels to acquire. '
                                      'Channel labels are defined in '
                                      'layout.acquisition_channels')
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
         self.is_acquiring = Parameter(
             set_cmd=None,
             initial_value=False,
@@ -634,17 +638,29 @@ class Layout(Instrument):
         else:
             return None
 
-    @property
-    def sample_rate(self):
+    @parameter
+    def sample_rate_get(self, parameter):
         """Union[float, None]: Acquisition sample rate
 
         If `Layout.acquisition_interface` is not setup, return None
 
         """
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.sample_rate()
+            return self.acquisition_interface.sample_rate.get_latest()
         else:
             return None
+
+    @parameter
+    def sample_rate_set(self, parameter, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -919,8 +935,12 @@ class Layout(Instrument):
                 return next(connection for connection in self.connections
                             if connection.label == connection_label)
             except StopIteration:
+                allowed_labels = [
+                    connection.label for connection in self.connections
+                    if connection_label is not None
+                ]
                 raise StopIteration(f'Cannot find connection with label {connection_label}. '
-                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
+                                    f'Allowed labels: {allowed_labels}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
@@ -1231,7 +1251,6 @@ class Layout(Instrument):
                     # generated during targeting
                     self._target_pulse(pulse, copy_pulse=False)
 
-
         # Finish setting up the pulse sequences
         self.targeted_pulse_sequence.finish_quick_add()
         for interface in self._interfaces.values():
@@ -1256,8 +1275,8 @@ class Layout(Instrument):
                 logger.debug(f'Storing pulse sequence to {filepath}')
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
-            except:
-                logger.exception(f'Could not save pulse sequence.')
+            except Exception:
+                logger.exception(f'Could not save pulse sequence.\n {traceback.format_exc}')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1361,7 +1380,6 @@ class Layout(Instrument):
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
 
-
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
                 # Get existing setup flags (if any)
@@ -1390,7 +1408,7 @@ class Layout(Instrument):
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+            sample_rate=self.sample_rate(), samples=self.samples())
         self.acquisition_shapes = {}
         output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
@@ -1506,8 +1524,7 @@ class Layout(Instrument):
         self.is_acquiring = True
 
         try:
-            logger.info(f'Performing acquisition, '
-                        f'{"stop" if stop else "continue"} when finished')
+            logger.info(f'Performing acquisition, {"stop" if stop else "continue"} when finished')
             if not self.active():
                 self.start()
 
@@ -1585,14 +1602,31 @@ class Layout(Instrument):
         file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['sample_rate'] = self.sample_rate()
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())}, file)
+                sample_rate=self.sample_rate(), samples=self.samples())}, file)
+
+        # Add index ranges (slices) of all pulses with acquire=True
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                return_slice=False
+            )}, file)
+
+        # Add index ranges (slices) of all pulses
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                filter_acquire=False,
+                return_slice=False
+            )}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
@@ -1662,15 +1696,27 @@ class Layout(Instrument):
 
         return trace_file
 
-    def plot_traces(self, channel_filter=None, **plot_kwargs):
+    def plot_traces(self, channel_filter: str = None, **plot_kwargs):
+        """Plot acquisition traces for acquisition channels
+
+        Args:
+            channel_filter: Optional filter for channel names.
+                If passed, only channels containing this string are plotted
+            **plot_kwargs: Optional kwargs passed when adding traces
+
+        Returns:
+            MatPlot object
+        """
+        assert channel_filter is None or isinstance(channel_filter, str)
+
         traces_channels = self.acquisition_interface.traces
         # TODO add check if no traces have been acquired
 
         # Map traces to the channel labels
         channel_mappings = dict(self.acquisition_channels())
-        traces = {channel_mappings[ch]: trace_arr
-                  for ch, trace_arr in traces_channels.items()
-                 }
+        traces = {
+            channel_mappings[ch]: trace_arr for ch, trace_arr in traces_channels.items()
+        }
         trace_shape = next(iter(traces.values())).shape
 
         # Optionally filter outputs
@@ -1683,20 +1729,22 @@ class Layout(Instrument):
         t_list = np.arange(trace_shape[1]) / self.sample_rate()
         if not self.acquisition_interface.capture_full_trace():
             t_list += min(self.acquisition_interface.pulse_sequence.t_start_list)
-        t_list *= 1e3  # Convert to ms
-        sample_list = np.arange(trace_shape[0], dtype=float)
+        t_arr = DataArray(name='Time', unit='s', preset_data=t_list, is_setpoint=True)
+        sample_arr = DataArray(name='Repetition', preset_data=np.arange(trace_shape[0], dtype=float), is_setpoint=True)
 
-        plot = MatPlot(subplots=len(traces), **plot_kwargs)
-        for k, (ax, (channel, traces_arr)) in enumerate(zip(plot, traces.items())):
-                if traces_arr.shape[0] == 1:
-                    ax.add(traces_arr[0], x=t_list)
-                    ax.set_ylabel('Amplitude (V)')
-                else:
-                    ax.add(traces_arr, x=t_list, y=sample_list)
-                ax.set_ylabel('Sample number')
-                ax.set_xlabel('Time (ms)')
-                ax.set_title(channel)
+        plot = MatPlot(subplots=len(traces))
+        for k, (ax, (channel, traces)) in enumerate(zip(plot, traces.items())):
+            if traces.shape[0] == 1:
+                traces = traces[0]
+                set_arrays = (t_arr, )
+            else:
+                set_arrays = (sample_arr, t_arr)
 
+            traces_arr = DataArray(name='Amplitude', unit='V', preset_data=traces, set_arrays=set_arrays)
+            ax.add(traces_arr, **plot_kwargs)
+            ax.set_title(channel)
+
+        plot.rescale_axis()
         plot.tight_layout()
 
         return plot
