@@ -599,6 +599,9 @@ class Layout(Instrument):
         # Dictionary for storing all performance timings
         self.timings = PerformanceTimer()
 
+        # Optional oscilloscope object to direct traces towards
+        self.oscilloscope = None
+
     @property
     def pulse_sequence(self):
         """Target pulse sequence by distributing its pulses to interfaces.
@@ -1534,6 +1537,11 @@ class Layout(Instrument):
 
             if save_traces:
                 self.save_traces()
+
+            if self.oscilloscope is not None:
+                traces = self.acquisition_interface.traces
+                self.oscilloscope.update_array_2D(traces)
+
         except:
             # If any error occurs, stop all instruments
             self.stop()
