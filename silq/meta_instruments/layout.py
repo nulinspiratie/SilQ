@@ -1232,7 +1232,11 @@ class Layout(Instrument):
             # Clone the structure of the target pulse sequence. This includes
             # fixing the duration of pulse sequence and any nested pulse sequences
             interface.pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
             interface.input_pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in self.pulse_sequence:
