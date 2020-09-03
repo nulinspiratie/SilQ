@@ -1539,8 +1539,9 @@ class Layout(Instrument):
                 self.save_traces()
 
             if self.oscilloscope is not None:
-                traces = self.acquisition_interface.traces
-                self.oscilloscope.update_array_2D(traces)
+                with self.timings.record('update_oscilloscope'):
+                    traces = self.acquisition_interface.traces
+                    self.oscilloscope.update_array_2D(traces)
 
         except:
             # If any error occurs, stop all instruments
