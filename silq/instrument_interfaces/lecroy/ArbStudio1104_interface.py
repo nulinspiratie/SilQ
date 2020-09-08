@@ -67,7 +67,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO check Arbstudio output TTL high voltage
 
         self.pulse_implementations = [SinePulseImplementation(
-            pulse_requirements=[('frequency', {'min': 1e2, 'max': 125e6})]),
+            pulse_requirements=[('frequency', {'min': -125e6, 'max': 125e6})]),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
             MarkerPulseImplementation(),
@@ -78,17 +78,18 @@ class ArbStudio1104Interface(InstrumentInterface):
             unit='s',
             initial_value=100e-9,
             docstring="Required duration of a trigger pulse, to be requested "
-                      "from the pulse that triggers the Arbstudio"
+                      "from the interface that triggers the Arbstudio"
         )
         self.pulse_final_delay = Parameter(
             set_cmd=None,
             unit='s', initial_value=1e-6,
-            docstring='Final delay up to the end of pulses that '
-                      'have full waveforms, to ensure that the '
-                      'waveform is finished before the next '
-                      'trigger arrives. This does not count for '
-                      'pulses such as DCPulse, which only have '
-                      'four points'
+            docstring='The waveform created for pulses are shortened by this '
+                      'delay to ensure that the waveform is finished before '
+                      'the next trigger arrives. '
+                      'Without this delay, trigger pulses may arrive before '
+                      'the waveform has finished, in which case the trigger '
+                      'pulse is ignored. This delay is not used for pulses '
+                      'such as DCPulse, which only have four waveform points.'
         )
         self.force_upload_waveform = Parameter(
             set_cmd=None,
@@ -393,6 +394,8 @@ class SinePulseImplementation(PulseImplementation):
     max_waveform_points = 300e3
 
     def target_pulse(self, pulse, interface, **kwargs):
+        assert abs(pulse.frequency) > 100, "Pulse frequency must be above 100 Hz"
+
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
@@ -424,8 +427,6 @@ class SinePulseImplementation(PulseImplementation):
         else:
             raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        assert self.pulse.frequency > 0, "Pulse frequency must be larger than zero."
-
         waveforms, sequences = {}, {}
         for ch in channels:
             sample_rate = sampling_rates[ch]
@@ -438,7 +439,9 @@ class SinePulseImplementation(PulseImplementation):
                     f"{self.max_waveform_points}. Could not segment sine waveform"
                 )
             elif points_per_period > 1000:
-                # Temporarily modify pulse frequency to ensure waveforms have full period
+                # Frequency is fairly low, so we can create a waveform consisting
+                # of a single oscillation. We modify the frequency a tiny bit
+                # to ensure that a full period exactly fits in the waveform.
                 original_frequency = self.pulse.frequency
                 modified_frequency = sample_rate / points_per_period
                 self.pulse.frequency = modified_frequency
@@ -448,6 +451,12 @@ class SinePulseImplementation(PulseImplementation):
 
                 self.pulse.frequency = original_frequency
             else:
+                # Pulse has a high frequency, so if we would put a single oscillation
+                # in the waveform, the frequency might deviate significantly.
+                # Instead, we add multiple oscillations, close to 50000 points
+                # such that roughly an integer number of periods fit into the
+                # waveform.
+                # TODO improve by modifying the frequency
                 periods = 50000 // points_per_period
                 waveform_points = int(periods * points_per_period)
                 t_list = self.pulse.t_start + np.arange(waveform_points) / sample_rate
