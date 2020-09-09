@@ -428,7 +428,8 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
             t_stop=('<', self.pulse.t_stop),
             trigger=True)
         assert len(trigger_pulses) == 0, \
-            "Cannot implement SingleWaveformMultiSinePulse if the Arbstudio receives intermediary triggers"
+            "Cannot implement SingleWaveformMultiSinePulse if the Arbstudio " \
+            "receives intermediary triggers"
 
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
