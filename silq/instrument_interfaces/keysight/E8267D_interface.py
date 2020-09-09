@@ -618,14 +618,14 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
                                   'implemented for SingleWaveformMultiSinePulse.'
         phases_IQ = {
             'I': self.pulse.phases,
-            'Q': self.pulse.phases - 90
+            'Q': list(np.array(self.pulse.phases) - 90)
         }
         for quadrature, phases in phases_IQ.items():
             additional_pulses.append(
                 SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
                                              t_start=self.pulse.t_start,
                                              t_stop=self.pulse.t_stop,
-                                             frequency=0,
+                                             frequency=frequency_IQ,
                                              phases=phases,
                                              durations=self.pulse.durations,
                                              connection_requirements={

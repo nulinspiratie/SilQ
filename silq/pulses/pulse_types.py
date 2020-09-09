@@ -818,6 +818,7 @@ class SingleWaveformMultiSinePulse(Pulse):
                  frequency_sideband: float = None,
                  sideband_mode: float = None,
                  phase_reference: str = None,
+                 final_delay: float = None,
                  **kwargs):
 
         super().__init__(name=name, **kwargs)
@@ -826,6 +827,8 @@ class SingleWaveformMultiSinePulse(Pulse):
                                vals=vals.Numbers())
         self.frequency = Parameter(initial_value=frequency, unit='Hz',
                                    set_cmd=None, vals=vals.Numbers())
+        self.final_delay = Parameter(initial_value=final_delay, unit='s',
+                                     set_cmd=None, vals=vals.Numbers())
         self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
                                 vals=vals.Lists())
         self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
@@ -838,16 +841,19 @@ class SingleWaveformMultiSinePulse(Pulse):
         self.phase_reference = Parameter(initial_value=phase_reference,
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
-        self.duration = sum(self.durations)
 
         self._connect_parameters_to_config(
             ['frequency', 'phases', 'durations', 'power', 'frequency_sideband',
-             'sideband_mode', 'phase_reference'])
+             'sideband_mode', 'phase_reference', 'final_delay'])
 
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
             self.phase_reference = 'absolute'
+        if self.final_delay is None:
+            self.final_delay = 0
+
+        self.duration = sum(self.durations) + self.final_delay
 
     def __repr__(self):
         properties_str = ''
