@@ -790,9 +790,13 @@ class SingleWaveformMultiSinePulse(Pulse):
 
     Parameters:
         name: Pulse name
-        frequency: Pulse frequency
+        pulse_type: 'sine' or 'ramp'
+        frequency: Pulse frequency if pulse_type is 'sine'
+        frequency_start: Start frequency of the 'ramp' pulse, not used if 'sine' pulse.
+        frequency_rate: Frequency ramp rate of the 'ramp' pulse, not used if 'sine' pulse.
         phases: list of Pulse phases
         power: Pulse power
+        final_delay: For possible correction of waveform cut-off in the end due to triggering.
         frequency_sideband: Mixer sideband frequency (off by default).
         sideband_mode: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
@@ -805,7 +809,10 @@ class SingleWaveformMultiSinePulse(Pulse):
     """
     def __init__(self,
                  name: str = None,
+                 pulse_type: str = None,
                  frequency: float = None,
+                 frequency_start: float = None,
+                 frequency_rate: float = None,
                  phases: List[float] = None,
                  power: float = None,
                  durations: List[float] = None,
@@ -817,12 +824,16 @@ class SingleWaveformMultiSinePulse(Pulse):
 
         super().__init__(name=name, **kwargs)
 
+        self.pulse_type = Parameter(initial_value=pulse_type, set_cmd=None,
+                                    vals=vals.Enum('sine', 'ramp'))
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
         self.frequency = Parameter(initial_value=frequency, unit='Hz',
                                    set_cmd=None, vals=vals.Numbers())
-        self.final_delay = Parameter(initial_value=final_delay, unit='s',
-                                     set_cmd=None, vals=vals.Numbers())
+        self.frequency_start = Parameter(initial_value=frequency_start, unit='Hz',
+                                         set_cmd=None, vals=vals.Numbers())
+        self.frequency_rate = Parameter(initial_value=frequency_rate, unit='Hz/s',
+                                        set_cmd=None, vals=vals.Numbers())
         self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
                                 vals=vals.Lists())
         self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
@@ -835,11 +846,15 @@ class SingleWaveformMultiSinePulse(Pulse):
         self.phase_reference = Parameter(initial_value=phase_reference,
                                          set_cmd=None, vals=vals.Enum('relative',
                                                                       'absolute'))
+        self.final_delay = Parameter(initial_value=final_delay, unit='s',
+                                     set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
-            ['frequency', 'phases', 'durations', 'power', 'frequency_sideband',
-             'sideband_mode', 'phase_reference', 'final_delay'])
+            ['pulse_type', 'power', 'frequency', 'frequency_start', 'frequency_rate', 'phases',
+             'durations', 'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
 
+        if self.pulse_type is None:
+            self.pulse_type = 'sine'
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
@@ -852,7 +867,13 @@ class SingleWaveformMultiSinePulse(Pulse):
     def __repr__(self):
         properties_str = ''
         try:
-            properties_str = f'f={freq_to_str(self.frequency)}'
+            if self.pulse_type == 'sine':
+                properties_str = 'SinePulse'
+                properties_str += f', f={freq_to_str(self.frequency)}'
+            else:
+                properties_str = 'RampPulse'
+                properties_str += f', f_start={freq_to_str(self.frequency_start)}'
+                properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
             properties_str += f', power={self.power} dBm'
             properties_str += f', phases={self.phases} deg'
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
@@ -889,16 +910,25 @@ class SingleWaveformMultiSinePulse(Pulse):
 
         if isinstance(t, collections.Iterable):
             waveform = np.zeros(len(t))
-            for idx, phase in enumerate(self.phases):
+            for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
                             for t_id in pulse_t_id]
-                waveform[idx_list] = np.sin(2 * np.pi * (self.frequency * t[idx_list] +
-                                                         phase / 360))
+                if self.pulse_type == 'sine':
+                    waveform[idx_list] = np.sin(2 * np.pi * (self.frequency * t[idx_list] +
+                                                             phase / 360))
+                else:
+                    waveform[idx_list] = np.sin(2 * np.pi * (self.frequency_start * t[idx_list] +
+                                                             self.frequency_rate * np.power(t[idx_list], 2) / 2 +
+                                                             phase / 360))
         else:
-            for idx, phase in enumerate(self.phases):
+            for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
                 if sum(self.durations[:idx]) <= pulse_t_id <= sum(self.durations[:idx + 1]):
-                    waveform = np.sin(2 * np.pi * (self.frequency * t + phase / 360))
-
+                    if self.pulse_type == 'sine':
+                        waveform = np.sin(2 * np.pi * (self.frequency * t + phase / 360))
+                    else:
+                        waveform = np.sin(2 * np.pi * (self.frequency_start * t +
+                                                       self.frequency_rate * t / 2 +
+                                                       phase / 360))
         return waveform
 
 

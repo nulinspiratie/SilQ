@@ -255,7 +255,8 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation() / 1e6} MHz"
 
-        if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
+        if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and
+                                                      min_frequency != max_frequency):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
@@ -615,30 +616,40 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        assert (interface.IQ_modulation() == 'on') and \
-               (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
-                                              'for SingleWaveformMultiSinePulse.'
+        assert (interface.IQ_modulation() == 'on') and (interface.FM_mode() == 'IQ'), \
+            'FM_mode should be IQ and IQ_modulation should be ON for SingleWaveformMultiSinePulse.'
 
-        frequency_IQ = self.pulse.frequency - interface.frequency()
-
-        assert frequency_IQ == 0, 'Carrier and pulse frequencies are not equal. This case is not yet' \
-                                  'implemented for SingleWaveformMultiSinePulse.'
         phases_IQ = {
-            'I': self.pulse.phases,
-            'Q': list(np.array(self.pulse.phases) - 90)
+            'I': list(np.array(self.pulse.phases) + interface.I_phase_correction()),
+            'Q': list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
         }
         for quadrature, phases in phases_IQ.items():
-            additional_pulses.append(
-                SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
-                                             t_start=self.pulse.t_start,
-                                             t_stop=self.pulse.t_stop,
-                                             frequency=frequency_IQ,
-                                             phases=phases,
-                                             durations=self.pulse.durations,
-                                             connection_requirements={
-                                                 'input_instrument': interface.instrument_name(),
-                                                 'input_channel': quadrature}
-                                             )
-            )
+            if self.pulse.pulse_type == 'sine':
+                additional_pulses.append(
+                    SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
+                                                 pulse_type='sine',
+                                                 t_start=self.pulse.t_start - interface.envelope_padding(),
+                                                 t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                                 frequency=self.pulse.frequency - interface.frequency(),
+                                                 phases=phases,
+                                                 durations=self.pulse.durations,
+                                                 connection_requirements={
+                                                     'input_instrument': interface.instrument_name(),
+                                                     'input_channel': quadrature}
+                                                 ))
+            elif self.pulse.pulse_type == 'ramp':
+                additional_pulses.append(
+                    SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
+                                                 pulse_type='ramp',
+                                                 t_start=self.pulse.t_start - interface.envelope_padding(),
+                                                 t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                                 frequency_start=self.pulse.frequency_start - interface.frequency(),
+                                                 frequency_rate=self.pulse.frequency_rate,
+                                                 phases=phases,
+                                                 durations=self.pulse.durations,
+                                                 connection_requirements={
+                                                     'input_instrument': interface.instrument_name(),
+                                                     'input_channel': quadrature}
+                                                 ))
 
         return additional_pulses
