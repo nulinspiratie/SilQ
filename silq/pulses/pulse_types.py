@@ -11,9 +11,10 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
-           'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
-           'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
-           'CombinationPulse', 'AWGPulse', 'pulse_conditions']
+           'SingleWaveformMultiSinePulse', 'FrequencyRampPulse', 'DCPulse',
+           'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
+           'MeasurementPulse', 'CombinationPulse', 'AWGPulse',
+           'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -778,6 +779,125 @@ class MultiSinePulse(Pulse):
         for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
             waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset
+
+        return waveform
+
+
+class SingleWaveformMultiSinePulse(Pulse):
+    """SingleWaveformMultiSine pulse - contains several sine pulses of different phases
+    to perform X and Y rotations within a single waveform without requiring additional triggers.
+    This allows avoiding jitters/errors during triggering.
+
+    Parameters:
+        name: Pulse name
+        frequency: Pulse frequency
+        phases: list of Pulse phases
+        power: Pulse power
+        frequency_sideband: Mixer sideband frequency (off by default).
+        sideband_mode: Sideband frequency to apply. This feature must
+            be existent in interface. Not used if not set.
+        phase_reference: What point in the the phase is with respect to.
+            Can be two modes:
+            - 'absolute': phase is with respect to t=0 (phase-coherent).
+            - 'relative': phase is with respect to `Pulse.t_start`.
+
+        **kwargs: Additional parameters of `Pulse`.
+    """
+    def __init__(self,
+                 name: str = None,
+                 frequency: float = None,
+                 phases: List[float] = None,
+                 power: float = None,
+                 durations: List[float] = None,
+                 frequency_sideband: float = None,
+                 sideband_mode: float = None,
+                 phase_reference: str = None,
+                 final_delay: float = None,
+                 **kwargs):
+
+        super().__init__(name=name, **kwargs)
+
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.frequency = Parameter(initial_value=frequency, unit='Hz',
+                                   set_cmd=None, vals=vals.Numbers())
+        self.final_delay = Parameter(initial_value=final_delay, unit='s',
+                                     set_cmd=None, vals=vals.Numbers())
+        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
+                                vals=vals.Lists())
+        self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
+                                   vals=vals.Lists())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
+
+        self._connect_parameters_to_config(
+            ['frequency', 'phases', 'durations', 'power', 'frequency_sideband',
+             'sideband_mode', 'phase_reference', 'final_delay'])
+
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'absolute'
+        if self.final_delay is None:
+            self.final_delay = 0
+
+        self.duration = sum(self.durations) + self.final_delay
+
+    def __repr__(self):
+        properties_str = ''
+        try:
+            properties_str = f'f={freq_to_str(self.frequency)}'
+            properties_str += f', power={self.power} dBm'
+            properties_str += f', phases={self.phases} deg'
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+            properties_str += f', durations={self.durations}'
+            if self.frequency_sideband is not None:
+                properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', full_duration(w/o delays)={self.duration}'
+        except:
+            pass
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and
+                `Pulse`.t_stop
+        """
+        assert is_between(t, self.t_start, self.t_stop),\
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
+
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
+
+        assert self.durations is not None, f'Pulse {self.name} does not have specified durations.'
+        assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
+        assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
+                                                        f'number of durations and phases.'
+        pulse_t_id = t - self.t_start
+
+        if isinstance(t, collections.Iterable):
+            waveform = np.zeros(len(t))
+            for idx, phase in enumerate(self.phases):
+                idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
+                            for t_id in pulse_t_id]
+                waveform[idx_list] = np.sin(2 * np.pi * (self.frequency * t[idx_list] +
+                                                         phase / 360))
+        else:
+            for idx, phase in enumerate(self.phases):
+                if sum(self.durations[:idx]) <= pulse_t_id <= sum(self.durations[:idx + 1]):
+                    waveform = np.sin(2 * np.pi * (self.frequency * t + phase / 360))
 
         return waveform
 
