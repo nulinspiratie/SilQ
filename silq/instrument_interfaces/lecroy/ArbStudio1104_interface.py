@@ -6,8 +6,6 @@ from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
     MultiSinePulse, FrequencyRampPulse, PulseImplementation, MarkerPulse
-from silq import config
-from silq.tools.pulse_tools import pulse_to_waveform_sequence
 
 from qcodes.utils.helpers import arreqclose_in_list
 from qcodes.instrument.parameter import Parameter
@@ -69,7 +67,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         # TODO check Arbstudio output TTL high voltage
 
         self.pulse_implementations = [SinePulseImplementation(
-            pulse_requirements=[('frequency', {'min': 1e2, 'max': 125e6})]),
+            pulse_requirements=[('frequency', {'min': -125e6, 'max': 125e6})]),
             MultiSinePulseImplementation(),
             FrequencyRampPulseImplementation(),
             DCPulseImplementation(),
