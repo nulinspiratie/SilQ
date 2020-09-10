@@ -186,12 +186,6 @@ class ESRPulseSequence(PulseSequenceGenerator):
             # Generate ESR frequencies via property
             ESR_frequencies = self.ESR_frequencies
 
-        if ESR_frequencies is None and \
-                (self._latest_pulse_settings is None or
-                 self.ESR['ESR_pulse'] != self._latest_pulse_settings['ESR']['ESR_pulse']):
-            # Generate ESR frequencies via property
-            ESR_frequencies = self.ESR_frequencies
-
         if ESR_frequencies is not None:
             logger.warning("Resetting all ESR pulses to default ESR['ESR_pulse']")
             self.ESR['ESR_pulses'] = []
@@ -661,6 +655,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
         # Create copy of current pulse settings for comparison later
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
+
 class NMRCPMGPulseSequence(NMRPulseSequence):
     """`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).
 
@@ -1002,6 +997,7 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
         self.add_ESR_pulses()
 
         self.add(*self.pulse_settings['post_pulses'])
+
 
 class ESRRamseyDetuningPulseSequence(ESRPulseSequence):
     """" Created to implement an arbitrary number of DC pulses in a Ramsey sequence during the wait time. Please Refer to ESRPulseSequence for the ESR pulses.

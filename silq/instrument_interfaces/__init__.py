@@ -47,6 +47,7 @@ instrument_interfaces = {
         "class": "PCDDSInterface",
     },
     "Keysight_81180A": {"module": ".keysight", "class": "Keysight81180AInterface"},
+    "RohdeSchwarz_SGS100A": {"module": ".rohde_schwarz", "class": "SGS100AInterface"},
 }
 
 
