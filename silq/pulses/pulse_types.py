@@ -668,14 +668,17 @@ class SinePulse(Pulse):
 
 
 class MultiSinePulse(Pulse):
-    """MultiSinusoidal pulse
+    """MultiSinusoidal pulse: multiple superposed (overlapping, simultaneous) sine pulses
+    with the same t_start and duration, but different amplitude, frequency and phase.
 
     Parameters:
         name: Pulse name
         frequencies: list of Pulse frequencies
         phases: list of Pulse phases
-        amplitudes: list of Pulse amplitudes
-        power: Pulse power
+        amplitudes: list of Pulse amplitudes; in AWG implementation these are the actual amplitudes
+         of each sinusoidal tone, while in microwave implementation they will be scaled (divided)
+         by the number of tones such that the total IQ pulse amplitude is <= 1V.
+        power: Pulse power is required only in microwave implementation, otherwise - optional.
         offset: amplitude offset (0 by default)
         frequency_sideband: Mixer sideband frequency (off by default)
         sideband_mode: Sideband frequency to apply. This feature must
@@ -734,8 +737,11 @@ class MultiSinePulse(Pulse):
     def __repr__(self):
         properties_str = ''
         try:
-            properties_str = f'power={self.power} dBm'
-            properties_str += f', A={self.amplitudes} V'
+            if self.power is not None:
+                properties_str = f'power={self.power} dBm'
+                properties_str += f', A={self.amplitudes} V'
+            else:
+                properties_str = f'A={self.amplitudes} V'
             properties_str += f', f={self.frequencies} Hz'
             properties_str += f', phases={self.phases} deg'
             properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
@@ -774,7 +780,7 @@ class MultiSinePulse(Pulse):
         assert len(self.amplitudes) == len(self.frequencies) == len(self.phases), \
             f'Pulse {self.name} does not have equal number of amplitudes, frequencies and phases.'
 
-        waveform = 0.0
+        waveform = np.zeros(len(t))
         for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
             waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset

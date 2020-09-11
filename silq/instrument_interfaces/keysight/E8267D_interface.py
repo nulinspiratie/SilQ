@@ -81,28 +81,36 @@ class E8267DInterface(InstrumentInterface):
                            unit='deg',
                            set_cmd=None,
                            initial_value=0,
-                           docstring="To calibrate the phase of I component independent of Q component."
-                                     "Only for FM_mode = 'IQ'.")
+                           docstring="Additional phase added to I pulse, which compensates "
+                                     "any phase mismatch between I and Q components. Only for "
+                                     "FM_mode = 'IQ'.")
         self.add_parameter('Q_phase_correction',
                            unit='deg',
                            set_cmd=None,
                            initial_value=0,
-                           docstring="To calibrate the phase of Q component independent of I component."
-                                     "Only for FM_mode = 'IQ'.")
+                           docstring="Additional phase added to Q pulse, which compensates "
+                                     "any phase mismatch between Q and I components. Only for "
+                                     "FM_mode = 'IQ'.")
         self.add_parameter('I_amplitude_correction',
                            unit='V',
                            set_cmd=None,
                            initial_value=0,
                            vals=vals.Numbers(min_value=-1, max_value=0),
-                           docstring="To calibrate the amplitude of I component independent of Q component."
-                                     "Takes values from -1 to 0V. Only for FM_mode = 'IQ'.")
+                           docstring="Amplitude correction added to the amplitude of I pulse"
+                                     "to compensate for any mismatch in amplitude/power "
+                                     "between I and Q components. The correction is restricted "
+                                     "in value between -1V to 0V to ensure the I/Q inputs do not "
+                                     "receive signals above 1V. Only for FM_mode = 'IQ'.")
         self.add_parameter('Q_amplitude_correction',
                            unit='V',
                            set_cmd=None,
                            initial_value=0,
                            vals=vals.Numbers(min_value=-1, max_value=0),
-                           docstring="To calibrate the amplitude of Q component independent of I component."
-                                     "Takes values from -1 to 0V. Only for FM_mode = 'IQ'.")
+                           docstring="Amplitude correction added to the amplitude of Q pulse"
+                                     "to compensate for any mismatch in amplitude/power "
+                                     "between Q and I components. The correction is restricted "
+                                     "in value between -1V to 0V to ensure the I/Q inputs do not "
+                                     "receive signals above 1V. Only for FM_mode = 'IQ'.")
         self.add_parameter('marker_amplitude',
                            unit='V',
                            set_cmd=None,
