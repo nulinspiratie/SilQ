@@ -5,7 +5,7 @@ from typing import List
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
-    PulseImplementation, MarkerPulse
+    MultiSinePulse, FrequencyRampPulse, PulseImplementation, MarkerPulse
 
 from qcodes.utils.helpers import arreqclose_in_list
 from qcodes.instrument.parameter import Parameter
@@ -68,6 +68,8 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         self.pulse_implementations = [SinePulseImplementation(
             pulse_requirements=[('frequency', {'min': -125e6, 'max': 125e6})]),
+            MultiSinePulseImplementation(),
+            FrequencyRampPulseImplementation(),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
             MarkerPulseImplementation(),
@@ -468,6 +470,121 @@ class SinePulseImplementation(PulseImplementation):
         return waveforms, sequences
 
 
+class MultiSinePulseImplementation(PulseImplementation):
+    pulse_class = MultiSinePulse
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+
+        # Set final delay from interface parameter
+        targeted_pulse.implementation.final_delay = interface.pulse_final_delay()
+        return targeted_pulse
+
+    def implement(self, sampling_rates, input_pulse_sequence, plot=False, **kwargs):
+        """
+        Implements the multi sine pulse for the ArbStudio for SingleConnection.
+        Args:
+
+        Returns:
+            waveforms: {output_channel: waveforms} dictionary for each output
+                channel, where each element in waveforms is a list
+                containing the voltage levels of the waveform
+            waveforms: {output_channel: sequence} dictionary for each
+                output channel, where each element in sequence indicates the
+                waveform that must be played after the trigger
+        """
+        # Find all trigger pulses occurring within this pulse
+        trigger_pulses = input_pulse_sequence.get_pulses(
+            t_start=('>', self.pulse.t_start),
+            t_stop=('<', self.pulse.t_stop),
+            trigger=True)
+        assert len(trigger_pulses) == 0, \
+            "Cannot implement multi sine pulse if the Arbstudio receives intermediary triggers"
+
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
+        else:
+            raise Exception(f"No implementation for connection {self.pulse.connection}")
+
+        waveforms, sequences = {}, {}
+        for ch in channels:
+            total_points = self.pulse.duration * sampling_rates[ch]
+            final_points = self.final_delay * sampling_rates[ch]
+            # Waveform points subtract the final waveform delay
+            waveform_points = int(round(total_points - final_points))
+
+            # All waveforms must have an even number of points
+            if waveform_points % 2:
+                waveform_points -= 1
+
+            t_list = self.pulse.t_start + np.arange(waveform_points) / sampling_rates[ch]
+            voltages = self.pulse.get_voltage(t_list)
+
+            waveforms[ch] = [voltages]
+            sequences[ch] = np.zeros(1, dtype=int)
+
+        return waveforms, sequences
+
+
+class FrequencyRampPulseImplementation(PulseImplementation):
+    pulse_class = FrequencyRampPulse
+
+    def target_pulse(self, pulse, interface, **kwargs):
+        targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
+
+        # Set final delay from interface parameter
+        targeted_pulse.implementation.final_delay = interface.pulse_final_delay()
+        return targeted_pulse
+
+    def implement(self, sampling_rates, input_pulse_sequence, plot=False, **kwargs):
+        """
+        Implements the frequency ramp pulse for the ArbStudio for SingleConnection.
+        Args:
+
+        Returns:
+            waveforms: {output_channel: waveforms} dictionary for each output
+                channel, where each element in waveforms is a list
+                containing the voltage levels of the waveform
+            waveforms: {output_channel: sequence} dictionary for each
+                output channel, where each element in sequence indicates the
+                waveform that must be played after the trigger
+        """
+        # Find all trigger pulses occuring within this pulse
+        trigger_pulses = input_pulse_sequence.get_pulses(
+            t_start=('>', self.pulse.t_start),
+            t_stop=('<', self.pulse.t_stop),
+            trigger=True)
+        assert len(trigger_pulses) == 0, \
+            "Cannot implement frequency ramp pulse if the arbstudio receives intermediary triggers"
+
+        if isinstance(self.pulse.connection, SingleConnection):
+            channels = [self.pulse.connection.output['channel'].name]
+        else:
+            raise Exception(f"No implementation for connection {self.pulse.connection}")
+
+        assert self.pulse.frequency_start > 0 and \
+               self.pulse.frequency_stop > 0, "Start and stop frequencies in pulse must be larger than zero."
+
+        waveforms, sequences = {}, {}
+        for ch in channels:
+            total_points = self.pulse.duration * sampling_rates[ch]
+            final_points = self.final_delay * sampling_rates[ch]
+            # Waveform points subtract the final waveform delay
+            waveform_points = int(round(total_points - final_points))
+
+            # All waveforms must have an even number of points
+            if waveform_points % 2:
+                waveform_points -= 1
+
+            t_list = self.pulse.t_start + np.arange(waveform_points) / sampling_rates[ch]
+            voltages = self.pulse.get_voltage(t_list)
+
+            waveforms[ch] = [voltages]
+            sequences[ch] = np.zeros(1, dtype=int)
+
+        return waveforms, sequences
+
+
 class DCPulseImplementation(PulseImplementation):
     # Number of points in a waveform (must be at least 4)
     pulse_class = DCPulse
@@ -551,11 +668,9 @@ class DCRampPulseImplementation(PulseImplementation):
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
         else:
-            raise Exception(
-                f"No implementation for connection {self.pulse.connection}")
+            raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        waveforms = {}
-        sequences = {}
+        waveforms, sequences = {}, {}
         for ch in channels:
             total_points = self.pulse.duration * sampling_rates[ch]
             final_points = self.final_delay * sampling_rates[ch]
