@@ -95,8 +95,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     @property
     def active_instrument_channels(self):
-        return [ch for ch in self.instrument.channels for k in self.active_channel_ids if ch.id == k]
-        # return self.instrument.channels[self.active_channel_ids]
+        return [ch for ch in self.instrument.channels if ch.id in self.active_channel_ids]
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
