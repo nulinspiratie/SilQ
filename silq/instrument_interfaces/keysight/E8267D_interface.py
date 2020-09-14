@@ -162,12 +162,16 @@ class E8267DInterface(InstrumentInterface):
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
                                      'frequency_sideband not None')
-        # TODO expand docstring
         self.add_parameter('force_IQ',
                            set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool(),
-                           docstring='Whether to enforce IQ modulation.')
+                           docstring='To apply pulses of different phases, IQ modulation is needed. However, with'
+                                     'the introduction of a Local Oscillator (LO) frequency shift (using frequency'
+                                     'carrier choice), separate triggering of each pulse introduces jitter errors,'
+                                     'which can be decreased if no LO shift is used and instead I/Q components are'
+                                     'DC pulses that define the phase of the current pulse. To use this IQ DC phase'
+                                     'control, we need to enforce IQ modulation with this parameter.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
