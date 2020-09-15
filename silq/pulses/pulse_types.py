@@ -880,11 +880,11 @@ class SingleWaveformPulse(Pulse):
             if self.pulse_type == 'sine':
                 properties_str = 'SinePulse'
                 properties_str += f', f={freq_to_str(self.frequencies[0])}'
-                properties_str += f'+ {freq_repr} Hz'
+                properties_str += f' + {freq_repr} Hz'
             else:
                 properties_str = 'RampPulse'
                 properties_str += f', f_start={freq_to_str(self.frequencies[0])}'
-                properties_str += f'+ {freq_repr} Hz'
+                properties_str += f' + {freq_repr} Hz'
                 properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
             properties_str += f', power={self.power} dBm'
             properties_str += f', phases={self.phases} deg'
