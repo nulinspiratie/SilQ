@@ -60,9 +60,7 @@ class E8267DInterface(InstrumentInterface):
                 pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
             ),
             MultiSinePulseImplementation(),
-            SingleWaveformMultiSinePulseImplementation(
-                pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
-            ),
+            SingleWaveformMultiSinePulseImplementation(),
             FrequencyRampPulseImplementation(
                 pulse_requirements=[
                     ('frequency_start', {'min': 250e3, 'max': 44e9}),
@@ -638,6 +636,8 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
                                                  frequency=self.pulse.frequency - interface.frequency(),
                                                  phases=phases,
                                                  durations=self.pulse.durations,
+                                                 final_delay=self.pulse.final_delay,
+                                                 phase_reference=self.pulse.phase_reference,
                                                  connection_requirements={
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}
@@ -652,6 +652,8 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
                                                  frequency_rate=self.pulse.frequency_rate,
                                                  phases=phases,
                                                  durations=self.pulse.durations,
+                                                 final_delay=self.pulse.final_delay,
+                                                 phase_reference=self.pulse.phase_reference,
                                                  connection_requirements={
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}

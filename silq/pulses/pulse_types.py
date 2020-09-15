@@ -864,9 +864,11 @@ class SingleWaveformMultiSinePulse(Pulse):
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
-            self.phase_reference = 'absolute'
+            self.phase_reference = 'relative'
         if self.final_delay is None:
             self.final_delay = 0
+        if self.pulse_type == 'ramp':
+            self.frequency = self.frequency_start
 
         self.duration = sum(self.durations) + self.final_delay
 
@@ -905,20 +907,20 @@ class SingleWaveformMultiSinePulse(Pulse):
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
-        if self.phase_reference == 'relative':
-            t = t - self.t_start
+        assert self.phase_reference == 'relative', f'Phase_reference must be relative, ' \
+                                                   f'since we define the whole waveform in the {self.name}.'
+        t = t - self.t_start
 
         assert self.durations is not None, f'Pulse {self.name} does not have specified durations.'
         assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
         assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
                                                         f'number of durations and phases.'
-        pulse_t_id = t - self.t_start
 
         if isinstance(t, collections.Iterable):
             waveform = np.zeros(len(t))
             for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
-                            for t_id in pulse_t_id]
+                            for t_id in t]
                 if self.pulse_type == 'sine':
                     waveform[idx_list] = np.sin(2 * np.pi * (self.frequency * t[idx_list] +
                                                              phase / 360))
@@ -928,7 +930,7 @@ class SingleWaveformMultiSinePulse(Pulse):
                                                              phase / 360))
         else:
             for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
-                if sum(self.durations[:idx]) <= pulse_t_id <= sum(self.durations[:idx + 1]):
+                if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
                     if self.pulse_type == 'sine':
                         waveform = np.sin(2 * np.pi * (self.frequency * t + phase / 360))
                     else:
