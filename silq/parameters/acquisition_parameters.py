@@ -330,7 +330,19 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def plot_traces(self, filter=None, channels=None,
                     t_skip: Union[bool, float] = True,
+                    clim=None,
                     **kwargs):
+        """Plot acquisition traces for pulses that have pulse.acquire
+
+        Args:
+            filter: Optional filter for pulse names. Can be string or list of strings
+            t_skip: Skip initial part of pulse traces (the part that is skipped when analysing blips).
+            clim: Colorbar limits
+            **kwargS: Additional kwargs sent to instantiated MatPlot object
+
+        Returns:
+            MatPlot object
+        """
         if channels is None:
             channels = [self.channel_label]
 
@@ -365,8 +377,11 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 t_list = np.linspace(0, pts / self.sample_rate, pts,
                                      endpoint=False)
                 if trace_arr.ndim == 2:
-                    plot[k].add(traces[channel][:,start_idx:], x=t_list[start_idx:],
-                                y=np.arange(trace_arr.shape[0], dtype=float))
+                    plot[k].add(
+                        traces[channel][:,start_idx:], x=t_list[start_idx:],
+                        y=np.arange(trace_arr.shape[0], dtype=float),
+                        clim=clim
+                    )
                 else:
                     plot[k].add(traces[channel][start_idx:], x=t_list[start_idx:])
                 plot[k].set_xlabel('Time (s)')
@@ -842,18 +857,18 @@ class DCSweepParameter(AcquisitionParameter):
             sweep_dict = next(iter_sweep_parameters)
             sweep_voltages = sweep_dict.sweep_voltages
             if sweep_dict.offset_parameter is not None:
-                sweep_voltages = sweep_voltages + sweep_dict.offset_parameter()
+                sweep_voltages = sweep_voltages + sweep_dict.offset_parameter.get_latest()
             setpoints = (convert_setpoints(sweep_voltages),),
 
         elif len(self.sweep_parameters) == 2:
             inner_sweep_dict = next(iter_sweep_parameters)
             inner_sweep_voltages = inner_sweep_dict.sweep_voltages
             if inner_sweep_dict.offset_parameter is not None:
-                inner_sweep_voltages = inner_sweep_voltages + inner_sweep_dict.offset_parameter()
+                inner_sweep_voltages = inner_sweep_voltages + inner_sweep_dict.offset_parameter.get_latest()
             outer_sweep_dict = next(iter_sweep_parameters)
             outer_sweep_voltages = outer_sweep_dict.sweep_voltages
             if outer_sweep_dict.offset_parameter is not None:
-                outer_sweep_voltages = outer_sweep_voltages + outer_sweep_dict.offset_parameter()
+                outer_sweep_voltages = outer_sweep_voltages + outer_sweep_dict.offset_parameter.get_latest()
 
             setpoints = (convert_setpoints(outer_sweep_voltages,
                                            inner_sweep_voltages)),
