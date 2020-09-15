@@ -583,15 +583,15 @@ class ATSInterface(InstrumentInterface):
                 elif pulse.average == 'trace':
                     pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
                 elif 'point_segment' in pulse.average:
+                    # Extract number of segments to split trace into
                     segments = int(pulse.average.split(':')[1])
 
-                    segments_idx = [int(round(pts * idx / segments))
-                                    for idx in np.arange(segments + 1)]
+                    # average over number of samples, returns 1D trace
+                    mean_arr = np.mean(pulse_trace, axis=0)
 
-                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
-                    for k in range(segments):
-                        pulse_traces[pulse.full_name][ch][k] = np.mean(
-                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]])
+                    # Split 1D trace into segments
+                    segmented_array = np.array_split(mean_arr, segments)
+                    pulse_traces[pulse.full_name][ch] = [np.mean(arr) for arr in segmented_array]
                 elif 'trace_segment' in pulse.average:
                     segments = int(pulse.average.split(':')[1])
 
