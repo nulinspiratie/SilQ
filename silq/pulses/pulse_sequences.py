@@ -13,6 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class PulseSequenceGenerator(PulseSequence):
+    delegate_attr_dicts = ['parameters', 'parameter_nodes', 'functions',
+                           'submodules', 'pulse_settings']
     """Base class for a `PulseSequence` that is generated from settings.
     """
     def __init__(self, pulses=[], **kwargs):
@@ -122,6 +124,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         self.pulse_settings = DotDict({
             'RF_pulse': SinePulse('ESR'),
             'stage_pulse': DCPulse('plunge'),
+            'transition_pulse': None,
             'read_pulse': DCPulse('read_initialize', acquire=True),  # Can be set to None
             'pre_delay': 5e-3,
             'inter_delay': 5e-3,
@@ -336,6 +339,9 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
             else:
                 self._add_RF_pulses_single_stage(RF_pulses_single_stage)
 
+            if self.pulse_settings['transition_pulse'] is not None:
+                self.add(self.pulse_settings['transition_pulse'])
+
             if self.pulse_settings['read_pulse'] is not None:
                 self.add(self.pulse_settings['read_pulse'])
 
@@ -355,6 +361,9 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         # Add pre_pulses
         self.add(*self.pulse_settings['post_pulses'])
+
+        for modifier in self.modifiers:
+            modifier(self)
 
         self._latest_pulse_settings = deepcopy(self.pulse_settings)
 
