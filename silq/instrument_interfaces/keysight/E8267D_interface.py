@@ -4,7 +4,7 @@ import numpy as np
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
-    MultiSinePulse, SingleWaveformMultiSinePulse, FrequencyRampPulse, \
+    MultiSinePulse, SingleWaveformPulse, FrequencyRampPulse, \
     MarkerPulse, PulseImplementation
 
 from qcodes.utils import validators as vals
@@ -60,7 +60,7 @@ class E8267DInterface(InstrumentInterface):
                 pulse_requirements=[('frequency', {'min': 250e3, 'max': 44e9})]
             ),
             MultiSinePulseImplementation(),
-            SingleWaveformMultiSinePulseImplementation(),
+            SingleWaveformPulseImplementation(),
             FrequencyRampPulseImplementation(
                 pulse_requirements=[
                     ('frequency_start', {'min': 250e3, 'max': 44e9}),
@@ -603,8 +603,8 @@ class MultiSinePulseImplementation(PulseImplementation):
         return additional_pulses
 
 
-class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
-    pulse_class = SingleWaveformMultiSinePulse
+class SingleWaveformPulseImplementation(PulseImplementation):
+    pulse_class = SingleWaveformPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         assert pulse.power is not None, "Pulse must have power defined"
@@ -620,7 +620,7 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
                             'input_channel': 'trig_in'})]
 
         assert (interface.IQ_modulation() == 'on') and (interface.FM_mode() == 'IQ'), \
-            'FM_mode should be IQ and IQ_modulation should be ON for SingleWaveformMultiSinePulse.'
+            f'FM_mode should be IQ and IQ_modulation should be ON for {self.pulse.name}.'
 
         phases_IQ = {
             'I': list(np.array(self.pulse.phases) + interface.I_phase_correction()),
@@ -629,34 +629,34 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
         for quadrature, phases in phases_IQ.items():
             if self.pulse.pulse_type == 'sine':
                 additional_pulses.append(
-                    SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
-                                                 pulse_type='sine',
-                                                 t_start=self.pulse.t_start - interface.envelope_padding(),
-                                                 t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                                                 frequency=self.pulse.frequency - interface.frequency(),
-                                                 phases=phases,
-                                                 durations=self.pulse.durations,
-                                                 final_delay=self.pulse.final_delay,
-                                                 phase_reference=self.pulse.phase_reference,
-                                                 connection_requirements={
+                    SingleWaveformPulse(name=f'sideband_{quadrature}',
+                                        pulse_type='sine',
+                                        t_start=self.pulse.t_start - interface.envelope_padding(),
+                                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                        frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        phases=phases,
+                                        durations=self.pulse.durations,
+                                        final_delay=self.pulse.final_delay,
+                                        phase_reference=self.pulse.phase_reference,
+                                        connection_requirements={
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}
-                                                 ))
+                                        ))
             elif self.pulse.pulse_type == 'ramp':
                 additional_pulses.append(
-                    SingleWaveformMultiSinePulse(name=f'sideband_{quadrature}',
-                                                 pulse_type='ramp',
-                                                 t_start=self.pulse.t_start - interface.envelope_padding(),
-                                                 t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                                                 frequency_start=self.pulse.frequency_start - interface.frequency(),
-                                                 frequency_rate=self.pulse.frequency_rate,
-                                                 phases=phases,
-                                                 durations=self.pulse.durations,
-                                                 final_delay=self.pulse.final_delay,
-                                                 phase_reference=self.pulse.phase_reference,
-                                                 connection_requirements={
+                    SingleWaveformPulse(name=f'sideband_{quadrature}',
+                                        pulse_type='ramp',
+                                        t_start=self.pulse.t_start - interface.envelope_padding(),
+                                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                        start_frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        frequency_rate=self.pulse.frequency_rate,
+                                        phases=phases,
+                                        durations=self.pulse.durations,
+                                        final_delay=self.pulse.final_delay,
+                                        phase_reference=self.pulse.phase_reference,
+                                        connection_requirements={
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}
-                                                 ))
+                                        ))
 
         return additional_pulses

@@ -5,7 +5,7 @@ from typing import List
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
-    MultiSinePulse, SingleWaveformMultiSinePulse, FrequencyRampPulse, \
+    MultiSinePulse, SingleWaveformPulse, FrequencyRampPulse, \
     PulseImplementation, MarkerPulse
 
 from qcodes.utils.helpers import arreqclose_in_list
@@ -70,7 +70,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.pulse_implementations = [SinePulseImplementation(
             pulse_requirements=[('frequency', {'min': -125e6, 'max': 125e6})]),
             MultiSinePulseImplementation(),
-            SingleWaveformMultiSinePulseImplementation(),
+            SingleWaveformPulseImplementation(),
             FrequencyRampPulseImplementation(),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
@@ -473,8 +473,8 @@ class SinePulseImplementation(PulseImplementation):
         return waveforms, sequences
 
 
-class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
-    pulse_class = SingleWaveformMultiSinePulse
+class SingleWaveformPulseImplementation(PulseImplementation):
+    pulse_class = SingleWaveformPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
@@ -485,7 +485,7 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
 
     def implement(self, sampling_rates, input_pulse_sequence, plot=False, **kwargs):
         """
-        Implements the single waveform multi sine pulse for the ArbStudio for SingleConnection.
+        Implements the single waveform pulse for the ArbStudio for SingleConnection.
         Args:
 
         Returns:

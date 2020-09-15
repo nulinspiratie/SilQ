@@ -797,8 +797,9 @@ class SingleWaveformPulse(Pulse):
     Parameters:
         name: Pulse name
         pulse_type: 'sine' or 'ramp'
-        frequencies: list of Pulse frequencies if pulse_type is 'sine'
-        frequency_start: Start frequency of the 'ramp' pulse, not used if 'sine' pulse.
+        frequencies: list of Pulse frequencies if pulse_type is 'sine' or
+                     list of Pulse start frequencies if pulse_type is 'ramp'
+        start_frequencies: list of start frequencies of the 'ramp' pulse, not used if 'sine' pulse.
         frequency_rate: Frequency ramp rate of the 'ramp' pulse, not used if 'sine' pulse.
         phases: list of Pulse phases
         power: Pulse power
@@ -816,8 +817,8 @@ class SingleWaveformPulse(Pulse):
     def __init__(self,
                  name: str = None,
                  pulse_type: str = None,
-                 frequencies: float = None,
-                 frequency_start: float = None,
+                 frequencies: List[float] = None,
+                 start_frequencies: List[float] = None,
                  frequency_rate: float = None,
                  phases: List[float] = None,
                  power: float = None,
@@ -836,8 +837,8 @@ class SingleWaveformPulse(Pulse):
                                vals=vals.Numbers())
         self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
                                      set_cmd=None, vals=vals.Lists())
-        self.frequency_start = Parameter(initial_value=frequency_start, unit='Hz',
-                                         set_cmd=None, vals=vals.Numbers())
+        self.start_frequencies = Parameter(initial_value=start_frequencies, unit='Hz',
+                                           set_cmd=None, vals=vals.Lists())
         self.frequency_rate = Parameter(initial_value=frequency_rate, unit='Hz/s',
                                         set_cmd=None, vals=vals.Numbers())
         self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
@@ -856,7 +857,7 @@ class SingleWaveformPulse(Pulse):
                                      set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
-            ['pulse_type', 'power', 'frequencies', 'frequency_start', 'frequency_rate', 'phases',
+            ['pulse_type', 'power', 'frequencies', 'start_frequencies', 'frequency_rate', 'phases',
              'durations', 'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
 
         if self.pulse_type is None:
@@ -868,21 +869,22 @@ class SingleWaveformPulse(Pulse):
         if self.final_delay is None:
             self.final_delay = 0
         if self.pulse_type == 'ramp':
-            self.frequency = self.frequency_start
+            self.frequencies = self.start_frequencies
 
         self.duration = sum(self.durations) + self.final_delay
 
     def __repr__(self):
         properties_str = ''
         try:
+            freq_repr = list(np.array(self.frequencies) - self.frequencies[0])
             if self.pulse_type == 'sine':
                 properties_str = 'SinePulse'
-                freq_repr = list(np.array(self.frequencies)-self.frequencies[0])
                 properties_str += f', f={freq_to_str(self.frequencies[0])}'
                 properties_str += f'+ {freq_repr} Hz'
             else:
                 properties_str = 'RampPulse'
-                properties_str += f', f_start={freq_to_str(self.frequency_start)}'
+                properties_str += f', f_start={freq_to_str(self.frequencies[0])}'
+                properties_str += f'+ {freq_repr} Hz'
                 properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
             properties_str += f', power={self.power} dBm'
             properties_str += f', phases={self.phases} deg'
@@ -922,23 +924,20 @@ class SingleWaveformPulse(Pulse):
         if isinstance(t, collections.Iterable):
             waveform = np.zeros(len(t))
             for idx, (frequency, duration, phase) in enumerate(zip(self.frequencies, self.durations, self.phases)):
-                idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
-                            for t_id in t]
+                idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1]) for t_id in t]
                 if self.pulse_type == 'sine':
                     waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] + phase / 360))
                 else:
-                    waveform[idx_list] = np.sin(2 * np.pi * (self.frequency_start * t[idx_list] +
+                    waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] +
                                                              self.frequency_rate * np.power(t[idx_list], 2) / 2 +
                                                              phase / 360))
         else:
-            for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
+            for idx, (frequency, duration, phase) in enumerate(zip(self.frequencies, self.durations, self.phases)):
                 if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
                     if self.pulse_type == 'sine':
-                        waveform = np.sin(2 * np.pi * (self.frequency * t + phase / 360))
+                        waveform = np.sin(2 * np.pi * (frequency * t + phase / 360))
                     else:
-                        waveform = np.sin(2 * np.pi * (self.frequency_start * t +
-                                                       self.frequency_rate * t / 2 +
-                                                       phase / 360))
+                        waveform = np.sin(2 * np.pi * (frequency * t + self.frequency_rate * t / 2 + phase / 360))
         return waveform
 
 
