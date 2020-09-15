@@ -789,15 +789,15 @@ class MultiSinePulse(Pulse):
         return waveform
 
 
-class SingleWaveformMultiSinePulse(Pulse):
-    """SingleWaveformMultiSine pulse - contains several sine pulses of different phases
-    to perform X and Y rotations within a single waveform without requiring additional triggers.
-    This allows avoiding jitters/errors during triggering.
+class SingleWaveformPulse(Pulse):
+    """SingleWaveformPulse - contains several sine or chirp (ramp) pulses of different frequencies,
+    durations and phases within a single waveform without requiring additional triggers. This allows
+    to avoid jitter errors during triggering.
 
     Parameters:
         name: Pulse name
         pulse_type: 'sine' or 'ramp'
-        frequency: Pulse frequency if pulse_type is 'sine'
+        frequencies: list of Pulse frequencies if pulse_type is 'sine'
         frequency_start: Start frequency of the 'ramp' pulse, not used if 'sine' pulse.
         frequency_rate: Frequency ramp rate of the 'ramp' pulse, not used if 'sine' pulse.
         phases: list of Pulse phases
@@ -816,7 +816,7 @@ class SingleWaveformMultiSinePulse(Pulse):
     def __init__(self,
                  name: str = None,
                  pulse_type: str = None,
-                 frequency: float = None,
+                 frequencies: float = None,
                  frequency_start: float = None,
                  frequency_rate: float = None,
                  phases: List[float] = None,
@@ -834,8 +834,8 @@ class SingleWaveformMultiSinePulse(Pulse):
                                     vals=vals.Enum('sine', 'ramp'))
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
-        self.frequency = Parameter(initial_value=frequency, unit='Hz',
-                                   set_cmd=None, vals=vals.Numbers())
+        self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
+                                     set_cmd=None, vals=vals.Lists())
         self.frequency_start = Parameter(initial_value=frequency_start, unit='Hz',
                                          set_cmd=None, vals=vals.Numbers())
         self.frequency_rate = Parameter(initial_value=frequency_rate, unit='Hz/s',
@@ -856,7 +856,7 @@ class SingleWaveformMultiSinePulse(Pulse):
                                      set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
-            ['pulse_type', 'power', 'frequency', 'frequency_start', 'frequency_rate', 'phases',
+            ['pulse_type', 'power', 'frequencies', 'frequency_start', 'frequency_rate', 'phases',
              'durations', 'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
 
         if self.pulse_type is None:
@@ -877,7 +877,9 @@ class SingleWaveformMultiSinePulse(Pulse):
         try:
             if self.pulse_type == 'sine':
                 properties_str = 'SinePulse'
-                properties_str += f', f={freq_to_str(self.frequency)}'
+                freq_repr = list(np.array(self.frequencies)-self.frequencies[0])
+                properties_str += f', f={freq_to_str(self.frequencies[0])}'
+                properties_str += f'+ {freq_repr} Hz'
             else:
                 properties_str = 'RampPulse'
                 properties_str += f', f_start={freq_to_str(self.frequency_start)}'
@@ -911,19 +913,19 @@ class SingleWaveformMultiSinePulse(Pulse):
                                                    f'since we define the whole waveform in the {self.name}.'
         t = t - self.t_start
 
+        assert self.frequencies is not None, f'Pulse {self.name} does not have specified frequencies.'
         assert self.durations is not None, f'Pulse {self.name} does not have specified durations.'
         assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
-        assert len(self.durations) == len(self.phases), f'Pulse {self.name} does not have equal ' \
-                                                        f'number of durations and phases.'
+        assert len(self.frequencies) == len(self.durations) == len(self.phases), \
+            f'Pulse {self.name} does not have equal number of frequencies, durations and phases.'
 
         if isinstance(t, collections.Iterable):
             waveform = np.zeros(len(t))
-            for idx, (duration, phase) in enumerate(zip(self.durations, self.phases)):
+            for idx, (frequency, duration, phase) in enumerate(zip(self.frequencies, self.durations, self.phases)):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
                             for t_id in t]
                 if self.pulse_type == 'sine':
-                    waveform[idx_list] = np.sin(2 * np.pi * (self.frequency * t[idx_list] +
-                                                             phase / 360))
+                    waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] + phase / 360))
                 else:
                     waveform[idx_list] = np.sin(2 * np.pi * (self.frequency_start * t[idx_list] +
                                                              self.frequency_rate * np.power(t[idx_list], 2) / 2 +
