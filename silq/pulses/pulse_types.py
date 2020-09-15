@@ -11,7 +11,7 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
-           'SingleWaveformMultiSinePulse', 'FrequencyRampPulse', 'DCPulse',
+           'SingleWaveformPulse', 'FrequencyRampPulse', 'DCPulse',
            'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
            'MeasurementPulse', 'CombinationPulse', 'AWGPulse',
            'pulse_conditions']
