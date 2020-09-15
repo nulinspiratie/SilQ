@@ -5,7 +5,7 @@ from typing import List
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.meta_instruments.layout import SingleConnection
 from silq.pulses import Pulse, DCPulse, DCRampPulse, TriggerPulse, SinePulse, \
-    MultiSinePulse, SingleWaveformMultiSinePulse, FrequencyRampPulse, \
+    MultiSinePulse, SingleWaveformPulse, FrequencyRampPulse, \
     PulseImplementation, MarkerPulse
 
 from qcodes.utils.helpers import arreqclose_in_list
@@ -70,7 +70,7 @@ class ArbStudio1104Interface(InstrumentInterface):
         self.pulse_implementations = [SinePulseImplementation(
             pulse_requirements=[('frequency', {'min': -125e6, 'max': 125e6})]),
             MultiSinePulseImplementation(),
-            SingleWaveformMultiSinePulseImplementation(),
+            SingleWaveformPulseImplementation(),
             FrequencyRampPulseImplementation(),
             DCPulseImplementation(),
             DCRampPulseImplementation(),
@@ -455,15 +455,16 @@ class SinePulseImplementation(PulseImplementation):
 
                 self.pulse.frequency = original_frequency
             else:
-                # Pulse has a high frequency, so if we would put a single oscillation
-                # in the waveform, the frequency might deviate significantly.
-                # Instead, we add multiple oscillations, close to 50000 points
-                # such that roughly an integer number of periods fit into the
-                # waveform.
-                # TODO improve by modifying the frequency
-                periods = 50000 // points_per_period
-                waveform_points = int(periods * points_per_period)
-                t_list = self.pulse.t_start + np.arange(waveform_points) / sample_rate
+                total_points = self.pulse.duration * sampling_rates[ch]
+                final_points = self.final_delay * sampling_rates[ch]
+                # Waveform points subtract the final waveform delay
+                waveform_points = int(round(total_points - final_points))
+
+                # All waveforms must have an even number of points
+                if waveform_points % 2:
+                    waveform_points -= 1
+
+                t_list = self.pulse.t_start + np.arange(waveform_points) / sampling_rates[ch]
                 voltages = self.pulse.get_voltage(t_list)
 
             waveforms[ch] = [voltages]
@@ -472,8 +473,8 @@ class SinePulseImplementation(PulseImplementation):
         return waveforms, sequences
 
 
-class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
-    pulse_class = SingleWaveformMultiSinePulse
+class SingleWaveformPulseImplementation(PulseImplementation):
+    pulse_class = SingleWaveformPulse
 
     def target_pulse(self, pulse, interface, **kwargs):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
@@ -484,7 +485,7 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
 
     def implement(self, sampling_rates, input_pulse_sequence, plot=False, **kwargs):
         """
-        Implements the single waveform multi sine pulse for the ArbStudio for SingleConnection.
+        Implements the single waveform pulse for the ArbStudio for SingleConnection.
         Args:
 
         Returns:
@@ -512,6 +513,12 @@ class SingleWaveformMultiSinePulseImplementation(PulseImplementation):
         waveforms, sequences = {}, {}
         for ch in channels:
             total_points = self.pulse.duration * sampling_rates[ch]
+
+            assert (self.pulse.final_delay - self.final_delay) >= (2 / sampling_rates[ch]), \
+                f'{self.pulse.name} {self.pulse.final_delay} s final delay must be larger than ' \
+                f'{self.final_delay} s final delay set by Arbstudio interface such that the difference ' \
+                f'provides >= than 2 waveform points.'
+
             final_points = self.final_delay * sampling_rates[ch]
             # Waveform points subtract the final waveform delay
             waveform_points = int(round(total_points - final_points))
