@@ -796,7 +796,8 @@ class SingleWaveformPulse(Pulse):
 
     Parameters:
         name: Pulse name
-        pulse_type: 'sine' or 'ramp'
+        pulse_type: 'sine', 'ramp_lin' - linear frequency ramp pulse,
+                    'ramp_expsat' - exponential-saturation frequency ramp pulse
         frequencies: list of Pulse frequencies if pulse_type is 'sine' or
                      list of Pulse start frequencies if pulse_type is 'ramp'
         start_frequencies: list of start frequencies of the 'ramp' pulse, not used if 'sine' pulse.
@@ -820,6 +821,7 @@ class SingleWaveformPulse(Pulse):
                  frequencies: List[float] = None,
                  start_frequencies: List[float] = None,
                  frequency_rate: float = None,
+                 decay: float = None,
                  phases: List[float] = None,
                  power: float = None,
                  durations: List[float] = None,
@@ -832,7 +834,7 @@ class SingleWaveformPulse(Pulse):
         super().__init__(name=name, **kwargs)
 
         self.pulse_type = Parameter(initial_value=pulse_type, set_cmd=None,
-                                    vals=vals.Enum('sine', 'ramp'))
+                                    vals=vals.Enum('sine', 'ramp_lin', 'ramp_expsat'))
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
         self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
@@ -841,6 +843,8 @@ class SingleWaveformPulse(Pulse):
                                            set_cmd=None, vals=vals.Lists())
         self.frequency_rate = Parameter(initial_value=frequency_rate, unit='Hz/s',
                                         set_cmd=None, vals=vals.Numbers())
+        self.decay = Parameter(initial_value=decay, unit='s',
+                               set_cmd=None, vals=vals.Numbers())
         self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
                                 vals=vals.Lists())
         self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
@@ -857,7 +861,7 @@ class SingleWaveformPulse(Pulse):
                                      set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
-            ['pulse_type', 'power', 'frequencies', 'start_frequencies', 'frequency_rate', 'phases',
+            ['pulse_type', 'power', 'frequencies', 'start_frequencies', 'frequency_rate', 'decay', 'phases',
              'durations', 'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
 
         if self.pulse_type is None:
@@ -867,8 +871,8 @@ class SingleWaveformPulse(Pulse):
         if self.phase_reference is None:
             self.phase_reference = 'relative'
         if self.final_delay is None:
-            self.final_delay = 0
-        if self.pulse_type == 'ramp':
+            self.final_delay = 2e-6
+        if self.pulse_type == 'ramp_lin' or self.pulse_type == 'ramp_expsat':
             self.frequencies = self.start_frequencies
 
         self.duration = sum(self.durations) + self.final_delay
@@ -882,7 +886,10 @@ class SingleWaveformPulse(Pulse):
                 properties_str += f', f={freq_to_str(self.frequencies[0])}'
                 properties_str += f' + {freq_repr} Hz'
             else:
-                properties_str = 'RampPulse'
+                if self.pulse_type == 'ramp_lin':
+                    properties_str = 'LinearRampPulse'
+                elif self.pulse_type == 'ramp_expsat':
+                    properties_str = 'ExpSatRampPulse'
                 properties_str += f', f_start={freq_to_str(self.frequencies[0])}'
                 properties_str += f' + {freq_repr} Hz'
                 properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
@@ -927,17 +934,28 @@ class SingleWaveformPulse(Pulse):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1]) for t_id in t]
                 if self.pulse_type == 'sine':
                     waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] + phase / 360))
-                else:
+                elif self.pulse_type == 'ramp_lin':
                     waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] +
                                                              self.frequency_rate * np.power(t[idx_list], 2) / 2 +
                                                              phase / 360))
+                elif self.pulse_type == 'ramp_expsat':
+                    waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] +
+                                                             self.frequency_rate * np.exp(-t[idx_list] / self.decay) +
+                                                             phase / 360))
+                else:
+                    raise ValueError('Pulse type is not set or not available.')
         else:
             for idx, (frequency, duration, phase) in enumerate(zip(self.frequencies, self.durations, self.phases)):
                 if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
                     if self.pulse_type == 'sine':
                         waveform = np.sin(2 * np.pi * (frequency * t + phase / 360))
-                    else:
+                    elif self.pulse_type == 'ramp_lin':
                         waveform = np.sin(2 * np.pi * (frequency * t + self.frequency_rate * t / 2 + phase / 360))
+                    elif self.pulse_type == 'ramp_expsat':
+                        waveform = np.sin(2 * np.pi * (frequency * t + self.frequency_rate * np.exp(-t / self.decay) +
+                                                       phase / 360))
+                    else:
+                        raise ValueError('Pulse type is not set or not available.')
         return waveform
 
 
@@ -1511,7 +1529,7 @@ class AWGPulse(Pulse):
 
     def __init__(self,
                  name: str = None,
-                 fun:Callable = None,
+                 fun: Callable = None,
                  wf_array: np.ndarray = None,
                  interpolate: bool = True,
                  **kwargs):
