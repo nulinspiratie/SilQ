@@ -649,10 +649,10 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}
                                         ))
-            elif self.pulse.pulse_type == 'ramp':
+            elif self.pulse.pulse_type == 'ramp_lin':
                 additional_pulses.append(
                     SingleWaveformPulse(name=f'sideband_{quadrature}',
-                                        pulse_type='ramp',
+                                        pulse_type='ramp_lin',
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
                                         start_frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
@@ -665,5 +665,24 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                                      'input_instrument': interface.instrument_name(),
                                                      'input_channel': quadrature}
                                         ))
+            elif self.pulse.pulse_type == 'ramp_expsat':
+                additional_pulses.append(
+                    SingleWaveformPulse(name=f'sideband_{quadrature}',
+                                        pulse_type='ramp_expsat',
+                                        t_start=self.pulse.t_start - interface.envelope_padding(),
+                                        t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                        start_frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        frequency_rate=self.pulse.frequency_rate,
+                                        decay=self.pulse.decay,
+                                        phases=phases,
+                                        durations=self.pulse.durations,
+                                        final_delay=self.pulse.final_delay,
+                                        phase_reference=self.pulse.phase_reference,
+                                        connection_requirements={
+                                                     'input_instrument': interface.instrument_name(),
+                                                     'input_channel': quadrature}
+                                        ))
+            else:
+                raise ValueError('Pulse type is not set or not available.')
 
         return additional_pulses
