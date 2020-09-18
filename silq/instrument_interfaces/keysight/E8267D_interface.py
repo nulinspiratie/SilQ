@@ -88,7 +88,7 @@ class E8267DInterface(InstrumentInterface):
                       "I and Q pulses are extended by the envelope padding "
                       "before (after) the pulse start (stop) time. "
                       "If False, the marker pulse starts before (after) the pulse start (stop) "
-                      "time, and the IQ pulses start (stop) at the pulse start (stop) time."
+                      "time, and the IQ pulses starts (stops) at the pulse start (stop) time."
                       "This means that there might be some leakage at the carrier frequency "
                       "when the IQ is zero, but the marker pulse is still high."
         )
@@ -203,6 +203,8 @@ class E8267DInterface(InstrumentInterface):
                                if pulse.frequency_sideband is not None else None
                                for pulse in self.pulse_sequence}
 
+        # Ramp mode does not work with envelope IQ since the output can only be
+        # turned off via gating (0V on ramp input corresponds to a pulse at carrier)
         assert self.FM_mode() != 'ramp' or self.envelope_IQ(), \
             "Cannot use 'ramp' FM mode while envelope_IQ == False"
 
