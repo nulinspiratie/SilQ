@@ -22,6 +22,7 @@ def convert_circuit(circuit, target_type: Type = str):
     elif isinstance(circuit, str):
         # Replace [] by identity gate
         expanded_circuit = circuit.replace('[]', 'Gi')
+        expanded_circuit = circuit.replace('Q', '')
 
         # Expand any expressions ({gates})^exponent
         expand_subcircuit = lambda match: match.group(0).replace(
