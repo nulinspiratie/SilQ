@@ -634,7 +634,10 @@ class DCPulseImplementation(PulseImplementation):
 class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
-    def target_pulse(self, pulse, interface, **kwargs):
+    def target_pulse(self, pulse: DCRampPulse, interface, **kwargs):
+        assert pulse.t_pre_ramp == 0
+        assert pulse.t_post_ramp == 0
+
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
