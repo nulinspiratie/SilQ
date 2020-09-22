@@ -1007,6 +1007,8 @@ class DCRampPulse(Pulse):
                  name: str = None,
                  amplitude_start: float = None,
                  amplitude_stop: float = None,
+                 t_pre_ramp: float = 0,
+                 t_post_ramp: float = 0,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
@@ -1015,8 +1017,16 @@ class DCRampPulse(Pulse):
                                          vals=vals.Numbers())
         self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
                                         set_cmd=None, vals=vals.Numbers())
+        self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
+                                        set_cmd=None, vals=vals.Numbers())
+        self.t_pre_ramp = Parameter(initial_value=t_pre_ramp, unit='V',
+                                        set_cmd=None, vals=vals.Numbers())
+        self.t_post_ramp = Parameter(initial_value=t_post_ramp, unit='V',
+                                        set_cmd=None, vals=vals.Numbers())
 
-        self._connect_parameters_to_config(['amplitude_start', 'amplitude_stop'])
+        self._connect_parameters_to_config(
+            ['amplitude_start', 'amplitude_stop', 't_pre_ramp', 't_post_ramp']
+        )
 
     def __repr__(self):
         properties_str = ''
@@ -1025,6 +1035,10 @@ class DCRampPulse(Pulse):
             properties_str += f', A_stop={self.amplitude_stop}'
             properties_str += f', t_start={self.t_start}'
             properties_str += f', duration={self.duration}'
+            if self.t_pre_ramp > 0:
+                properties_str += f', t_pre_ramp={self.t_pre_ramp}'
+            if self.t_post_ramp > 0:
+                properties_str += f', t_post_ramp={self.t_post_ramp}'
         except:
             pass
 
@@ -1041,10 +1055,25 @@ class DCRampPulse(Pulse):
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
 
-        slope = (self.amplitude_stop - self.amplitude_start) / self.duration
-        offset = self.amplitude_start - slope * self.t_start
+        ramp_duration = self.duration - self.t_pre_ramp - self.t_post_ramp
 
-        return offset + slope * t
+        slope = (self.amplitude_stop - self.amplitude_start) / ramp_duration
+        offset = self.amplitude_start - slope * (self.t_start + self.t_pre_ramp)
+
+        if isinstance(t, (int, float)):
+            if t <= self.t_start + self.t_pre_ramp:
+                return self.amplitude_start
+            elif t <= self.t_stop - self.t_post_ramp:
+                return self.amplitude_stop
+            else:
+                return offset + slope * t
+        else:
+            if not isinstance(t, np.ndarray):
+                t = np.array(t)
+            amplitude = offset + slope * t
+            amplitude[t<=self.t_start + self.t_pre_ramp] = self.amplitude_start
+            amplitude[t>=self.t_stop + self.t_post_ramp] = self.amplitude_stop
+            return amplitude
 
 
 class TriggerPulse(Pulse):
