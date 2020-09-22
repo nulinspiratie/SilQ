@@ -235,7 +235,9 @@ class Pulse(ParameterNode):
         if self.parent is not None:
             t_start += self.parent.t_start
 
-        return round(t_start, 11)
+        t_start = round(t_start, 11)
+        parameter._latest['raw_value'] = t_start
+        return t_start
 
     @parameter
     def duration_set_parser(self, parameter, duration):

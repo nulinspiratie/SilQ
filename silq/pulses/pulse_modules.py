@@ -679,7 +679,7 @@ class PulseSequence(ParameterNode):
         if pulses_no_duration:
             raise ValueError(
                 'Please specify pulse duration in silq.config.pulses for the '
-                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+                'following pulses: ' + ', '.join(p.name for p in pulses_no_duration)
             )
 
         if copy:
