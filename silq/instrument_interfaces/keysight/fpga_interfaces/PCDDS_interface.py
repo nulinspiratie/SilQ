@@ -1,8 +1,12 @@
 from typing import Any, Dict, List
-from copy import copy
+import logging
+
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, SinePulse, FrequencyRampPulse, \
     TriggerPulse, PulseImplementation, MarkerPulse
+
+
+logger = logging.getLogger(__name__)
 
 
 class PCDDSInterface(InstrumentInterface):
@@ -66,33 +70,43 @@ class PCDDSInterface(InstrumentInterface):
         # t_list = self.pulse_sequence.t_list
         trigger_pulses = []
         t_list = []
-        for pulse in self.pulse_sequence:
-            if pulse.t_start not in t_list:
-                t_list.append(pulse.t_start)
-                trigger_pulses.append(
-                    TriggerPulse(t_start=pulse.t_start,
-                        duration=self.trigger_in_duration(),
-                        connection_requirements={
-                            'input_instrument': self.instrument.name,
-                            'input_channel': self._input_channels['trig_in']
-                        })
-                )
+        for ch_id in self.active_channel_ids:
+            channel_pulses = self.pulse_sequence.get_pulses(output_channel=f'ch{ch_id}')
 
-            auto_advance =  getattr(pulse, 'auto_advance', False)
-            if pulse.t_stop not in t_list and not auto_advance and pulse.t_stop < self.pulse_sequence.duration:
-                t_list.append(pulse.t_stop)
-                trigger_pulses.append(
-                    TriggerPulse(t_start=pulse.t_stop,
-                        duration=self.trigger_in_duration(),
-                        connection_requirements={
-                            'input_instrument': self.instrument.name,
-                            'input_channel': self._input_channels['trig_in']
-                        })
-                )
+            auto_advance = False
+            for pulse in channel_pulses:
+                if pulse.t_start not in t_list and not auto_advance:
+                    t_list.append(pulse.t_start)
+                    trigger_pulses.append(
+                        TriggerPulse(t_start=pulse.t_start,
+                            duration=self.trigger_in_duration(),
+                            connection_requirements={
+                                'input_instrument': self.instrument.name,
+                                'input_channel': self._input_channels['trig_in']
+                            })
+                    )
 
+                auto_advance =  getattr(pulse, 'auto_advance', False)
+                if pulse.t_stop not in t_list and not auto_advance:
+                    if pulse.t_stop < self.pulse_sequence.duration:
+                        t_list.append(pulse.t_stop)
+                        trigger_pulses.append(
+                            TriggerPulse(t_start=pulse.t_stop,
+                                duration=self.trigger_in_duration(),
+                                connection_requirements={
+                                    'input_instrument': self.instrument.name,
+                                    'input_channel': self._input_channels['trig_in']
+                                })
+                        )
+                elif auto_advance and pulse.t_stop >= self.pulse_sequence.duration:
+                    logger.warning('Setting final pulse.auto_advance = False')
+                    pulse.auto_advance = False
+
+        # Ensure there are no triggers within auto-advancing pulses
         for pulse in self.pulse_sequence:
-            if getattr(pulse, 'auto_advance', False):
-                assert all(not (pulse.t_start < p.t_start < pulse.t_stop) for p in trigger_pulses)
+            if not getattr(pulse, 'auto_advance', False):
+                continue
+            assert all(not (pulse.t_start < p.t_start <= pulse.t_stop) for p in trigger_pulses)
 
         return trigger_pulses
 
