@@ -430,8 +430,6 @@ def count_blips(
 
             if next_idx == 0:  # Reached end of trace
                 if not ignore_final:
-<<<<<<< HEAD
-=======
                     next_idx = len(trace) - idx
                     blip_list.append(next_idx)
 >>>>>>> origin/feature/blips-tools-upgrade
