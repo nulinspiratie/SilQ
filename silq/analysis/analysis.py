@@ -432,7 +432,6 @@ def count_blips(
                 if not ignore_final:
                     next_idx = len(trace) - idx
                     blip_list.append(next_idx)
->>>>>>> origin/feature/blips-tools-upgrade
                     blip_events[k].append(
                         (int(trace[idx] >= threshold_voltage), next_idx)
                     )
