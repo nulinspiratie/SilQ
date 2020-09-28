@@ -988,10 +988,15 @@ class DCPulse(Pulse):
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
+        amplitude = self.amplitude
+        if isinstance(amplitude, Sequence):
+            logger.warning(f'DCPulse amplitude {amplitude} is a sequence, using first element')
+            amplitude = amplitude[0]
+
         if isinstance(t, collections.Iterable):
-            return np.ones(len(t)) * self.amplitude
+            return np.ones(len(t)) * amplitude
         else:
-            return self.amplitude
+            return amplitude
 
 
 class DCRampPulse(Pulse):
@@ -1009,20 +1014,22 @@ class DCRampPulse(Pulse):
                  amplitude_stop: float = None,
                  t_pre_ramp: float = 0,
                  t_post_ramp: float = 0,
+                 exponent: float = 1,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
+        assert t_pre_ramp + t_post_ramp < self.duration
+
         self.amplitude_start = Parameter(initial_value=amplitude_start,
-                                         unit='V', set_cmd=None,
-                                         vals=vals.Numbers())
+                                         unit='V', set_cmd=None)
         self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
-                                        set_cmd=None, vals=vals.Numbers())
-        self.amplitude_stop = Parameter(initial_value=amplitude_stop, unit='V',
-                                        set_cmd=None, vals=vals.Numbers())
+                                        set_cmd=None)
         self.t_pre_ramp = Parameter(initial_value=t_pre_ramp, unit='V',
                                         set_cmd=None, vals=vals.Numbers())
         self.t_post_ramp = Parameter(initial_value=t_post_ramp, unit='V',
-                                        set_cmd=None, vals=vals.Numbers())
+                                     set_cmd=None, vals=vals.Numbers())
+        self.exponent = Parameter(initial_value=exponent,
+                                  set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
             ['amplitude_start', 'amplitude_stop', 't_pre_ramp', 't_post_ramp']
@@ -1055,25 +1062,34 @@ class DCRampPulse(Pulse):
             f"voltage at {t} s is not in the time range {self.t_start} s " \
             f"- {self.t_stop} s of pulse {self}"
 
+        amplitude_start = self.amplitude_start
+        amplitude_stop = self.amplitude_stop
+        if isinstance(amplitude_start, Sequence):
+            amplitude_start = amplitude_start[0]
+        if isinstance(amplitude_stop, Sequence):
+            amplitude_stop = amplitude_stop[0]
+
         ramp_duration = self.duration - self.t_pre_ramp - self.t_post_ramp
 
-        slope = (self.amplitude_stop - self.amplitude_start) / ramp_duration
-        offset = self.amplitude_start - slope * (self.t_start + self.t_pre_ramp)
+        t_scaled = (t - self.t_start - self.t_pre_ramp) / ramp_duration
+        t_scaled_exponent = np.power(t_scaled, self.exponent)
+        amplitude_shift = (amplitude_stop - amplitude_start) * t_scaled_exponent
 
         if isinstance(t, (int, float)):
             if t <= self.t_start + self.t_pre_ramp:
-                return self.amplitude_start
+                return amplitude_start
             elif t <= self.t_stop - self.t_post_ramp:
-                return self.amplitude_stop
+                return amplitude_stop
             else:
-                return offset + slope * t
+                return amplitude_start + amplitude_shift
         else:
             if not isinstance(t, np.ndarray):
                 t = np.array(t)
-            amplitude = offset + slope * t
-            amplitude[t<=self.t_start + self.t_pre_ramp] = self.amplitude_start
-            amplitude[t>=self.t_stop + self.t_post_ramp] = self.amplitude_stop
-            return amplitude
+
+            amplitudes = amplitude_start + amplitude_shift
+            amplitudes[t<=self.t_start + self.t_pre_ramp] = amplitude_start
+            amplitudes[t>=self.t_stop - self.t_post_ramp] = amplitude_stop
+            return amplitudes
 
 
 class TriggerPulse(Pulse):
