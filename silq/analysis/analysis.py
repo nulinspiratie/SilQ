@@ -2,6 +2,7 @@ import numpy as np
 import functools
 import itertools
 from matplotlib.axis import Axis
+from matplotlib.colors import TwoSlopeNorm
 import peakutils
 import logging
 from typing import Union, Dict, Any, List, Sequence, Iterable, Tuple
@@ -43,6 +44,8 @@ analysis_config = config["analysis"]
 
 
 class Analysis(ParameterNode):
+    delegate_attr_dicts = ['parameters', 'parameter_nodes', 'functions',
+                           'submodules', 'settings']
     def __init__(self, name):
         super().__init__(name=name, use_as_attributes=True)
         self.settings = ParameterNode(use_as_attributes=True)
@@ -432,6 +435,7 @@ def count_blips(
 
     blip_events = [[] for _ in range(len(traces))]
     for k, trace in enumerate(traces):
+
         idx = start_idx
         trace_above_threshold = trace > threshold_voltage
         trace_below_threshold = ~trace_above_threshold
@@ -469,6 +473,7 @@ def count_blips(
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
+
     return {
         "blips": blips,
         "blip_events": blip_events,
@@ -575,22 +580,6 @@ def analyse_traces(
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = int(round(t_skip * sample_rate))
 
-    if plot is not False:  # Create plot for traces
-        ax = MatPlot()[0] if plot is True else plot
-        t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0]))
-        print(ax.get_xlim())
-        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float), cmap="seismic")
-        print(ax.get_xlim())
-        # Modify x-limits to add blips information
-        xlim = ax.get_xlim()
-        xpadding = 0.05 * (xlim[1] - xlim[0])
-        if segment == "begin":
-            xpadding_range = [-xpadding + xlim[0], xlim[0]]
-            ax.set_xlim(-xpadding + xlim[0], xlim[1])
-        else:
-            xpadding_range = [xlim[1], xlim[1] + xpadding]
-            ax.set_xlim(xlim[0], xlim[1] + xpadding)
-
     # Calculate threshold voltage if not provided
     if threshold_voltage is None or np.isnan(threshold_voltage):
         # Histogram trace voltages to find two peaks corresponding to high and low
@@ -604,19 +593,43 @@ def analyse_traces(
 
         results["threshold_voltage"] = threshold_voltage
 
-        if threshold_voltage is None or np.isnan(threshold_voltage):
-            logger.debug("Could not determine threshold voltage")
-            if plot is not False:
-                ax.text(
-                    np.mean(xlim),
-                    len(traces) + 0.5,
-                    "Unknown threshold voltage",
-                    horizontalalignment="center",
-                )
-            return results
     else:
         # We don't know voltage difference since we skip a high_low measure.
         results["voltage_difference"] = np.nan
+
+    if plot is not False:  # Create plot for traces
+        ax = MatPlot()[0] if plot is True else plot
+        t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0])) * 1e3
+
+        # A
+        if threshold_voltage:
+            divnorm = TwoSlopeNorm(vmin=np.min(traces), vcenter=threshold_voltage, vmax=np.max(traces))
+        else:
+            divnorm = None
+
+        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float), cmap="seismic", norm=divnorm)
+        # Modify x-limits to add blips information
+        xlim = ax.get_xlim()
+        xpadding = 0.05 * (xlim[1] - xlim[0])
+        if segment == "begin":
+            xpadding_range = [-xpadding + xlim[0], xlim[0]]
+            ax.set_xlim(-xpadding + xlim[0], xlim[1])
+        else:
+            xpadding_range = [xlim[1], xlim[1] + xpadding]
+            ax.set_xlim(xlim[0], xlim[1] + xpadding)
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Sample')
+
+    if threshold_voltage is None or np.isnan(threshold_voltage):
+        logger.debug("Could not determine threshold voltage")
+        if plot is not False:
+            ax.text(
+                np.mean(xlim),
+                len(traces) + 0.5,
+                "Unknown threshold voltage",
+                horizontalalignment="center",
+            )
+        return results
 
     # Analyse blips (disabled because it's very slow)
     # blips_results = count_blips(traces=traces,
@@ -721,18 +734,18 @@ def analyse_traces(
 
         # Add vertical line for t_read
         if t_read is not None:
-            ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
+            ax.vlines(t_read*1e3, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
             ax.text(
-                t_read,
+                t_read*1e3,
                 len(traces) + 0.5,
                 f"t_read={t_read*1e3} ms",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
             ax.text(
-                t_skip,
+                t_skip*1e3,
                 len(traces) + 0.5,
-                f"t_skip={t_skip*1e3} ms",
+                f"t_skip={t_skip*1e6:.0f} us",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
@@ -1470,6 +1483,7 @@ def parse_flip_pairs(
             flip_pairs = flip_pair_indices
         else:
             flip_pairs = [(labels[k1], labels[k2]) for (k1, k2) in flip_pair_indices]
+
     elif isinstance(flip_pairs[0][0], str):
         # Flip pairs use state labels, convert to state indices
         assert labels is not None
@@ -1478,7 +1492,6 @@ def parse_flip_pairs(
         flip_pair_indices = flip_pairs
     # Ensure flip_pairs_int are tuples and sorted
     flip_pair_indices = [tuple(sorted(flip_pair)) for flip_pair in flip_pair_indices]
-
     return flip_pairs, flip_pair_indices
 
 
