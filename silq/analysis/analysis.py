@@ -1462,7 +1462,7 @@ def parse_flip_pairs(
         if flip_pairs == "neighbouring":
             flip_pair_indices = list(zip(range(num_states - 1), range(1, num_states)))
         elif flip_pairs == "all":
-            flip_pair_indices = itertools.combinations(range(num_states), r=2)
+            flip_pair_indices = list(itertools.combinations(range(num_states), r=2))
         else:
             raise RuntimeError(f"Flip pairs {flip_pairs} not understood")
 
