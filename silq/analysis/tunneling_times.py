@@ -221,6 +221,7 @@ def get_blips(
         sample_rate: float,
         pulse_slice=None,
         silent=False,
+        t_skip=0,
 ):
     """Get first blips from an array"""
     if isinstance(traces, h5py.File):
@@ -235,6 +236,7 @@ def get_blips(
                 sample_rate=sample_rate,
                 pulse_slice=pulse_slice,
                 silent=True,
+                t_skip=t_skip
             )
             result['pulse_slice'] = pulse_slice
 
@@ -261,6 +263,7 @@ def get_blips(
                 sample_rate=sample_rate,
                 pulse_slice=pulse_slice,
                 silent=True,
+                t_skip=t_skip
             )
             for key, val in result.items():
                 if isinstance(val, (int, float)):
@@ -274,12 +277,11 @@ def get_blips(
             traces = traces[:, pulse_slice]
 
         samples, trace_pts = traces.shape
-
         blip_results = count_blips(
             traces,
             threshold_voltage=threshold_voltage,
             sample_rate=sample_rate,
-            t_skip=0,
+            t_skip=t_skip,
             ignore_final=True,
         )
         first_blip_durations = [
@@ -738,7 +740,8 @@ def analyse_tunnel_times_measurement(
             data,
             threshold_voltage=threshold_voltage,
             sample_rate=sample_rate,
-            silent=silent
+            silent=silent,
+            t_skip=t_skip
         )
     elif isinstance(data, (dict, list)):
         # Ensure data is a list
@@ -751,7 +754,8 @@ def analyse_tunnel_times_measurement(
                 trace_arr,
                 threshold_voltage=threshold_voltage,
                 sample_rate=sample_rate,
-                silent=silent
+                silent=silent,
+                t_skip=t_skip
             )
     else:
         raise SyntaxError('Must provide either data, or traces')
