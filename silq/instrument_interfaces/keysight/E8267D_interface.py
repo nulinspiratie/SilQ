@@ -166,12 +166,18 @@ class E8267DInterface(InstrumentInterface):
                            set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool(),
-                           docstring='To apply pulses of different phases, IQ modulation is needed. However, with'
-                                     'the introduction of a Local Oscillator (LO) frequency shift (using frequency'
-                                     'carrier choice), separate triggering of each pulse introduces jitter errors,'
-                                     'which can be decreased if no LO shift is used and instead I/Q components are'
-                                     'DC pulses that define the phase of the current pulse. To use this IQ DC phase'
-                                     'control, we need to enforce IQ modulation with this parameter.')
+                           docstring='Forces to use IQ modulation mode in any case. It is useful'
+                                     'if we want to minimize phase errors during triggering'
+                                     'between two phase coherent consecutive pulses in the'
+                                     'pulse sequence. If I/Q components are sinusoidal signals'
+                                     'of some frequency f_iq, a trigger error delta_t will'
+                                     'introduce a phase error of delta_phi=f_iq*dt. To avoid this,'
+                                     'DC pulses for I/Q components can be used that will define'
+                                     'the phases of the pulses in the sequence. A local oscillator'
+                                     'frequency of the microwave source should then be equal to'
+                                     'the pulse frequency. Since no frequency modulation is'
+                                     'required in this DC IQ phase control, we need to enforce'
+                                     'IQ modulation setting this parameter to True.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
