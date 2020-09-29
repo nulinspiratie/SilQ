@@ -161,23 +161,13 @@ class E8267DInterface(InstrumentInterface):
                            docstring='Whether to use IQ modulation. This '
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
-                                     'frequency_sideband not None')
+                                     'frequency_sideband not None.')
         self.add_parameter('force_IQ',
                            set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool(),
-                           docstring='Forces to use IQ modulation mode in any case. It is useful'
-                                     'if we want to minimize phase errors during triggering'
-                                     'between two phase coherent consecutive pulses in the'
-                                     'pulse sequence. If I/Q components are sinusoidal signals'
-                                     'of some frequency f_iq, a trigger error delta_t will'
-                                     'introduce a phase error of delta_phi=f_iq*dt. To avoid this,'
-                                     'DC pulses for I/Q components can be used that will define'
-                                     'the phases of the pulses in the sequence. A local oscillator'
-                                     'frequency of the microwave source should then be equal to'
-                                     'the pulse frequency. Since no frequency modulation is'
-                                     'required in this DC IQ phase control, we need to enforce'
-                                     'IQ modulation setting this parameter to True.')
+                           docstring='Force IQ modulation to be enabled, even when'
+                                     'outputting only a single frequency.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
@@ -383,8 +373,10 @@ class SinePulseImplementation(PulseImplementation):
         elif frequency_IQ is not None:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
-                'I': np.sin(2 * np.pi * self.pulse.phase / 360),
-                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90) / 360)
+                'I': np.sin(2 * np.pi * (self.pulse.phase +
+                                         interface.I_phase_correction()) / 360),
+                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90 +
+                                         interface.Q_phase_correction()) / 360)
             }
 
             for quadrature, amplitude in amplitudes.items():
