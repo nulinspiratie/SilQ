@@ -118,23 +118,24 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         For given pulse settings, `ESRPulseSequence.generate` will recreate the
         pulse sequence from settings.
 """
+    pulse_settings = DotDict({
+        'RF_pulse': SinePulse('ESR'),
+        'stage_pulse': DCPulse('plunge'),
+        'transition_pulse': None,
+        'read_pulse': DCPulse('read_initialize', acquire=True),  # Can be set to None
+        'pre_delay': 5e-3,
+        'inter_delay': 5e-3,
+        'post_delay': 5e-3,
+        'min_duration': None,
+        'RF_pulses': ['RF_pulse'],
+        'pre_pulses': (),
+        'post_pulses': (),
+        'shots_per_frequency': 1
+    })
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_settings = DotDict({
-            'RF_pulse': SinePulse('ESR'),
-            'stage_pulse': DCPulse('plunge'),
-            'transition_pulse': None,
-            'read_pulse': DCPulse('read_initialize', acquire=True),  # Can be set to None
-            'pre_delay': 5e-3,
-            'inter_delay': 5e-3,
-            'post_delay': 5e-3,
-            'min_duration': None,
-            'RF_pulses': ['RF_pulse'],
-            'pre_pulses': (),
-            'post_pulses': (),
-            'shots_per_frequency': 1
-        })
+        self.pulse_settings = deepcopy(ElectronReadoutPulseSequence.pulse_settings)
 
         self.frequencies = Parameter()
 
