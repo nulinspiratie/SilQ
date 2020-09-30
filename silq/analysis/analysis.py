@@ -492,6 +492,7 @@ def analyse_traces(
     min_filter_proportion: float = 0.5,
     t_skip: float = 0,
     t_read: Union[float, None] = None,
+    t_read_vals: Union[int, None, Sequence] = None,
     segment: str = "begin",
     threshold_voltage: Union[float, None] = None,
     threshold_method: str = "config",
@@ -511,6 +512,11 @@ def analyse_traces(
         t_read: duration of each trace to use for calculating up_proportion etc.
             e.g. for a long trace, you want to compare up proportion of start
             and end segments.
+        t_read_vals: Optional range of t_read values for which to extract
+            up proportion. Can be:
+            - an int, indicating that t_read should be uniformly chosen across
+              the trace duration.
+            - a list of t_read values
         segment: Use beginning or end of trace for ``t_read``.
             Allowed values are ``begin`` and ``end``.
         threshold_voltage: threshold voltage for a ``high`` voltage (blip).
@@ -549,6 +555,11 @@ def analyse_traces(
         * **blips** (float): average blips per trace.
         * **mean_low_blip_duration** (float): average duration in low state
         * **mean_high_blip_duration** (float): average duration in high state
+        * **t_read_vals** (list(float)): t_read list if provided as kwarg.
+          If t_read_vals was an int, this is converted to a list.
+          Not returned if t_read_vals is not set.
+        * **up_proportions** (list(float)): up_proportion values for each t_read
+          if t_read_vals is provided. Not returned if t_read_vals is not set.
 
     Note:
         If no threshold voltage is provided, and no two peaks can be discerned,
@@ -596,6 +607,7 @@ def analyse_traces(
     else:
         # We don't know voltage difference since we skip a high_low measure.
         results["voltage_difference"] = np.nan
+        results["threshold_voltage"] = threshold_voltage
 
     if plot is not False:  # Create plot for traces
         ax = MatPlot()[0] if plot is True else plot
@@ -682,23 +694,45 @@ def analyse_traces(
             )
         return results
 
-    if t_read is not None:  # Only use a time segment of each trace
-        read_pts = int(round(t_read * sample_rate))
+    # Determine all the t_read's for which to determine up proportion
+    total_duration = filtered_traces.shape[1] / sample_rate
+    if t_read is None:  # Only use a time segment of each trace
+        t_read = total_duration
+
+    if isinstance(t_read_vals, int):
+        # Choose equidistantly spaced t_read values
+        t_read_vals = np.linspace(total_duration/t_read_vals, total_duration, num=t_read_vals)
+    elif t_read_vals is None:
+        t_read_vals = []
+    elif not isinstance(t_read_vals, Sequence):
+        raise ValueError('t_read_vals must be an int, Sequence, or None')
+
+    # Determine up_proportion for each t_read
+    up_proportions = []
+    for k, t_read_val in enumerate(list(t_read_vals) + [t_read]):
+
+        read_pts = int(round(t_read_val * sample_rate))
         if segment == "begin":
             segmented_filtered_traces = filtered_traces[:, :read_pts]
         else:
             segmented_filtered_traces = filtered_traces[:, -read_pts:]
-    else:
-        segmented_filtered_traces = filtered_traces
 
-    # Calculate up proportion of traces
-    up_proportion_idxs = find_up_proportion(
-        segmented_filtered_traces,
-        start_idx=start_idx,
-        threshold_voltage=threshold_voltage,
-        return_array=True,
-    )
-    results["up_proportion"] = sum(up_proportion_idxs) / len(traces)
+        # Calculate up proportion of traces
+        up_proportion_idxs = find_up_proportion(
+            segmented_filtered_traces,
+            start_idx=start_idx,
+            threshold_voltage=threshold_voltage,
+            return_array=True,
+        )
+        up_proportion = sum(up_proportion_idxs) / len(traces)
+        if k == len(t_read_vals):
+            results["up_proportion"] = up_proportion
+        else:
+            up_proportions.append(up_proportion)
+
+    if t_read_vals is not None:
+        results['up_proportions'] = up_proportions
+        results['t_read_vals'] = t_read_vals
 
     # Calculate ratio of traces that end up with low voltage
     idx_end_low = edge_voltage(
@@ -962,6 +996,7 @@ def analyse_electron_readout(
     labels: List[str] = None,
     t_skip: float = 0,
     t_read: Union[float, None] = None,
+    t_read_vals: Union[int, None, Sequence] = None,
     threshold_voltage: Union[float, None] = None,
     threshold_method: str = "config",
     min_filter_proportion: float = 0.5,
@@ -1023,6 +1058,7 @@ def analyse_electron_readout(
                 sample_rate=sample_rate,
                 t_read=t_read,
                 t_skip=t_skip,
+                t_read_vals=t_read_vals,
                 threshold_voltage=threshold_voltage,
                 min_filter_proportion=min_filter_proportion,
                 plot=plot,
@@ -1087,6 +1123,10 @@ class AnalyseElectronReadout(Analysis):
             set_cmd=None,
             config_link="properties.t_read",
             update_from_config=True,
+        )
+        self.settings.t_read_vals = Parameter(
+            initial_value=None,
+            set_cmd=None,
         )
         self.settings.threshold_voltage = Parameter(
             initial_value=None,
