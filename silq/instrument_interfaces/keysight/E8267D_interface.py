@@ -163,17 +163,13 @@ class E8267DInterface(InstrumentInterface):
                            docstring='Whether to use IQ modulation. This '
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
-                                     'frequency_sideband not None')
+                                     'frequency_sideband not None.')
         self.add_parameter('force_IQ',
                            set_cmd=None,
                            initial_value=False,
                            vals=vals.Bool(),
-                           docstring='To apply pulses of different phases, IQ modulation is needed. However, with'
-                                     'the introduction of a Local Oscillator (LO) frequency shift (using frequency'
-                                     'carrier choice), separate triggering of each pulse introduces jitter errors,'
-                                     'which can be decreased if no LO shift is used and instead I/Q components are'
-                                     'DC pulses that define the phase of the current pulse. To use this IQ DC phase'
-                                     'control, we need to enforce IQ modulation with this parameter.')
+                           docstring='Force IQ modulation to be enabled, even when'
+                                     'outputting only a single frequency.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
@@ -380,8 +376,10 @@ class SinePulseImplementation(PulseImplementation):
         elif frequency_IQ is not None:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
-                'I': np.sin(2 * np.pi * self.pulse.phase / 360),
-                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90) / 360)
+                'I': np.sin(2 * np.pi * (self.pulse.phase +
+                                         interface.I_phase_correction()) / 360),
+                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90 +
+                                         interface.Q_phase_correction()) / 360)
             }
 
             for quadrature, amplitude in amplitudes.items():

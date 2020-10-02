@@ -284,14 +284,17 @@ def run_scripts(path: Union[str, Path] = None,
 
     for elem in path.iterdir():
         if elem.is_dir():
-            run_scripts(
-                path=elem,
-                mode=mode,
-                silent=silent,
-                max_relative_parents=max_relative_parents,
-                globals=globals,
-                locals=locals
-            )
+            if elem.stem == '.ipynb_checkpoints':
+                continue
+            else:
+                run_scripts(
+                    path=elem,
+                    mode=mode,
+                    silent=silent,
+                    max_relative_parents=max_relative_parents,
+                    globals=globals,
+                    locals=locals
+                )
         elif elem.suffix != '.py':
             logger.warning(f"Skipping non-python script: {elem.stem}")
         else:
