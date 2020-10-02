@@ -330,7 +330,19 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
 
     def plot_traces(self, filter=None, channels=None,
                     t_skip: Union[bool, float] = True,
+                    clim=None,
                     **kwargs):
+        """Plot acquisition traces for pulses that have pulse.acquire
+
+        Args:
+            filter: Optional filter for pulse names. Can be string or list of strings
+            t_skip: Skip initial part of pulse traces (the part that is skipped when analysing blips).
+            clim: Colorbar limits
+            **kwargS: Additional kwargs sent to instantiated MatPlot object
+
+        Returns:
+            MatPlot object
+        """
         if channels is None:
             channels = [self.channel_label]
 
@@ -365,8 +377,11 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
                 t_list = np.linspace(0, pts / self.sample_rate, pts,
                                      endpoint=False)
                 if trace_arr.ndim == 2:
-                    plot[k].add(traces[channel][:,start_idx:], x=t_list[start_idx:],
-                                y=np.arange(trace_arr.shape[0], dtype=float))
+                    plot[k].add(
+                        traces[channel][:,start_idx:], x=t_list[start_idx:],
+                        y=np.arange(trace_arr.shape[0], dtype=float),
+                        clim=clim
+                    )
                 else:
                     plot[k].add(traces[channel][start_idx:], x=t_list[start_idx:])
                 plot[k].set_xlabel('Time (s)')
