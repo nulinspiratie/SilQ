@@ -373,7 +373,7 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def t_stop_get(self, parameter):
-        return self.t_start + self.duration
+        return np.round(self.t_start + self.duration, 11)
 
     @parameter
     def t_start_list_get(self, parameter):
