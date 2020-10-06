@@ -936,6 +936,24 @@ class PulseSequence(ParameterNode):
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
+        """Add pulse sequence(s) as nested pulse sequences
+
+        Args:
+            *pulse_sequences: pulse sequences to sequentially append.
+
+        Notes:
+            - Successive pulse sequences are connected to each other such
+              that if a previous pulse sequence duration changes, the subsequent
+              pulse sequences are also shifted.
+            - Pulse sequences are not copied. This means that if you want to
+              nest a pulse sequence to multiple parent pulse sequences, you must
+              manually copy the pulse sequence.
+            - For each nested pulse sequence, pulse_sequence.parent is set to
+             this pulse sequence.
+
+        Raises:
+             RuntimeError if current pulse sequence already contains pulses
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -949,6 +967,12 @@ class PulseSequence(ParameterNode):
         self._link_pulse_sequences()
 
     def insert_pulse_sequence(self, index, pulse_sequence):
+        """Insert a nested pulse sequence at a specific pulse sequence index
+
+        Args:
+            index: Index at which to insert pulse sequence
+            pulse_sequence: Pulse sequence to insert
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -1481,6 +1505,11 @@ class PulseSequence(ParameterNode):
             self._last_pulse['t_stop'].connect(self['t_stop'])
 
     def clone_skeleton(self, pulse_sequence):
+        """Clone the structure of a pulse sequence into this one
+
+        This skeleton copy includes copies of all nested pulse sequences,
+        but does not include copies of the pulses
+        """
         self.clear()
         for subsequence in pulse_sequence.pulse_sequences:
             clone_subsequence = PulseSequence()
