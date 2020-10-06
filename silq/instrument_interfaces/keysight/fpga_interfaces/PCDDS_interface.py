@@ -4,7 +4,8 @@ import logging
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, SinePulse, FrequencyRampPulse, \
     TriggerPulse, PulseImplementation, MarkerPulse
-
+from qcodes.utils import validators as vals
+from qcodes.instrument.parameter import Parameter
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,12 @@ class PCDDSInterface(InstrumentInterface):
                            initial_value=.1e-6,
                            set_cmd=None,
                            docstring="Duration for a trigger input")
+        self.auto_advance = Parameter(
+            initial_value=False,
+            set_cmd=None,
+            vals=vals.Bool(),
+            docstring='Auto advance to next pulse without needing trigger'
+        )
 
     @property
     def active_channel_ids(self):
