@@ -1664,9 +1664,19 @@ class CircuitPulseSequence(ElectronReadoutPulseSequence):
                 f'CircuitPulseSequence.settings.pulses: {unknown_gates}'
             )
 
-        self.settings.RF_pulses = [[self.settings.pulses[gate] for gate in gates]]
+        self.settings.RF_pulses = self.gates_to_RF_pulses(gates)
 
         self.generate()
+
+    def gates_to_RF_pulses(self, gates):
+        RF_pulses = [[]]
+        for gate in gates:
+            pulse_element = self.settings.pulses[gate]
+            if isinstance(pulse_element, (Pulse, PulseSequence)):
+                RF_pulses[0].append(pulse_element)
+            elif isinstance(pulse_element, (list, tuple)):
+                RF_pulses[0].extend(pulse_element)
+        return RF_pulses
 
     def load_circuits(self, filepath):
         if not isinstance(filepath, Path):
