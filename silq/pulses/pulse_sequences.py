@@ -44,10 +44,14 @@ class PulseSequenceGenerator(PulseSequence):
 
 
 class ElectronReadoutPulseSequence(PulseSequenceGenerator):
-    """`PulseSequenceGenerator` for electron spin resonance (ESR).
+    """`PulseSequenceGenerator` for a general electron readout
 
-    This pulse sequence can handle many of the basic pulse sequences involving
-    ESR. The pulse sequence is generated from its pulse settings attributes.
+    This pulse sequence can handle nearly all of the basic pulse sequencing
+    involving ESR / NMR.
+    More specific pulse sequences, such as The `ESRPulseSequenceComposite` and
+    ``NMRPulseSequenceComposite`` are composed by nesting multiple
+    `ElectronReadoutPulseSequence`. This pulse sequence can therefore be seen
+    as a building block for more complicated sequences.
 
     In general the pulse sequence is as follows:
 
@@ -317,6 +321,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         pulses_add = []
         for pulse in RF_pulse_sequence:
             pulse_copy = deepcopy(pulse)
+            pulse_copy.parent = self
             connect_parameter.connect(pulse_copy['t_start'], offset=pulse.t_start)
             pulses_add.append(pulse_copy)
 
@@ -354,7 +359,6 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
         # Add pre_pulses
         self.add(*self.pulse_settings['pre_pulses'])
-
         # Update self.pulse_settings['RF_pulses']. Converts any pulses that are
         # strings to actual pulses, and sets correct frequencies
         for _ in range(self.pulse_settings['shots_per_frequency']):
