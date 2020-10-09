@@ -49,16 +49,35 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
     This pulse sequence can handle nearly all of the basic pulse sequencing
     involving ESR / NMR.
     More specific pulse sequences, such as The `ESRPulseSequenceComposite` and
-    ``NMRPulseSequenceComposite`` are composed by nesting multiple
-    `ElectronReadoutPulseSequence`. This pulse sequence can therefore be seen
-    as a building block for more complicated sequences.
+    `NMRPulseSequenceComposite` are composed by nesting multiple
+    `ElectronReadoutPulseSequence`. The `ElectronReadoutPulseSequence` can
+    therefore be seen as a building block for more complicated sequences.
 
-    In general the pulse sequence is as follows:
+    The basic pulse sequence scheme is as follows:
 
-    1. Perform any pre_pulses defined in ``ESRPulseSequence.pre_pulses``.
-    2. Perform stage pulse ``ESRPulseSequence.ESR['stage_pulse']``.
+    1. Perform stage pulse ``ElectronReadoutPulseSequence.settings.stage_pulse``.
+       By default the stage pulse is a ``plunge`` pulse.
+    2. Perform RF pulse(s) within the stage pulse, as defined in the list
+       ``ElectronReadoutPulseSequence.settings.RF_pulses``. More on this later.
+    3. Perform read pulse, defined in ``ElectronReadoutPulseSequence.settings.read_pulse``.
+
+    This basic scheme can be extended in several ways, the relevant settings are
+    grouped together in ``ElectronReadoutPulseSequence.settings``.
+
+    The primary
+
+    The basic pulse sequence is as follows:
+
+
+    2. Perform a stage pulse, RF pulse(s) within the stage pulse, and then a read pulse.
+       By default the stage pulse is a ``plunge`` pulse.
+
+    2. Perform stage pulse ``ElectronReadoutPulseSequence.settings.stage_pulse``.
        By default, this is the ``plunge`` pulse.
-    3. Perform ESR pulse within plunge pulse, the delay from start of plunge
+    3. Perform RF pulse(s) within plunge pulse, as defined in the list
+       ``ElectronReadoutPulseSequence.settings.RF_pulses``.
+       Each element in ``RF_pulses``  has its own ``stage`` pulse and ``read`` pulse
+       the delay from start of plunge
        pulse is defined in ``ESRPulseSequence.ESR['pulse_delay']``.
     4. Perform read pulse ``ESRPulseSequence.ESR['read_pulse']``.
     5. Repeat steps 2 and 3 for each ESR pulse in

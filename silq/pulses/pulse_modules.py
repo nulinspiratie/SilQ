@@ -1023,7 +1023,7 @@ class PulseSequence(ParameterNode):
         for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
-                
+
                 # Remove any pre-existing connection to pulse_sequence.enabled
                 # This may link to another parent pulse sequence
                 enabled_receivers = pulse_sequence['enabled'].signal.receivers
@@ -1482,10 +1482,20 @@ class PulseSequence(ParameterNode):
         return all(pulse_sequence.up_to_date() for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
+        """Separate pulses into enabled and disabled pulses"""
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
         self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
 
     def _update_last_pulse(self):
+        """Attaches pulse_sequence.t_stop to t_stop of last pulse
+
+        Called whenever pulses are added
+        Notes:
+            - If the t_stop of a pulse that is not the last pulse is increased
+              such that it becomes the last t_stop, this will cause issues since
+              it is not connected to pulse_sequence.t_stop.
+
+        """
         if not self.my_pulses:
             return
 
