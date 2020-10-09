@@ -410,7 +410,7 @@ class SinePulseImplementation(PulseImplementation):
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
-        elif frequency_IQ is not None:
+        elif frequency_IQ == 0:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
                 'I': np.sin(2 * np.pi * (self.pulse.phase +
