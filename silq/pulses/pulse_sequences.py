@@ -63,63 +63,37 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
 
     This basic scheme can be extended in several ways, the relevant settings are
     grouped together in ``ElectronReadoutPulseSequence.settings``.
+    The pulse sequence is generated from these settings via
+    ``ElectronReadoutPulseSequence.generate()``. The different settings will now
+    be described.
 
-    The primary
+    - RF_pulses: This is the most important setting, as it determines the number
+      of readouts and the pulses in each stage.
+      Each element in ``RF_pulses`` is applied in a single stage, and followed
+      by a readout. An element can be:
 
-    The basic pulse sequence is as follows:
+      - `Pulse`
+      - List of pulses, in which case multiple pulses are applied in a single stage.
+        The delays between pulses are specified in the setting ``inter_delay``
+      - `PulseSequence`, in which case the entire pulse sequence is considered
+        as a single stage. Useful if more complex pulsing is needed in a single
+        stage. An actual stage pulse is added if it is not present in the pulse
+        sequence.
+      - String referring to pulse defined in ``ElectronReadoutPulseSequence.settings``.
 
-
-    2. Perform a stage pulse, RF pulse(s) within the stage pulse, and then a read pulse.
-       By default the stage pulse is a ``plunge`` pulse.
-
-    2. Perform stage pulse ``ElectronReadoutPulseSequence.settings.stage_pulse``.
-       By default, this is the ``plunge`` pulse.
-    3. Perform RF pulse(s) within plunge pulse, as defined in the list
-       ``ElectronReadoutPulseSequence.settings.RF_pulses``.
-       Each element in ``RF_pulses``  has its own ``stage`` pulse and ``read`` pulse
-       the delay from start of plunge
-       pulse is defined in ``ESRPulseSequence.ESR['pulse_delay']``.
-    4. Perform read pulse ``ESRPulseSequence.ESR['read_pulse']``.
-    5. Repeat steps 2 and 3 for each ESR pulse in
-       ``ESRPulseSequence.ESR['ESR_pulses']``, which by default contains single
-       pulse ``ESRPulseSequence.ESR['ESR_pulse']``.
-    6. Perform empty-plunge-read sequence (EPR), but only if
-       ``ESRPulseSequence.EPR['enabled']`` is True.
-       EPR pulses are defined in ``ESRPulseSequence.EPR['pulses']``.
-    7. Perform any post_pulses defined in ``ESRPulseSequence.post_pulses``.
-
-    Parameters:
-        ESR (dict): Pulse settings for the ESR part of the pulse sequence.
-            Contains the following items:
-
-            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR
-              (e.g. plunge). Default is 'plunge `DCPulse`.
-            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.
-              Default is 'ESR' ``SinePulse``.
-            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to
-              use. Can be strings, in which case the string should be an item in
-              ``ESR`` whose value is a `Pulse`.
-            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage
-              pulse. Default is 5 ms.
-            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and
-              initialization of electron. Default is 'read_initialize`
-              `DCPulse`.
-
-        EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
-            pulse sequence. This part is optional, and is used for non-ESR
-            contast, and to measure dark counts and hence ESR contrast.
-            Contains the following items:
-
-            * ``enabled`` (bool): Enable EPR sequence.
-            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.
-              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.
-
-        pre_pulses (List[Pulse]): Pulses before main pulse sequence.
-            Empty by default.
-        post_pulses (List[Pulse]): Pulses after main pulse sequence.
-            Empty by default.
-        pulse_settings (dict): Dict containing all pulse settings.
-        **kwargs: Additional kwargs to `PulseSequence`.
+      The elements in ``RF_pulses`` can be a combination of the above three types.
+    - pre_pulses:
+    - post_pulses:
+    - stage_pulse: Pulse applied during RF pulses.
+      Usually a DC pulse to plunge/empty the donor
+    - transition_pulse: Optional pulse between stage pulse and read pulse.
+      Can be used to transition to an intermediate bias voltage.
+    - read_pulse: Pulse applied after stage pulse, usually to read out electron.
+    - pre_delay: Delay between beginning of stage pulse
+    - inter_delay:
+    - post_delay:
+    - shots_per_frequency:
+    - min_duration
 
     Examples:
         The following code measures two ESR frequencies and performs an EPR
