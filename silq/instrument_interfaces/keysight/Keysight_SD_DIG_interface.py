@@ -22,7 +22,7 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
         self._acquisition_channels  = {
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k, input=True)
-            for k in range(self.instrument.n_channels)}
+            for k in self.instrument.channel_idxs}
 
         self._pxi_channels = {
             f'pxi{k}': Channel(instrument_name=self.instrument_name(),
@@ -281,6 +281,6 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
 
     def stop(self):
         # Stop all DAQs
-        self.instrument.stop_channels(range(8))
+        self.instrument.stop_channels(self.instrument.channel_idxs)
 
 
