@@ -479,107 +479,111 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                         name=f'{self.pulse.name}_marker')]
 
         if interface.modulation_channel().startswith('int'):  # using internal modulation
+            # If you use internal modulation of the microwave source, we skip all other
+            # additional pulses.
+            # NOTE: The parameters of internal modulation must be set (currently) manually
+            # on the microwave source
             return additional_pulses
-        else:
-            if interface.IQ_modulation() == 'off':
-                frequency_IQ = None
-                frequency_IQ_start = None
-                frequency_IQ_stop = None
-                frequency_offset = interface.frequency()
-            elif interface.FM_mode() == 'ramp':  # interface.IQ_modulation() == 'on'
-                assert self.pulse.frequency_sideband is not None, \
-                    "Pulse.frequency_sideband must be defined when " \
-                    "FM_mode = 'ramp' and IQ_modulation = 'on'"
-                frequency_IQ = self.pulse.frequency_sideband
-                frequency_IQ_start = None
-                frequency_IQ_stop = None
-                frequency_offset = self.pulse.frequency + self.pulse.frequency_sideband
-            else:  # interface.FM_mode() == 'IQ'
-                frequency_IQ = None
-                frequency_IQ_start = self.pulse.frequency_start - interface.frequency()
-                frequency_IQ_stop = self.pulse.frequency_stop - interface.frequency()
-                frequency_offset = None
 
-            if frequency_IQ is not None:
-                additional_pulses.extend([
-                    SinePulse(name='sideband_I',
-                              t_start=self.pulse.t_start - interface.envelope_padding(),
-                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                              frequency=frequency_IQ,
-                              amplitude=1 + interface.I_amplitude_correction(),
-                              phase=self.pulse.phase + interface.I_phase_correction(),
-                              phase_reference=self.pulse.phase_reference,
-                              offset=self.pulse.offset,
-                              connection_requirements={
-                                  'input_instrument': interface.instrument_name(),
-                                  'input_channel': 'I'}),
-                    SinePulse(name='sideband_Q',
-                              t_start=self.pulse.t_start - interface.envelope_padding(),
-                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                              frequency=frequency_IQ,
-                              phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                              phase_reference=self.pulse.phase_reference,
-                              offset=self.pulse.offset,
-                              amplitude=1 + interface.Q_amplitude_correction(),
-                              connection_requirements={
-                                  'input_instrument': interface.instrument_name(),
-                                  'input_channel': 'Q'})])
-            elif frequency_IQ_start is not None:
-                additional_pulses.extend([
-                    FrequencyRampPulse(name='sideband_I',
-                                       t_start=self.pulse.t_start,
-                                       t_stop=self.pulse.t_stop,
-                                       frequency_start=frequency_IQ_start,
-                                       frequency_stop=frequency_IQ_stop,
-                                       amplitude=1 + interface.I_amplitude_correction(),
-                                       phase=self.pulse.phase + interface.I_phase_correction(),
-                                       phase_reference=self.pulse.phase_reference,
-                                       offset=self.pulse.offset,
-                                       connection_requirements={
-                                           'input_instrument': interface.instrument_name(),
-                                           'input_channel': 'I'}),
-                    FrequencyRampPulse(name='sideband_Q',
-                                       t_start=self.pulse.t_start,
-                                       t_stop=self.pulse.t_stop,
-                                       frequency_start=frequency_IQ_start,
-                                       frequency_stop=frequency_IQ_stop,
-                                       amplitude=1 + interface.Q_amplitude_correction(),
-                                       phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                                       phase_reference=self.pulse.phase_reference,
-                                       offset=self.pulse.offset,
-                                       connection_requirements={
-                                           'input_instrument': interface.instrument_name(),
-                                           'input_channel': 'Q'})])
+        if interface.IQ_modulation() == 'off':
+            frequency_IQ = None
+            frequency_IQ_start = None
+            frequency_IQ_stop = None
+            frequency_offset = interface.frequency()
+        elif interface.FM_mode() == 'ramp':  # interface.IQ_modulation() == 'on'
+            assert self.pulse.frequency_sideband is not None, \
+                "Pulse.frequency_sideband must be defined when " \
+                "FM_mode = 'ramp' and IQ_modulation = 'on'"
+            frequency_IQ = self.pulse.frequency_sideband
+            frequency_IQ_start = None
+            frequency_IQ_stop = None
+            frequency_offset = self.pulse.frequency + self.pulse.frequency_sideband
+        else:  # interface.FM_mode() == 'IQ'
+            frequency_IQ = None
+            frequency_IQ_start = self.pulse.frequency_start - interface.frequency()
+            frequency_IQ_stop = self.pulse.frequency_stop - interface.frequency()
+            frequency_offset = None
 
-            if frequency_offset is not None:  # Add a DC ramp pulse for FM
-                amplitude_start = (self.pulse.frequency_start - frequency_offset) \
-                                  / abs(interface.frequency_deviation())
-                amplitude_stop = (self.pulse.frequency_stop - frequency_offset) \
-                                 / abs(interface.frequency_deviation())
-                additional_pulses.append(
-                    DCRampPulse(t_start=self.pulse.t_start,
-                                t_stop=self.pulse.t_stop,
-                                amplitude_start=amplitude_start,
-                                amplitude_stop=amplitude_stop,
-                                connection_requirements={
-                                    'input_instrument': interface.instrument_name(),
-                                    'input_channel': interface.modulation_channel()}))
+        if frequency_IQ is not None:
+            additional_pulses.extend([
+                SinePulse(name='sideband_I',
+                          t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=frequency_IQ,
+                          amplitude=1 + interface.I_amplitude_correction(),
+                          phase=self.pulse.phase + interface.I_phase_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'I'}),
+                SinePulse(name='sideband_Q',
+                          t_start=self.pulse.t_start - interface.envelope_padding(),
+                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          frequency=frequency_IQ,
+                          phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
+                          phase_reference=self.pulse.phase_reference,
+                          offset=self.pulse.offset,
+                          amplitude=1 + interface.Q_amplitude_correction(),
+                          connection_requirements={
+                              'input_instrument': interface.instrument_name(),
+                              'input_channel': 'Q'})])
+        elif frequency_IQ_start is not None:
+            additional_pulses.extend([
+                FrequencyRampPulse(name='sideband_I',
+                                   t_start=self.pulse.t_start,
+                                   t_stop=self.pulse.t_stop,
+                                   frequency_start=frequency_IQ_start,
+                                   frequency_stop=frequency_IQ_stop,
+                                   amplitude=1 + interface.I_amplitude_correction(),
+                                   phase=self.pulse.phase + interface.I_phase_correction(),
+                                   phase_reference=self.pulse.phase_reference,
+                                   offset=self.pulse.offset,
+                                   connection_requirements={
+                                       'input_instrument': interface.instrument_name(),
+                                       'input_channel': 'I'}),
+                FrequencyRampPulse(name='sideband_Q',
+                                   t_start=self.pulse.t_start,
+                                   t_stop=self.pulse.t_stop,
+                                   frequency_start=frequency_IQ_start,
+                                   frequency_stop=frequency_IQ_stop,
+                                   amplitude=1 + interface.Q_amplitude_correction(),
+                                   phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
+                                   phase_reference=self.pulse.phase_reference,
+                                   offset=self.pulse.offset,
+                                   connection_requirements={
+                                       'input_instrument': interface.instrument_name(),
+                                       'input_channel': 'Q'})])
 
-                if interface.envelope_padding() > 0:  # Add padding DC pulses at start and end
-                    additional_pulses.extend((
-                        DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
-                                t_stop=self.pulse.t_start,
-                                amplitude=amplitude_start,
-                                connection_requirements={
-                                    'input_instrument': interface.instrument_name(),
-                                    'input_channel': interface.modulation_channel()}),
-                        DCPulse(t_start=self.pulse.t_stop,
-                                t_stop=self.pulse.t_stop+interface.envelope_padding(),
-                                amplitude=amplitude_stop,
-                                connection_requirements={
-                                    'input_instrument': interface.instrument_name(),
-                                    'input_channel': interface.modulation_channel()})))
-            return additional_pulses
+        if frequency_offset is not None:  # Add a DC ramp pulse for FM
+            amplitude_start = (self.pulse.frequency_start - frequency_offset) \
+                              / abs(interface.frequency_deviation())
+            amplitude_stop = (self.pulse.frequency_stop - frequency_offset) \
+                             / abs(interface.frequency_deviation())
+            additional_pulses.append(
+                DCRampPulse(t_start=self.pulse.t_start,
+                            t_stop=self.pulse.t_stop,
+                            amplitude_start=amplitude_start,
+                            amplitude_stop=amplitude_stop,
+                            connection_requirements={
+                                'input_instrument': interface.instrument_name(),
+                                'input_channel': interface.modulation_channel()}))
+
+            if interface.envelope_padding() > 0:  # Add padding DC pulses at start and end
+                additional_pulses.extend((
+                    DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
+                            t_stop=self.pulse.t_start,
+                            amplitude=amplitude_start,
+                            connection_requirements={
+                                'input_instrument': interface.instrument_name(),
+                                'input_channel': interface.modulation_channel()}),
+                    DCPulse(t_start=self.pulse.t_stop,
+                            t_stop=self.pulse.t_stop+interface.envelope_padding(),
+                            amplitude=amplitude_stop,
+                            connection_requirements={
+                                'input_instrument': interface.instrument_name(),
+                                'input_channel': interface.modulation_channel()})))
+        return additional_pulses
 
 
 class MultiSinePulseImplementation(PulseImplementation):
