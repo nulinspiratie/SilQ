@@ -578,7 +578,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                 'input_instrument': interface.instrument_name(),
                                 'input_channel': interface.modulation_channel()}),
                     DCPulse(t_start=self.pulse.t_stop,
-                            t_stop=self.pulse.t_stop+interface.envelope_padding(),
+                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
                             amplitude=amplitude_stop,
                             connection_requirements={
                                 'input_instrument': interface.instrument_name(),
@@ -646,6 +646,6 @@ class MultiSinePulseImplementation(PulseImplementation):
                            phase_reference=self.pulse.phase_reference,
                            offset=self.pulse.offset,
                            connection_requirements={
-                                   'input_instrument': interface.instrument_name(),
-                                   'input_channel': 'Q'})])
+                               'input_instrument': interface.instrument_name(),
+                               'input_channel': 'Q'})])
         return additional_pulses
