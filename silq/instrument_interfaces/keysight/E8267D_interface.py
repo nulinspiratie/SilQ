@@ -670,6 +670,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                 additional_pulses.append(
                     SingleWaveformPulse(name=f'sideband_{quadrature}',
                                         pulse_type='sine',
+                                        AM_type=self.pulse.AM_type,
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
                                         frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
