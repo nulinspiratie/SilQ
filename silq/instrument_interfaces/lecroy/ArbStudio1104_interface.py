@@ -635,9 +635,6 @@ class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
     def target_pulse(self, pulse: DCRampPulse, interface, **kwargs):
-        assert pulse.t_pre_ramp == 0
-        assert pulse.t_post_ramp == 0
-
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
@@ -673,21 +670,32 @@ class DCRampPulseImplementation(PulseImplementation):
         else:
             raise Exception(f"No implementation for connection {self.pulse.connection}")
 
-        waveforms, sequences = {}, {}
-        for ch in channels:
-            total_points = self.pulse.duration * sampling_rates[ch]
-            final_points = self.final_delay * sampling_rates[ch]
-            # Waveform points subtract the final waveform delay
-            waveform_points = int(round(total_points - final_points))
+        try:
+            # Subtract final waveform delay
+            self.pulse.duration -= self.final_delay
+            waveforms, sequences = {}, {}
+            for ch in channels:
+                points = int(self.pulse.duration * sampling_rates[ch])
+                points -= points % 2
 
-            # All waveforms must have an even number of points
-            if waveform_points % 2:
-                waveform_points -= 1
+                t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, points)
+                voltages = self.pulse.get_voltage(t_list)
 
-            waveforms[ch] = [np.linspace(self.pulse.amplitude_start,
-                                         self.pulse.amplitude_stop,
-                                         waveform_points)]
-            sequences[ch] = np.zeros(1, dtype=int)
+                # Remove duplicate final points (due to DCRampPulse.t_post_ramp)
+                consecutive_duplicates = 0
+                for elem in voltages[::-1]:
+                    if elem != voltages[-1]:
+                        break
+                    else:
+                        consecutive_duplicates += 1
+                points -= max(consecutive_duplicates + 1, 0)
+                points -= points % 2
+                voltages = voltages[:points]
+
+                waveforms[ch] = [voltages]
+                sequences[ch] = np.zeros(1, dtype=int)
+        finally:
+            self.pulse.duration += self.final_delay
 
         return waveforms, sequences
 
