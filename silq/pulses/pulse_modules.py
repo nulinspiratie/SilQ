@@ -949,25 +949,9 @@ class PulseSequence(ParameterNode):
     def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
              figsize=None, legend=True,
              **connection_kwargs):
-        pulses = self.get_pulses(**connection_kwargs)
 
-        connection_pulse_list = {}
-        for pulse in pulses:
-            if pulse.connection_label is not None:
-                connection_label = pulse.connection_label
-            elif pulse.connection is not None:
-                if pulse.connection.label is not None:
-                    connection_label = pulse.connection.label
-                else:
-                    connection_label = pulse.connection.output['str']
-            else:
-                connection_label = 'Other'
-
-            if connection_label not in connection_pulse_list:
-                connection_pulse_list[connection_label] = [pulse]
-            else:
-                connection_pulse_list[connection_label].append(pulse)
-
+        t_list, voltages, connection_pulse_list = self.get_waveform(t_range, points,
+                                                                    **connection_kwargs)
         if subplots:
             figsize = figsize or 10, 1.5 * len(connection_pulse_list)
             fig, axes = plt.subplots(len(connection_pulse_list), 1, sharex=True,
@@ -977,33 +961,12 @@ class PulseSequence(ParameterNode):
             fig, ax = plt.subplots(1, figsize=figsize)
             axes = [ax]
 
-        # Generate t_list
-        if t_range is None:
-            t_range = (0, self.duration)
-        sample_rate = (t_range[1] - t_range[0]) / points
-        t_list = np.linspace(*t_range, points)
-
-        voltages = {}
         for k, (connection_label, connection_pulses) in enumerate(
                 connection_pulse_list.items()):
-
-            connection_voltages = np.nan * np.ones(len(t_list))
-            for pulse in connection_pulses:
-                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop,
-                                         sample_rate)
-                start_idx = np.argmax(t_list >= pulse.t_start)
-                # Determine max_pts because sometimes there is a rounding error
-                max_pts = len(connection_voltages[
-                              start_idx:start_idx + len(pulse_t_list)])
-                connection_voltages[
-                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
-                    pulse_t_list[:max_pts])
-            voltages[connection_label] = connection_voltages
-
             if subplots:
                 ax = axes[k]
 
-            ax.plot(t_list, connection_voltages, label=connection_label)
+            ax.plot(t_list, voltages[connection_label], label=connection_label)
             if not subplots:
                 ax.set_xlabel('Time (s)')
             ax.set_ylabel('Amplitude (V)')
@@ -1073,7 +1036,7 @@ class PulseSequence(ParameterNode):
                     pulse_t_list[:max_pts])
             voltages[connection_label] = connection_voltages
 
-        return t_list, voltages
+        return t_list, voltages, connection_pulse_list
 
     def up_to_date(self) -> bool:
         """Checks if a pulse sequence is up to date or needs to be generated.
