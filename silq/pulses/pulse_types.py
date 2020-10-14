@@ -1436,60 +1436,50 @@ class AWGAdvancedPulse(Pulse):
     To define it we can use 3 approaches:
         - provide a callable function that converts a time-array into array of waveform points
         - provide an arbitrary array of waveform points
+        - provide a pulse sequence
 
     The resulting AWGPulse can be sampled at different sample rates,
     interpolating between waveform points if necessary.
 
     Parameters:
         name: Pulse name.
-        function: The function used for calculating waveform points based on
-                  time-array.
-        wf_array: Numpy array of (float) with time-stamps and waveform points.
-        interpolate: Use interpolation of the wf_array.
+        function: The function used for calculating waveform points based on time-array.
+        waveform: Numpy array of (float) with time-stamps and waveform points.
+        interpolate: Use interpolation of the waveform array.
 
     """
 
     def __init__(self,
                  name: str = None,
-                 fun: Callable = None,
-                 wf_array: np.ndarray = None,
+                 function: Callable = None,
+                 waveform: np.ndarray = None,
                  interpolate: bool = True,
                  **kwargs):
         super().__init__(name=name, **kwargs)
 
-        if fun:
-            if not callable(fun):
-                raise TypeError('The argument `function` must be a callable function.')
-            self.from_function = True
-            self.function = fun
-        elif wf_array is not None:
-            if not type(wf_array) == np.ndarray:
+        if function:
+            if not callable(function):
+                raise TypeError('The argument "function" must be a callable function.')
+            self.function = function
+        elif waveform is not None:
+            if not type(waveform) == np.ndarray:
                 raise TypeError('The argument `array` must be of type `np.ndarray`.')
-            if not len(wf_array) == 2:
+            if not len(waveform) == 2:
                 raise TypeError('The argument `array` must be of length 2.')
-            if not len(wf_array[0]) == len(wf_array[1]):
+            if not len(waveform[0]) == len(waveform[1]):
                 raise TypeError('The argument `array` must have equal time-stamps and waveform points')
-            assert np.all(np.diff(wf_array[0]) > 0), 'the time-stamps must be increasing'
-            self.t_start = wf_array[0][0]
-            self.t_stop = wf_array[0][-1]
-            self.from_function = False
-            self.array = wf_array
+            assert np.all(np.diff(waveform[0]) > 0), 'the time-stamps must be increasing'
+            self.t_start = waveform[0][0]
+            self.t_stop = waveform[0][-1]
+            self.array = waveform
             self.interpolate = interpolate
         else:
             raise TypeError('Provide either a function or an array.')
 
-    @classmethod
-    def from_array(cls, array, **kwargs):
-        return cls(wf_array=array, **kwargs)
-
-    @classmethod
-    def from_function(cls, function, **kwargs):
-        return cls(fun=function, **kwargs)
-
     def __repr__(self):
         properties_str = ''
         try:
-            if self.from_function:
+            if self.function is not None:
                 properties_str = f'function:{self.function}'
             else:
                 properties_str = f'array:{self.array.shape}'
