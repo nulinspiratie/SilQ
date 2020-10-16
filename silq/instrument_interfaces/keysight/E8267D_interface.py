@@ -661,6 +661,10 @@ class SingleWaveformPulseImplementation(PulseImplementation):
         assert (interface.IQ_modulation() == 'on') and (interface.FM_mode() == 'IQ'), \
             f'FM_mode should be IQ and IQ_modulation should be ON for {self.pulse.name}.'
 
+        assert all(0 <= amp <= 1 for amp in
+                   self.pulse.amplitudes), f"Not all amplitudes in {self.pulse.name} list: " \
+                                           f"{self.pulse.amplitudes} are between 0 and 1V."
+
         phases_IQ = {
             'I': list(np.array(self.pulse.phases) + interface.I_phase_correction()),
             'Q': list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
@@ -673,6 +677,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                         AM_type=self.pulse.AM_type,
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                        amplitudes=self.pulse.amplitudes,
                                         frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
                                         phases=phases,
                                         durations=self.pulse.durations,

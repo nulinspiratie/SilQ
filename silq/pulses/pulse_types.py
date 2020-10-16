@@ -803,6 +803,7 @@ class SingleWaveformPulse(Pulse):
                     'ramp_lin' - linear frequency ramp pulse;
                     'ramp_expsat' - exponential-saturation frequency ramp pulse
         AM_type: type of pulse's amplitude modulation, can be 'square' (by default) or 'gauss'
+        amplitudes: list of Pulse amplitudes (set to 1 by default)
         frequencies: list of Pulse frequencies if pulse_type is 'sine' or
                      list of Pulse start frequencies if pulse_type is 'ramp'
         start_frequencies: list of start frequencies of the 'ramp' pulse, not used if 'sine' pulse.
@@ -825,6 +826,7 @@ class SingleWaveformPulse(Pulse):
                  name: str = None,
                  pulse_type: str = None,
                  AM_type: str = None,
+                 amplitudes: List[float] = None,
                  frequencies: List[float] = None,
                  start_frequencies: List[float] = None,
                  frequency_rate: float = None,
@@ -846,6 +848,8 @@ class SingleWaveformPulse(Pulse):
                                  vals=vals.Enum('square', 'gauss'))
         self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
                                vals=vals.Numbers())
+        self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
+                                    set_cmd=None, vals=vals.Lists())
         self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
                                      set_cmd=None, vals=vals.Lists())
         self.start_frequencies = Parameter(initial_value=start_frequencies, unit='Hz',
@@ -870,14 +874,16 @@ class SingleWaveformPulse(Pulse):
                                      set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
-            ['pulse_type', 'AM_type', 'power', 'frequencies', 'start_frequencies', 'frequency_rate',
-             'decay', 'phases', 'durations', 'frequency_sideband', 'sideband_mode',
-             'phase_reference', 'final_delay'])
+            ['pulse_type', 'AM_type', 'power', 'amplitudes', 'frequencies',
+             'start_frequencies', 'frequency_rate', 'decay', 'phases', 'durations',
+             'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
 
         if self.pulse_type is None:
             self.pulse_type = 'sine'
         if self.AM_type is None:
             self.AM_type = 'square'
+        if self.amplitudes is None:
+            self.amplitudes = [1.0] * len(self.durations)
         if self.sideband_mode is None:
             self.sideband_mode = 'IQ'
         if self.phase_reference is None:
@@ -895,6 +901,7 @@ class SingleWaveformPulse(Pulse):
             freq_repr = list(np.array(self.frequencies) - self.frequencies[0])
             if self.pulse_type == 'sine':
                 properties_str = f'SinePulse ({self.AM_type})'
+                properties_str += f', amplitudes={self.amplitudes} V'
                 properties_str += f', f={freq_to_str(self.frequencies[0])}'
                 properties_str += f' + {freq_repr} Hz'
             else:
@@ -941,19 +948,19 @@ class SingleWaveformPulse(Pulse):
                                            f'specified durations.'
         assert self.phases is not None, f'Pulse {self.name} does not have ' \
                                         f'specified phases.'
-        assert len(self.frequencies) == len(self.durations) == len(self.phases), \
-            f'Pulse {self.name} does not have equal number of frequencies, durations and phases.'
+        assert len(self.frequencies) == len(self.durations) == len(self.phases) == len(self.amplitudes), \
+            f'Pulse {self.name} does not have equal number of frequencies, durations, phases and amplitudes.'
 
         if isinstance(t, collections.Iterable):
             waveform = np.zeros(len(t))
-            for idx, (frequency, duration, phase) in enumerate(
-                    zip(self.frequencies, self.durations, self.phases)):
+            for idx, (amplitude, frequency, duration, phase) in enumerate(
+                    zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
                             for t_id in t]
                 if self.pulse_type == 'sine':
                     if self.AM_type == 'square':
-                        waveform[idx_list] = np.sin(2 * np.pi * (frequency * t[idx_list] +
-                                                                 phase / 360))
+                        waveform[idx_list] = amplitude * np.sin(2 * np.pi * (frequency * t[idx_list] +
+                                                                             phase / 360))
                     elif self.AM_type == 'gauss':
                         t_start = sum(self.durations[:idx])
                         t_end = sum(self.durations[:idx + 1])
@@ -974,12 +981,12 @@ class SingleWaveformPulse(Pulse):
                 else:
                     raise ValueError('Pulse type is not set or not available.')
         else:
-            for idx, (frequency, duration, phase) in enumerate(
-                    zip(self.frequencies, self.durations, self.phases)):
+            for idx, (amplitude, frequency, duration, phase) in enumerate(
+                    zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
                 if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
                     if self.pulse_type == 'sine':
                         if self.AM_type == 'square':
-                            waveform = np.sin(2 * np.pi * (frequency * t + phase / 360))
+                            waveform = amplitude * np.sin(2 * np.pi * (frequency * t + phase / 360))
                         elif self.AM_type == 'gauss':
                             t_start = sum(self.durations[:idx])
                             t_end = sum(self.durations[:idx + 1])
