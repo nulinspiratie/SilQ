@@ -906,9 +906,10 @@ class SingleWaveformPulse(Pulse):
                 properties_str += f' + {freq_repr} Hz'
             else:
                 if self.pulse_type == 'ramp_lin':
-                    properties_str = f'LinearRampPulse ({self.AM_type})'
+                    properties_str = f'LinearRampPulse (square)'
                 elif self.pulse_type == 'ramp_expsat':
-                    properties_str = f'ExpSatRampPulse ({self.AM_type})'
+                    properties_str = f'ExpSatRampPulse (square)'
+                properties_str += f', amplitudes={self.amplitudes} V'
                 properties_str += f', f_start={freq_to_str(self.frequencies[0])}'
                 properties_str += f' + {freq_repr} Hz'
                 properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
@@ -965,17 +966,17 @@ class SingleWaveformPulse(Pulse):
                         t_start = sum(self.durations[:idx])
                         t_end = sum(self.durations[:idx + 1])
                         peak_t = (t_start + t_end) / 2
-                        waveform[idx_list] = np.exp(
+                        waveform[idx_list] = amplitude * np.exp(
                             -8 * (t[idx_list] - peak_t) ** 2 / (duration ** 2)) * np.sin(
                             2 * np.pi * (frequency * t[idx_list] + phase / 360))
 
                 elif self.pulse_type == 'ramp_lin':
-                    waveform[idx_list] = np.sin(2 * np.pi * (
+                    waveform[idx_list] = amplitude * np.sin(2 * np.pi * (
                             frequency * t[idx_list] + self.frequency_rate * np.power(
                         t[idx_list], 2) / 2 + phase / 360))
 
                 elif self.pulse_type == 'ramp_expsat':
-                    waveform[idx_list] = np.sin(2 * np.pi * (
+                    waveform[idx_list] = amplitude * np.sin(2 * np.pi * (
                             frequency * t[idx_list] + self.frequency_rate * np.exp(
                         -t[idx_list] / self.decay) + phase / 360))
                 else:
@@ -991,16 +992,16 @@ class SingleWaveformPulse(Pulse):
                             t_start = sum(self.durations[:idx])
                             t_end = sum(self.durations[:idx + 1])
                             peak_t = (t_start + t_end) / 2
-                            waveform = np.exp(
+                            waveform = amplitude * np.exp(
                                 -8 * (t - peak_t) ** 2 / (duration ** 2)) * np.sin(
                                 2 * np.pi * (frequency * t + phase / 360))
 
                     elif self.pulse_type == 'ramp_lin':
-                        waveform = np.sin(
+                        waveform = amplitude * np.sin(
                             2 * np.pi * (frequency * t + self.frequency_rate * t / 2 + phase / 360))
 
                     elif self.pulse_type == 'ramp_expsat':
-                        waveform = np.sin(2 * np.pi * (
+                        waveform = amplitude * np.sin(2 * np.pi * (
                                 frequency * t + self.frequency_rate * np.exp(-t / self.decay) +
                                 phase / 360))
                     else:
