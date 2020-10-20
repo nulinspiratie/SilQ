@@ -1030,7 +1030,7 @@ def analyse_electron_readout(
     )
     if threshold_voltage is None or np.isnan(threshold_voltage):
         threshold_voltage = high_low["threshold_voltage"]
-    results["threshold_voltage"] = high_low["threshold_voltage"]
+    results["threshold_voltage"] = threshold_voltage
     results["voltage_difference"] = high_low["voltage_difference"]
 
     if shots_per_frequency == 1:
