@@ -488,6 +488,7 @@ def count_blips(
 def analyse_traces(
     traces: np.ndarray,
     sample_rate: float,
+    filtered_shots: np.ndarray = None,
     filter: Union[str, None] = None,
     min_filter_proportion: float = 0.5,
     t_skip: float = 0,
@@ -576,6 +577,7 @@ def analyse_traces(
     # Initialize all results to None
     results = {
         "up_proportion": 0,
+        "up_proportion_idxs": np.nan * np.zeros(len(traces)),
         "end_high": 0,
         "end_low": 0,
         "num_traces": 0,
@@ -671,6 +673,9 @@ def analyse_traces(
     else:  # Do not filter traces
         filtered_traces_idx = np.ones(len(traces), dtype=bool)
 
+    if filtered_shots is not None:
+        filtered_traces_idx = filtered_traces_idx & filtered_shots
+
     results["filtered_traces_idx"] = filtered_traces_idx
     filtered_traces = traces[filtered_traces_idx]
     results["num_traces"] = len(filtered_traces)
@@ -727,6 +732,7 @@ def analyse_traces(
         up_proportion = sum(up_proportion_idxs) / len(traces)
         if k == len(t_read_vals):
             results["up_proportion"] = up_proportion
+            results["up_proportion_idxs"][filtered_traces_idx] = up_proportion_idxs
         else:
             up_proportions.append(up_proportion)
 
@@ -992,6 +998,7 @@ class AnalyseEPR(Analysis):
 def analyse_electron_readout(
     traces: dict,
     sample_rate: float,
+    filtered_shots: np.ndarray = None,
     shots_per_frequency: int = 1,
     labels: List[str] = None,
     t_skip: float = 0,
@@ -1011,7 +1018,8 @@ def analyse_electron_readout(
         )
     num_frequencies = int(len(traces) / shots_per_frequency)
 
-    results = {"read_results": [[] for _ in range(num_frequencies)]}
+    results = {}
+    read_results = [[] for _ in range(num_frequencies)]
 
     # Extract samples and points per shot
     first_trace = next(iter(traces.values()))
@@ -1049,13 +1057,21 @@ def analyse_electron_readout(
                 read_traces[f_idx][sample_idx][shot_idx] = read_trace
 
     # Iterate through traces and extract data
-    up_proportions = np.zeros((num_frequencies, samples))
+    if shots_per_frequency == 1:
+        up_proportions = np.zeros((num_frequencies, shots_per_frequency))
+        up_proportions_idxs = np.nan * np.zeros((num_frequencies, shots_per_frequency, samples))
+    else:
+        up_proportions = np.zeros((num_frequencies, samples))
+        up_proportions_idxs = np.nan * np.zeros((num_frequencies, samples, shots_per_frequency))
+
     num_traces = np.zeros((num_frequencies, samples))
     for f_idx, read_traces_single_frequency in enumerate(read_traces):
         for sample_idx, read_traces_arr in enumerate(read_traces_single_frequency):
+            # read_traces_arr is 2D (shots_per_frequency, points_per_shot)
             read_result = analyse_traces(
                 traces=read_traces_arr,
                 sample_rate=sample_rate,
+                filtered_shots=filtered_shots,
                 t_read=t_read,
                 t_skip=t_skip,
                 t_read_vals=t_read_vals,
@@ -1063,13 +1079,14 @@ def analyse_electron_readout(
                 min_filter_proportion=min_filter_proportion,
                 plot=plot,
             )
-            results["read_results"][f_idx].append(read_result)
+            read_results[f_idx].append(read_result)
 
             up_proportions[f_idx, sample_idx] = read_result["up_proportion"]
+            up_proportions_idxs[f_idx, sample_idx] = read_result["up_proportion_idxs"]
             num_traces[f_idx, sample_idx] = read_result["num_traces"]
 
     # Add all up proportions as measurement results
-    for k, up_proportion_arr in enumerate(up_proportions):
+    for k, (up_proportion_arr, up_proportion_idxs_arr) in enumerate(zip(up_proportions, up_proportions_idxs)):
         # Determine the right up_proportion label
         label = "up_proportion" if shots_per_frequency == 1 else "up_proportions"
         if labels is not None:
@@ -1081,8 +1098,10 @@ def analyse_electron_readout(
 
         if shots_per_frequency == 1:  # Remove outer dimension
             up_proportion_arr = up_proportion_arr[0]
+            up_proportion_idxs_arr = up_proportion_idxs_arr[0]
 
-        results[label + suffix] = up_proportion_arr
+        results[f"{label}{suffix}"] = up_proportion_arr
+        results[f"{label}_idxs{suffix}"] = up_proportion_idxs_arr
 
         if threshold_up_proportion:
             results["filtered_shots" + suffix] = up_proportion_arr > threshold_up_proportion
@@ -1091,6 +1110,9 @@ def analyse_electron_readout(
             results["contrast" + suffix] = up_proportion_arr - dark_counts
 
         results["num_traces" + suffix] = sum(num_traces[k])
+
+    results["read_results"] = read_results
+
     return results
 
 
@@ -1166,10 +1188,22 @@ class AnalyseElectronReadout(Analysis):
         self.outputs.filtered_shots = Parameter(
             initial_value=False, set_cmd=None
         )
+        self.outputs.up_proportion_idxs = Parameter(
+            initial_value=False, set_cmd=None
+        )
 
     @property
     def result_parameters(self):
         parameters = []
+
+        if self.settings.labels is not None:
+            suffixes = [f"_{label}" for label in self.settings.labels]
+        elif self.settings.num_frequencies > 1:
+            # Note that we avoid an underscore
+            suffixes = [str(k) for k in range(self.settings.num_frequencies)]
+        else:
+            suffixes = [""] * self.settings.num_frequencies
+
         for name, output in self.outputs.parameters.items():
             if not output():
                 continue
@@ -1177,22 +1211,28 @@ class AnalyseElectronReadout(Analysis):
             if name in ["up_proportion", "contrast", "num_traces", "filtered_shots"]:
                 # Add a label for each frequency
                 for k in range(self.settings.num_frequencies):
-                    if self.settings.labels is not None:
-                        suffix = f"_{self.settings.labels[k]}"
-                    elif self.settings.num_frequencies > 1:
-                        suffix = str(k)  # Note that we avoid an underscore
-                    else:
-                        suffix = ""
-
                     output_copy = copy(output)
-                    output_copy.name = name + suffix
+                    output_copy.name = name + suffixes[k]
 
                     if (
                         name == "up_proportion"
                         and self.settings.shots_per_frequency > 1
                     ):
-                        output_copy.name = "up_proportions" + suffix
+                        output_copy.name = "up_proportions" + suffixes[k]
                         output_copy.shape = (self.settings.samples,)
+
+                    parameters.append(output_copy)
+            elif name == 'up_proportion_idxs':
+                # Add a label for each frequency
+                for k in range(self.settings.num_frequencies):
+                    output_copy = copy(output)
+
+                    if self.settings.shots_per_frequency > 1:
+                        output_copy.name = "up_proportions_idxs" + suffixes[k]
+                        output_copy.shape = (self.settings.samples, self.settings.shots_per_frequency)
+                    else:
+                        output_copy.name = "up_proportion_idxs" + suffixes[k]
+                        output_copy.shape = (self.settings.samples, )
 
                     parameters.append(output_copy)
             else:
