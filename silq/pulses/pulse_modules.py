@@ -373,7 +373,7 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def t_stop_get(self, parameter):
-        return self.t_start + self.duration
+        return np.round(self.t_start + self.duration, 11)
 
     @parameter
     def t_start_list_get(self, parameter):
@@ -679,7 +679,7 @@ class PulseSequence(ParameterNode):
         if pulses_no_duration:
             raise ValueError(
                 'Please specify pulse duration in silq.config.pulses for the '
-                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+                'following pulses: ' + ', '.join(p.name for p in pulses_no_duration)
             )
 
         if copy:
@@ -936,6 +936,24 @@ class PulseSequence(ParameterNode):
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
+        """Add pulse sequence(s) as nested pulse sequences
+
+        Args:
+            *pulse_sequences: pulse sequences to sequentially append.
+
+        Notes:
+            - Successive pulse sequences are connected to each other such
+              that if a previous pulse sequence duration changes, the subsequent
+              pulse sequences are also shifted.
+            - Pulse sequences are not copied. This means that if you want to
+              nest a pulse sequence to multiple parent pulse sequences, you must
+              manually copy the pulse sequence.
+            - For each nested pulse sequence, pulse_sequence.parent is set to
+             this pulse sequence.
+
+        Raises:
+             RuntimeError if current pulse sequence already contains pulses
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -949,6 +967,12 @@ class PulseSequence(ParameterNode):
         self._link_pulse_sequences()
 
     def insert_pulse_sequence(self, index, pulse_sequence):
+        """Insert a nested pulse sequence at a specific pulse sequence index
+
+        Args:
+            index: Index at which to insert pulse sequence
+            pulse_sequence: Pulse sequence to insert
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -999,7 +1023,7 @@ class PulseSequence(ParameterNode):
         for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
-                
+
                 # Remove any pre-existing connection to pulse_sequence.enabled
                 # This may link to another parent pulse sequence
                 enabled_receivers = pulse_sequence['enabled'].signal.receivers
@@ -1458,10 +1482,20 @@ class PulseSequence(ParameterNode):
         return all(pulse_sequence.up_to_date() for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
+        """Separate pulses into enabled and disabled pulses"""
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
         self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
 
     def _update_last_pulse(self):
+        """Attaches pulse_sequence.t_stop to t_stop of last pulse
+
+        Called whenever pulses are added
+        Notes:
+            - If the t_stop of a pulse that is not the last pulse is increased
+              such that it becomes the last t_stop, this will cause issues since
+              it is not connected to pulse_sequence.t_stop.
+
+        """
         if not self.my_pulses:
             return
 
@@ -1481,6 +1515,11 @@ class PulseSequence(ParameterNode):
             self._last_pulse['t_stop'].connect(self['t_stop'])
 
     def clone_skeleton(self, pulse_sequence):
+        """Clone the structure of a pulse sequence into this one
+
+        This skeleton copy includes copies of all nested pulse sequences,
+        but does not include copies of the pulses
+        """
         self.clear()
         for subsequence in pulse_sequence.pulse_sequences:
             clone_subsequence = PulseSequence()

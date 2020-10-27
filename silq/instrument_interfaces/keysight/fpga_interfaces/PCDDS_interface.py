@@ -152,11 +152,8 @@ class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
     def implement(self, *args, **kwargs):
-        if self.pulse.phase_reference == 'absolute':
-            phase = 360 * ((self.pulse.frequency * self.pulse.t_start) % 1)
-            phase += self.pulse.phase
-        else:
-            phase = self.pulse.phase
+        # TODO distinguish between abolute / relative phase
+        phase = self.pulse.phase
 
         return {'instr': 'sine',
                 'freq': self.pulse.frequency,

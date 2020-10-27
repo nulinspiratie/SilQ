@@ -7,6 +7,8 @@ from silq.pulses import Pulse, DCPulse, DCRampPulse, SinePulse, \
     MultiSinePulse, FrequencyRampPulse, MarkerPulse, PulseImplementation
 
 from qcodes.utils import validators as vals
+from qcodes.instrument.parameter import Parameter
+
 
 
 class E8267DInterface(InstrumentInterface):
@@ -77,6 +79,19 @@ class E8267DInterface(InstrumentInterface):
                                      "the gate marker pulse, and end afterwards. "
                                      "This is ignored for chirp pulses where "
                                      "FM_mode = 'IQ'.")
+        self.envelope_IQ = Parameter(
+            set_cmd=None,
+            vals=vals.Bool(),
+            initial_value=True,
+            docstring="Apply the envelope padding to the IQ pulse instead of marker pulse."
+                      "If True, the marker pulse length equals the pulse length, and the "
+                      "I and Q pulses are extended by the envelope padding "
+                      "before (after) the pulse start (stop) time. "
+                      "If False, the marker pulse starts before (after) the pulse start (stop) "
+                      "time, and the IQ pulses starts (stops) at the pulse start (stop) time."
+                      "This means that there might be some leakage at the carrier frequency "
+                      "when the IQ is zero, but the marker pulse is still high."
+        )
         self.add_parameter('I_phase_correction',
                            unit='deg',
                            set_cmd=None,
@@ -161,7 +176,13 @@ class E8267DInterface(InstrumentInterface):
                            docstring='Whether to use IQ modulation. This '
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
-                                     'frequency_sideband not None')
+                                     'frequency_sideband not None.')
+        self.add_parameter('force_IQ',
+                           set_cmd=None,
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           docstring='Force IQ modulation to be enabled, even when'
+                                     'outputting only a single frequency.')
         self.add_parameter('FM_mode',
                            set_cmd=None,
                            initial_value='ramp',
@@ -187,6 +208,11 @@ class E8267DInterface(InstrumentInterface):
         frequency_sidebands = {int(round(pulse.frequency_sideband))
                                if pulse.frequency_sideband is not None else None
                                for pulse in self.pulse_sequence}
+
+        # Ramp mode does not work with envelope IQ since the output can only be
+        # turned off via gating (0V on ramp input corresponds to a pulse at carrier)
+        assert self.FM_mode() != 'ramp' or self.envelope_IQ(), \
+            "Cannot use 'ramp' FM mode while envelope_IQ == False"
 
         if self.FM_mode() == 'IQ':
             assert frequency_sidebands == {None}, \
@@ -249,7 +275,7 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation() / 1e6} MHz"
 
-        if frequency_sidebands or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
+        if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
             self.IQ_modulation._save_val('on')
         else:
             self.IQ_modulation._save_val('off')
@@ -257,6 +283,23 @@ class E8267DInterface(InstrumentInterface):
         additional_pulses = []
         for pulse in self.pulse_sequence:
             additional_pulses += pulse.implementation.get_additional_pulses(interface=self)
+
+        # Ensure marker pulses are not overlapping
+        marker_pulses = [p for p in additional_pulses if isinstance(p, MarkerPulse)]
+        if marker_pulses:
+            marker_pulses = sorted(marker_pulses, key=lambda p: p.t_start)
+            current_pulse = marker_pulses[0]
+            merged_marker_pulses = [current_pulse]
+            for pulse in marker_pulses[1:]:
+                if pulse.t_start <= current_pulse.t_stop:
+                    # Marker pulse overlaps with previous pulse
+                    current_pulse.t_stop = max(pulse.t_stop, current_pulse.t_stop)
+                else:
+                    # Pulse starts after previous pulse
+                    merged_marker_pulses.append(pulse)
+                    current_pulse = pulse
+            nonmarker_pulses = [p for p in additional_pulses if not isinstance(p, MarkerPulse)]
+            additional_pulses = [*merged_marker_pulses, *nonmarker_pulses]
 
         return additional_pulses
 
@@ -310,8 +353,10 @@ class SinePulseImplementation(PulseImplementation):
 
     def get_additional_pulses(self, interface: InstrumentInterface):
         # Add an envelope pulse
+        t_offset = 0 if interface.envelope_IQ() else interface.envelope_padding()
         additional_pulses = [
-            MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
+            MarkerPulse(t_start=self.pulse.t_start - t_offset,
+                        t_stop=self.pulse.t_stop + t_offset,
                         amplitude=interface.marker_amplitude(),
                         connection_requirements={
                             'input_instrument': interface.instrument_name(),
@@ -340,11 +385,12 @@ class SinePulseImplementation(PulseImplementation):
                 amplitude_FM = None
                 frequency_IQ = self.pulse.frequency - interface.frequency()
 
-        if frequency_IQ is not None:
+        if frequency_IQ is not None and frequency_IQ != 0:
+            t_offset = interface.envelope_padding() if interface.envelope_IQ() else 0
             additional_pulses.extend([
                 SinePulse(name='sideband_I',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          t_start=self.pulse.t_start - t_offset,
+                          t_stop=self.pulse.t_stop + t_offset,
                           frequency=frequency_IQ,
                           amplitude=1 + interface.I_amplitude_correction(),
                           phase=self.pulse.phase + interface.I_phase_correction(),
@@ -354,8 +400,8 @@ class SinePulseImplementation(PulseImplementation):
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'I'}),
                 SinePulse(name='sideband_Q',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                          t_start=self.pulse.t_start - t_offset,
+                          t_stop=self.pulse.t_stop + t_offset,
                           frequency=frequency_IQ,
                           phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
                           amplitude=1 + interface.Q_amplitude_correction(),
@@ -364,11 +410,35 @@ class SinePulseImplementation(PulseImplementation):
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
+        elif frequency_IQ == 0:
+            # Frequency is zero, add DC pulses instead of sine pulses
+            amplitudes = {
+                'I': np.sin(2 * np.pi * (self.pulse.phase +
+                                         interface.I_phase_correction()) / 360),
+                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90 +
+                                         interface.Q_phase_correction()) / 360)
+            }
+
+            for quadrature, amplitude in amplitudes.items():
+                # Pulse is probably not needed if amplitude is 0, but we leave it for now.
+                # if amplitude == 0:
+                #     continue
+                additional_pulses.append(
+                    DCPulse(name=f'sideband_{quadrature}',
+                            t_start=self.pulse.t_start - interface.envelope_padding(),
+                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                            amplitude=amplitude,
+                            connection_requirements={
+                                'input_instrument': interface.instrument_name(),
+                                'input_channel': quadrature}
+                            )
+                )
 
         if amplitude_FM is not None:
             assert abs(amplitude_FM) <= 1 + 1e-13, \
                 f'abs(amplitude) {amplitude_FM} cannot be higher than 1'
 
+            # Note that amplitude_FM implies envelope_IQ == True
             additional_pulses.append(
                 DCPulse(t_start=self.pulse.t_start - interface.envelope_padding(),
                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
