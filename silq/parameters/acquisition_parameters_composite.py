@@ -355,9 +355,19 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         self.analyses = ParameterNode()
         self.analyses.ESR = AnalyseElectronReadout('ESR')
+        self.analyses.NMR_electron_readout = AnalyseElectronReadout('NMR_electron_readout')
         self.analyses.NMR = AnalyseMultiStateReadout('NMR')
 
+        # Turn off NMR_electron_readout analysis
+        self.analyses.NMR_electron_readout.enabled = False
+
+        self._connect_analyses()
+
+        super().__init__(name=name, **kwargs)
+
+    def _connect_analyses(self):
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
+        self.layout.sample_rate.connect(self.analyses.NMR_electron_readout.settings["sample_rate"])
         self.analyses.ESR.settings['labels'].connect(
             self.analyses.NMR.settings['labels']
         )
@@ -368,8 +378,14 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         self.analyses.ESR.settings["shots_per_frequency"].define_get(
             partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
         )
+        self.analyses.NMR_electron_readout.settings["shots_per_frequency"].define_get(
+            partial(self.NMR.settings.__getitem__, 'shots_per_frequency')
+        )
         self.analyses.ESR.settings["num_frequencies"].define_get(
             lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.NMR_electron_readout.settings["num_frequencies"].define_get(
+            lambda: len(self.NMR.frequencies)
         )
         self.analyses.NMR.settings["num_frequencies"].define_get(
             lambda: len(self.ESR.frequencies)
@@ -377,8 +393,9 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         self.analyses.ESR.settings["samples"].define_get(
             lambda: self.samples
         )
-
-        super().__init__(name=name, **kwargs)
+        self.analyses.NMR_electron_readout.settings["samples"].define_get(
+            lambda: self.samples
+        )
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None, plot: bool = False):
         """Analyse flipping events between nuclear states
@@ -443,12 +460,17 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         up_proportions_arrs = np.array([
             val for key, val in self.results['ESR'].items()
-            if key.startswith('up_proportion')
+            if key.startswith('up_proportion') and 'idxs' not in key
         ])
         if self.analyses.NMR.enabled:
             self.results["NMR"] = self.analyses.NMR.analyse(
                 up_proportions_arrs=up_proportions_arrs,
                 filtered_shots=filtered_shots
+            )
+        if self.analyses.NMR_electron_readout.enabled:
+            self.results["NMR_electron_readout"] = self.analyses.NMR_electron_readout.analyse(
+                traces=traces.NMR, filtered_shots=filtered_shots, plot=plot,
+                threshold_voltage=self.results['ESR']['threshold_voltage']
             )
 
         return self.results
@@ -456,7 +478,7 @@ class NMRParameterComposite(AcquisitionParameterComposite):
     def plot_flips(self , figsize=(8, 3)):
         up_proportion_arrays = [
             val for key, val in self.results.ESR.items()
-            if key.startswith('up_proportion')
+            if key.startswith('up_proportion') and 'idxs' not in key
         ]
         assert len(up_proportion_arrays) >= 2
 
