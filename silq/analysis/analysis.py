@@ -796,6 +796,7 @@ def analyse_EPR(
     t_read: float,
     min_filter_proportion: float = 0.5,
     threshold_voltage: Union[float, None] = None,
+    threshold_method='config',
     filter_traces=True,
     plot: bool = False,
 ):
@@ -853,6 +854,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
         plot=plot[0],
     )
@@ -864,6 +866,7 @@ def analyse_EPR(
         filter="high" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
         plot=plot[1],
     )
@@ -875,6 +878,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
     )
     results_read_begin = analyse_traces(
@@ -883,6 +887,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_read=t_read,
         segment="begin",
         t_skip=t_skip,
@@ -893,6 +898,7 @@ def analyse_EPR(
         sample_rate=sample_rate,
         t_read=t_read,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         segment="end",
         t_skip=t_skip,
         plot=plot[2],
@@ -946,6 +952,12 @@ class AnalyseEPR(Analysis):
             initial_value=None,
             set_cmd=None,
             config_link="analysis.threshold_voltage",
+            update_from_config=True,
+        )
+        self.settings.threshold_method = Parameter(
+            initial_value=None,
+            set_cmd=None,
+            config_link="analysis.threshold_method",
             update_from_config=True,
         )
         self.settings.filter_traces = Parameter(
