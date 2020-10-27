@@ -1535,12 +1535,7 @@ class Layout(Instrument):
         self.is_acquiring = True
 
         try:
-<<<<<<< HEAD
-            logger.info(f'Performing acquisition, '
-                        f'{"stop" if stop else "continue"} when finished')
-=======
             logger.info(f'Performing acquisition, {"stop" if stop else "continue"} when finished')
->>>>>>> master
             if not self.active():
                 self.start()
 
