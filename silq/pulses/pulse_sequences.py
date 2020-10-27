@@ -474,7 +474,8 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
             'RF_inter_pulse': None,
             'final_phase': 0,
             'artificial_frequency': 0,
-            'num_refocusing': 0
+            'num_refocusing': 0,
+            'additional_RF_pulses': []
         })
         self.tau: float = Parameter('tau', unit='s', initial_value=1e-3, parent=False)
 
@@ -489,11 +490,14 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
             self.generate()
 
     def add_RF_pulses(self):
-        self.settings['RF_pulses'] = [[
-            self.settings['RF_initial_pulse'],
-            *[self.settings['RF_refocusing_pulse'] for _ in range(self.settings['num_refocusing'])],
-            self.settings['RF_final_pulse']
-        ]]
+        self.settings['RF_pulses'] = [
+            [
+                self.settings['RF_initial_pulse'],
+                *[self.settings['RF_refocusing_pulse'] for _ in range(self.settings['num_refocusing'])],
+                self.settings['RF_final_pulse']
+            ],
+            *self.settings['additional_RF_pulses']
+        ]
 
         self.settings['inter_delay'] = []
         for k, (RF_pulse, next_RF_pulse) in enumerate(zip(
