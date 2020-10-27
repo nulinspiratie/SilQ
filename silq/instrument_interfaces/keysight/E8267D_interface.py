@@ -170,6 +170,10 @@ class E8267DInterface(InstrumentInterface):
                            unit='Hz',
                            set_cmd=None,
                            initial_value=None)
+        self.add_parameter('power',
+                           unit='dBm',
+                           set_cmd=None,
+                           initial_value=None)
         self.add_parameter('IQ_modulation',
                            initial_value=None,
                            vals=vals.Enum('on', 'off'),
@@ -230,6 +234,12 @@ class E8267DInterface(InstrumentInterface):
         if None in frequency_sidebands:
             frequency_sidebands.remove(None)
 
+        # Determine power
+        powers = {pulse.power for pulse in self.pulse_sequence}
+        assert len(powers) == 1 or self.FM_mode() == 'IQ', \
+            "Must use IQ mode for multiple pulse powers"
+        settings['power'] = max(powers)
+
         # Find minimum and maximum frequency
         min_frequency = max_frequency = None
         for pulse in self.pulse_sequence:
@@ -288,10 +298,10 @@ class E8267DInterface(InstrumentInterface):
         else:
             settings['IQ_modulation'] = 'off'
 
-
         if update:
             self.frequency(settings['frequency'])
             self.frequency_deviation(settings['frequency_deviation'])
+            self.power(settings['power'])
             self.IQ_modulation._latest["raw_value"] = settings["IQ_modulation"]
             self.IQ_modulation.get()
 
@@ -308,9 +318,6 @@ class E8267DInterface(InstrumentInterface):
         """
         if not self.pulse_sequence:
             return []
-
-        powers = list({pulse.power for pulse in self.pulse_sequence})
-        assert len(powers) == 1, "Cannot handle multiple pulse powers"
 
         frequency_settings = self.determine_instrument_settings()
 
@@ -348,14 +355,11 @@ class E8267DInterface(InstrumentInterface):
         self.instrument.RF_output('off')
         self.instrument.phase_modulation('off')
 
-        powers = list({pulse.power for pulse in self.pulse_sequence})
-        assert len(powers) == 1, "Cannot handle multiple pulse powers"
-
         # Determine frequency, frequency_deviation, and IQ_modulation
         self.determine_instrument_settings(update=True)
 
         self.instrument.frequency(self.frequency())
-        self.instrument.power(powers[0])
+        self.instrument.power(self.power())
 
         if self.frequency_deviation() > 0 and self.FM_mode() == 'ramp':
             self.instrument.frequency_modulation('on')
@@ -400,6 +404,7 @@ class SinePulseImplementation(PulseImplementation):
             IQ_modulation,
             frequency,
             frequency_deviation,
+            power,
             **kwargs
     ):
         # Add an envelope pulse
@@ -435,6 +440,9 @@ class SinePulseImplementation(PulseImplementation):
                 amplitude_FM = None
                 frequency_IQ = self.pulse.frequency - frequency
 
+        attenuation = self.pulse.power - power
+        amplitude = 10.0 ** (attenuation / 20)
+
         if frequency_IQ is not None and frequency_IQ != 0:
             t_offset = interface.envelope_padding() if interface.envelope_IQ() else 0
             additional_pulses.extend([
@@ -442,7 +450,7 @@ class SinePulseImplementation(PulseImplementation):
                           t_start=self.pulse.t_start - t_offset,
                           t_stop=self.pulse.t_stop + t_offset,
                           frequency=frequency_IQ,
-                          amplitude=1 + interface.I_amplitude_correction(),
+                          amplitude=amplitude + interface.I_amplitude_correction(),
                           phase=self.pulse.phase + interface.I_phase_correction(),
                           phase_reference=self.pulse.phase_reference,
                           offset=self.pulse.offset,
@@ -454,7 +462,7 @@ class SinePulseImplementation(PulseImplementation):
                           t_stop=self.pulse.t_stop + t_offset,
                           frequency=frequency_IQ,
                           phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                          amplitude=1 + interface.Q_amplitude_correction(),
+                          amplitude=amplitude + interface.Q_amplitude_correction(),
                           phase_reference=self.pulse.phase_reference,
                           offset=self.pulse.offset,
                           connection_requirements={
@@ -463,13 +471,13 @@ class SinePulseImplementation(PulseImplementation):
         elif frequency_IQ == 0:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
-                'I': np.sin(2 * np.pi * (self.pulse.phase +
+                'I': amplitude * np.sin(2 * np.pi * (self.pulse.phase +
                                          interface.I_phase_correction()) / 360),
-                'Q': np.sin(2 * np.pi * (self.pulse.phase - 90 +
+                'Q': amplitude * np.sin(2 * np.pi * (self.pulse.phase - 90 +
                                          interface.Q_phase_correction()) / 360)
             }
 
-            for quadrature, amplitude in amplitudes.items():
+            for quadrature, amplitude_quadrature in amplitudes.items():
                 # Pulse is probably not needed if amplitude is 0, but we leave it for now.
                 # if amplitude == 0:
                 #     continue
@@ -477,7 +485,7 @@ class SinePulseImplementation(PulseImplementation):
                     DCPulse(name=f'sideband_{quadrature}',
                             t_start=self.pulse.t_start - interface.envelope_padding(),
                             t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                            amplitude=amplitude,
+                            amplitude=amplitude_quadrature,
                             connection_requirements={
                                 'input_instrument': interface.instrument_name(),
                                 'input_channel': quadrature}
@@ -514,6 +522,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             IQ_modulation,
             frequency,
             frequency_deviation,
+            power,
             **kwargs
     ):
         assert self.pulse.t_start >= interface.envelope_padding(), \
@@ -549,13 +558,16 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             frequency_IQ_stop = self.pulse.frequency_stop - frequency
             frequency_offset = None
 
+        attenuation = self.pulse.power - power
+        amplitude = 10.0 ** (attenuation / 20)
+
         if frequency_IQ is not None:
             additional_pulses.extend([
                 SinePulse(name='sideband_I',
                           t_start=self.pulse.t_start - interface.envelope_padding(),
                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
                           frequency=frequency_IQ,
-                          amplitude=1 + interface.I_amplitude_correction(),
+                          amplitude=amplitude + interface.I_amplitude_correction(),
                           phase=self.pulse.phase + interface.I_phase_correction(),
                           phase_reference=self.pulse.phase_reference,
                           offset=self.pulse.offset,
@@ -569,7 +581,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                           phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
                           phase_reference=self.pulse.phase_reference,
                           offset=self.pulse.offset,
-                          amplitude=1 + interface.Q_amplitude_correction(),
+                          amplitude=amplitude + interface.Q_amplitude_correction(),
                           connection_requirements={
                               'input_instrument': interface.instrument_name(),
                               'input_channel': 'Q'})])
@@ -580,7 +592,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    t_stop=self.pulse.t_stop,
                                    frequency_start=frequency_IQ_start,
                                    frequency_stop=frequency_IQ_stop,
-                                   amplitude=1 + interface.I_amplitude_correction(),
+                                   amplitude=amplitude + interface.I_amplitude_correction(),
                                    phase=self.pulse.phase + interface.I_phase_correction(),
                                    phase_reference=self.pulse.phase_reference,
                                    offset=self.pulse.offset,
@@ -592,7 +604,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                                    t_stop=self.pulse.t_stop,
                                    frequency_start=frequency_IQ_start,
                                    frequency_stop=frequency_IQ_stop,
-                                   amplitude=1 + interface.Q_amplitude_correction(),
+                                   amplitude=amplitude + interface.Q_amplitude_correction(),
                                    phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
                                    phase_reference=self.pulse.phase_reference,
                                    offset=self.pulse.offset,
