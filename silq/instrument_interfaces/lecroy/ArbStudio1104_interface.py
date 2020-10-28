@@ -458,22 +458,10 @@ class SinePulseImplementation(PulseImplementation):
                 # Instead, we add multiple oscillations, close to 50000 points
                 # such that roughly an integer number of periods fit into the
                 # waveform.
-                # TODO improve by modifying the frequency and fix the duration of the waveform
-                # TODO in the commented code below:
-                # periods = 50000 // points_per_period
-                # waveform_points = int(periods * points_per_period)
-                # t_list = self.pulse.t_start + np.arange(waveform_points) / sample_rate
-
-                total_points = self.pulse.duration * sampling_rates[ch]
-                final_points = self.final_delay * sampling_rates[ch]
-                # Waveform points subtract the final waveform delay
-                waveform_points = int(round(total_points - final_points))
-
-                # All waveforms must have an even number of points
-                if waveform_points % 2:
-                    waveform_points -= 1
-
-                t_list = self.pulse.t_start + np.arange(waveform_points) / sampling_rates[ch]
+                # TODO improve by modifying the frequency
+                periods = 50000 // points_per_period
+                waveform_points = int(periods * points_per_period)
+                t_list = self.pulse.t_start + np.arange(waveform_points) / sample_rate
                 voltages = self.pulse.get_voltage(t_list)
 
             waveforms[ch] = [voltages]
