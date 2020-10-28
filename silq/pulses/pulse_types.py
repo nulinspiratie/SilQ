@@ -490,6 +490,12 @@ class Pulse(ParameterNode):
         raise NotImplementedError('Pulse.get_voltage should be implemented in a subclass')
 
 
+class DummyPulse(Pulse):
+    amplitude = None
+    frequency = None
+    """Pulse that will be ignored by the layout"""
+    pass
+
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
 
