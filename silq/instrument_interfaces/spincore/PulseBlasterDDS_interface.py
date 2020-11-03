@@ -80,6 +80,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # Request one trigger at the start if not primary
         if not self.is_primary():
             return [TriggerPulse(t_start=0,
+                                 amplitude=0,  # Inverted trigger (below threshold)
                                  connection_requirements={
                                      'input_instrument': self.instrument_name(),
                                      'trigger': True})]
