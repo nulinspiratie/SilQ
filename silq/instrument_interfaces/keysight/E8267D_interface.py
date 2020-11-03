@@ -37,6 +37,10 @@ class E8267DInterface(InstrumentInterface):
                             name='ext1', input=True),
             'ext2': Channel(instrument_name=self.instrument_name(),
                             name='ext2', input=True),
+            'int1': Channel(instrument_name=self.instrument_name(),
+                            name='int1', input=True),
+            'int2': Channel(instrument_name=self.instrument_name(),
+                            name='int2', input=True),
             'I': Channel(instrument_name=self.instrument_name(),
                          name='I', input=True),
             'Q': Channel(instrument_name=self.instrument_name(),
@@ -293,7 +297,8 @@ class E8267DInterface(InstrumentInterface):
             "Maximum FM frequency deviation is 80 MHz if FM_mode == 'ramp'. " \
             f"Current frequency deviation: {self.frequency_deviation() / 1e6} MHz"
 
-        if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and min_frequency != max_frequency):
+        if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and
+                                                      min_frequency != max_frequency):
             self.IQ_modulation._save_val('on')
         else:
             settings['IQ_modulation'] = 'off'
@@ -538,6 +543,13 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'},
                         name=f'{self.pulse.name}_marker')]
+
+        if interface.modulation_channel().startswith('int'):  # using internal modulation
+            # If you use internal modulation of the microwave source, we skip all other
+            # additional pulses.
+            # NOTE: The parameters of internal modulation must be set (currently) manually
+            # on the microwave source
+            return additional_pulses
 
         if IQ_modulation == 'off':
             frequency_IQ = None
