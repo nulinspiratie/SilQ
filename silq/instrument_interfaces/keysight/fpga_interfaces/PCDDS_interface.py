@@ -124,6 +124,10 @@ class PCDDSInterface(InstrumentInterface):
                     pulse_implementation['next_pulse'] = 1
                 channel.write_instr(pulse_implementation)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         self.active_instrument_channels.set_next_pulse(pulse=0, update=True)
         self.active_instrument_channels.output_enable(True)

@@ -12,8 +12,8 @@ from pathlib import Path
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
-from silq.pulses.pulse_modules import PulseSequence
-from silq.pulses.pulse_types import Pulse, MeasurementPulse
+from silq.pulses.pulse_modules import PulseSequence, find_matching_pulse_sequence
+from silq.pulses.pulse_types import Pulse, MeasurementPulse, DummyPulse
 
 import qcodes as qc
 from qcodes.instrument.parameter_node import parameter
@@ -239,7 +239,7 @@ class SingleConnection(Connection):
             ``amplitude_start``, and ``amplitude_stop`` are scaled.
         """
         if copy_pulse:
-            targeted_pulse = copy(pulse)
+            targeted_pulse = pulse.copy(connect_to_config=False)
         else:
             targeted_pulse = pulse
         targeted_pulse.connection = self
@@ -377,7 +377,7 @@ class CombinedConnection(Connection):
         """
         pulses = []
         for k, connection in enumerate(self.connections):
-            targeted_pulse = copy(pulse)
+            targeted_pulse = pulse.copy(connect_to_config=False)
             for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
@@ -507,71 +507,88 @@ class Layout(Instrument):
     # Targeted pulse sequence whose duration exceeds this will raise an error
     maximum_pulse_sequence_duration = 25
 
-    def __init__(self, name: str = 'layout',
-                 instrument_interfaces: List[InstrumentInterface] = [],
-                 store_pulse_sequences_folder: Union[bool, None] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str = "layout",
+        instrument_interfaces: List[InstrumentInterface] = [],
+        store_pulse_sequences_folder: Union[bool, None] = None,
+        **kwargs
+    ):
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
-        self._interfaces = {interface.instrument_name(): interface
-                            for interface in instrument_interfaces}
+        self._interfaces = {
+            interface.instrument_name(): interface
+            for interface in instrument_interfaces
+        }
 
         self.connections = []
 
-        self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()),
-                           docstring='List of instrument names. Can only be '
-                                     'retrieved. To set, update layout._interfaces')
-        self.add_parameter('primary_instrument',
-                           get_cmd=None,
-                           set_cmd=self._set_primary_instrument,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of primary instrument, usually the '
-                                     'instrument that performs triggering')
+        self.instruments = Parameter(
+            get_cmd=lambda: list(self._interfaces.keys()),
+            docstring="List of instrument names. Can only be retrieved. "
+            "To set, update layout._interfaces",
+        )
+        self.primary_instrument = Parameter(
+            get_cmd=None,
+            set_cmd=self._set_primary_instrument,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of primary instrument, usually the instrument that "
+            "performs triggering",
+        )
+        self.acquisition_instrument = Parameter(
+            set_cmd=None,
+            initial_value=None,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of instrument that acquires data",
+        )
+        self.acquisition_channels = Parameter(
+            set_cmd=None,
+            vals=vals.Lists(),
+            docstring="List of acquisition channels to acquire. "
+            "Each element in the list should be a tuple (ch_name, ch_label), "
+            "where ch_name is a channel of the acquisition interface, "
+            "and ch_label is a given label for that channel (e.g. 'output')."
+        )
+        self.samples = Parameter(
+            set_cmd=None,
+            initial_value=1,
+            docstring="Number of times to acquire the pulse sequence",
+        )
 
-        self.add_parameter('acquisition_instrument',
-                           set_cmd=None,
-                           initial_value=None,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of instrument that acquires data')
-        self.add_parameter('acquisition_channels',
-                           set_cmd=None,
-                           vals=vals.Lists(),
-                           docstring='List of acquisition channels to acquire. '
-                                     'Each element in the list should be a '
-                                     'tuple (ch_name, ch_label), where ch_name '
-                                     'is a channel of the acquisition interface, '
-                                     'and ch_label is a given label for that '
-                                     'channel (e.g. "output").')
+        self.active = Parameter(
+            set_cmd=None,
+            initial_value=False,
+            vals=vals.Bool(),
+            docstring="Whether the pulse sequence is being executed. "
+            "Can be started/stopped via layout.start/layout.stop",
+        )
 
-        self.add_parameter(name='samples',
-                           set_cmd=None,
-                           initial_value=1,
-                           docstring='Number of times to acquire the pulse sequence')
+        self.force_setup = Parameter(
+            set_cmd=None,
+            initial_value=True,
+            vals=vals.Bool(),
+            docstring="Setup all instruments if the pulse sequence has changed. "
+            "If False, only the instruments are setup if their "
+            "respective pulses have changed",
+        )
 
-        self.add_parameter(name='active',
-                           set_cmd=None,
-                           initial_value=False,
-                           vals=vals.Bool(),
-                           docstring='Whether the pulse sequence is being executed. '
-                                     'Can be started/stopped via layout.start/layout.stop')
-
-        self.add_parameter('save_trace_channels',
-                           set_cmd=None,
-                           initial_value=['output'],
-                           vals=vals.Lists(vals.Strings()),
-                           docstring='List of channel labels to acquire. '
-                                     'Channel labels are defined in '
-                                     'layout.acquisition_channels')
-        self.sample_rate = Parameter(
-            docstring='Acquisition sample rate'
+        self.save_trace_channels = Parameter(
+            set_cmd=None,
+            initial_value=["output"],
+            vals=vals.Lists(vals.Strings()),
+            docstring="List of channel labels to acquire. "
+            "Channel labels are defined in layout.acquisition_channels",
         )
         self.is_acquiring = Parameter(
             set_cmd=None,
             initial_value=False,
             docstring="Whether or not the Layout is performing an acquisition. "
-                      "Ensures no two acquisitions are run simultaneously.")
+                      "Ensures no two acquisitions are run simultaneously."
+        )
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -583,9 +600,10 @@ class Layout(Instrument):
         # Handle saving of pulse sequence
         if store_pulse_sequences_folder is not None:
             self.store_pulse_sequences_folder = store_pulse_sequences_folder
-        elif silq.config.properties.get('store_pulse_sequences_folder') is not None:
-            self.store_pulse_sequences_folder = \
+        elif silq.config.properties.get("store_pulse_sequences_folder") is not None:
+            self.store_pulse_sequences_folder = (
                 silq.config.properties.store_pulse_sequences_folder
+            )
         else:
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
@@ -970,7 +988,8 @@ class Layout(Instrument):
             interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(
-            self, sorted_interfaces: List[InstrumentInterface] = []):
+            self, sorted_interfaces: List[InstrumentInterface] = []
+    ) -> List[InstrumentInterface]:
         """Sort interfaces by triggering order, from bottom to top.
 
         This sorting ensures that earlier instruments never trigger later ones.
@@ -1079,8 +1098,11 @@ class Layout(Instrument):
                                              **kwargs)
         return connection
 
-    def _target_pulse(self,
-                      pulse: Pulse):
+    def _target_pulse(
+            self,
+            pulse: Pulse,
+            copy_pulse: bool = True
+    ):
         """Target pulse to corresponding connection and instrument interface.
 
         The connection is determined from either `Pulse.connection_label`,
@@ -1093,6 +1115,10 @@ class Layout(Instrument):
 
         Args:
             pulse: pulse to be targeted
+            copy_pulse: whether to copy the pulse when targeting via the connection.
+                the main pulses should have this set to True, whereas additional
+                pulses should have this set to False.
+                Note that a MultiConnection will have this set to True regardless
 
         Notes:
             * At each targeting stage, the pulse is copied such that any
@@ -1107,10 +1133,15 @@ class Layout(Instrument):
               pulse is modified.
 
         """
+        if isinstance(pulse, DummyPulse):
+            # Ignore pulse
+            return
+
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
-            self.acquisition_interface.pulse_sequence.quick_add(pulse, connect=False,
-                                                                reset_duration=False)
+            self.acquisition_interface.pulse_sequence.quick_add(
+                pulse, connect=False, reset_duration=False, nest=True
+            )
 
         if isinstance(pulse, MeasurementPulse):
             # Measurement pulses do not need to be output
@@ -1123,10 +1154,13 @@ class Layout(Instrument):
         # single pulse is that targeting by a CombinedConnection will target the
         # pulse to each of its connections it's composed of.
         # Copies pulse (multiple times if type is CombinedConnection)
-        pulses = connection.target_pulse(pulse)
-        if not isinstance(pulses, list):
-            # Convert to list
-            pulses = [pulses]
+        if isinstance(connection, CombinedConnection):
+            # A CombinedConnection targets the pulse to each of its connections
+            # that it's composed of. Will create a copy for each connection
+            pulses = connection.target_pulse(pulse)
+        else:
+            pulse = connection.target_pulse(pulse, copy_pulse=copy_pulse)
+            pulses = [pulse]
 
         for pulse in pulses:
             instrument = pulse.connection.output['instrument']
@@ -1140,23 +1174,39 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
-            # Copies pulse
-            self.targeted_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                   reset_duration=False)
+            # Set parent of targeted pulse to interface.pulse_sequence
+            t_start = targeted_pulse.t_start
+            # We find the matching pulse sequence because it could be nested
+            targeted_pulse.parent = find_matching_pulse_sequence(
+                pulse, interface.pulse_sequence
+            )
+            # Reset t_start because it will shift if the pulse_sequence does not
+            # start at t=0
+            targeted_pulse.t_start = t_start
 
             # Do not copy pulse
-            interface.pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                               reset_duration=False, copy=False)
+            self.targeted_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+            )
+
+            # Do not copy pulse
+            interface.pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
+            )
 
             # Also add pulse to input interface pulse sequence
-            input_interface = self._interfaces[
-                pulse.connection.input['instrument']]
-            # Copies pulse
-            input_interface.input_pulse_sequence.quick_add(targeted_pulse, connect=False,
-                                                           reset_duration=False)
+            input_interface = self._interfaces[pulse.connection.input['instrument']]
+            # Do not copy pulse
+            input_interface.input_pulse_sequence.quick_add(
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
+            )
 
-    def _target_pulse_sequence(self,
-                               pulse_sequence: PulseSequence):
+    def _target_pulse_sequence(
+            self,
+            pulse_sequence: PulseSequence
+    ):
         """Targets a pulse sequence.
 
         For each of the pulses, it finds the instrument that can output it,
@@ -1173,7 +1223,7 @@ class Layout(Instrument):
             * If a measurement is running, all instruments are stopped
             * The original pulse sequence and pulses remain unmodified
         """
-        logger.info(f'Targeting {pulse_sequence}')
+        logger.info(f'Targeting pulse sequence {pulse_sequence}')
 
         if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
             raise RuntimeError(
@@ -1181,9 +1231,6 @@ class Layout(Instrument):
                 f'maximum duration {self.maximum_pulse_sequence_duration}. '
                 f'Please change layout.maximum_pulse_sequence_duration'
             )
-
-        if self.active():
-            self.stop()
 
         # Create a copy of the pulse sequence
         try:
@@ -1196,7 +1243,7 @@ class Layout(Instrument):
                 pulse._connected_to_config = False
 
             # Copy the pulse sequence
-            self._pulse_sequence = copy(pulse_sequence)
+            self._pulse_sequence = pulse_sequence.copy(connect_to_config=False)
         finally:
             # Restore original pulse._connected_to_config values
             for pulse, _connected_to_config in zip(pulse_sequence.pulses,
@@ -1205,19 +1252,23 @@ class Layout(Instrument):
 
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
-        self.targeted_pulse_sequence.duration = pulse_sequence.duration
-        self.targeted_pulse_sequence.final_delay = pulse_sequence.final_delay
+        # Adopt the same structure as the target pulse sequence, including any
+        # nested pulse sequences
+        self.targeted_pulse_sequence.clone_skeleton(pulse_sequence)
 
         # Clear pulses sequences of all instruments
         for interface in self._interfaces.values():
             logger.debug(f'Initializing interface {interface.name}')
             interface.initialize()
 
-            # Fix duration of pulse sequence and input pulse sequence
-            interface.pulse_sequence.duration = pulse_sequence.duration
-            interface.pulse_sequence.final_delay = pulse_sequence.final_delay
-            interface.input_pulse_sequence.duration = pulse_sequence.duration
-            interface.input_pulse_sequence.final_delay = pulse_sequence.final_delay
+            # Clone the structure of the target pulse sequence. This includes
+            # fixing the duration of pulse sequence and any nested pulse sequences
+            interface.pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
+            interface.input_pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in self.pulse_sequence:
@@ -1232,15 +1283,19 @@ class Layout(Instrument):
                 additional_pulses = interface.get_additional_pulses(
                     connections=self.connections)
                 for pulse in additional_pulses:
-                    self._target_pulse(pulse)
+                    # These pulses do not need to be copied since they were
+                    # generated during targeting
+                    self._target_pulse(pulse, copy_pulse=False)
 
         # Finish setting up the pulse sequences
-        self.targeted_pulse_sequence.finish_quick_add()
+        # kwarg connect=False is added because else the pulse sequence duration
+        # might be changed to that of the last pulse, while it should be fixed
+        self.targeted_pulse_sequence.finish_quick_add(connect=False)
         for interface in self._interfaces.values():
             # Finish adding pulses, which performs final steps such as sorting
             # and checking for overlaps
-            interface.pulse_sequence.finish_quick_add()
-            interface.input_pulse_sequence.finish_quick_add()
+            interface.pulse_sequence.finish_quick_add(connect=False)
+            interface.input_pulse_sequence.finish_quick_add(connect=False)
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
@@ -1365,6 +1420,7 @@ class Layout(Instrument):
 
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
+
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
@@ -1373,13 +1429,24 @@ class Layout(Instrument):
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
+                if not self.force_setup() and not interface.requires_setup(
+                    samples=self.samples(),
+                    input_connections=input_connections,
+                    output_connections=output_connections,
+                    repeat=repeat,
+                    **setup_flags,
+                    **kwargs
+                ):
+                    logger.debug(f'Skipping setup interface {interface.name}')
+                    continue
+
                 with self.timings.record(f'setup.{interface.name}'):
+                    logger.debug(f'Setup interface {interface.name}')
                     flags = interface.setup(samples=self.samples(),
                                             input_connections=input_connections,
                                             output_connections=output_connections,
                                             repeat=repeat,
                                             **setup_flags, **kwargs)
-
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)

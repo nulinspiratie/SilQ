@@ -113,6 +113,9 @@ class InstrumentInterface(Instrument):
                                             allow_pulse_overlap=False)
         self.input_pulse_sequence = PulseSequence(
             allow_untargeted_pulses=False, allow_pulse_overlap=False)
+        self.targeted_pulse_sequence = None
+        self.targeted_input_pulse_sequence = None
+
         self.add_parameter('instrument_name',
                            set_cmd=None,
                            initial_value=instrument_name,
@@ -209,8 +212,8 @@ class InstrumentInterface(Instrument):
         Returns:
             None
         """
-        self.pulse_sequence.clear()
-        self.input_pulse_sequence.clear()
+        self.pulse_sequence = PulseSequence()
+        self.input_pulse_sequence = PulseSequence()
 
     def setup(self,
               samples: Union[int, None] = None,
@@ -239,6 +242,14 @@ class InstrumentInterface(Instrument):
         """
         raise NotImplementedError(
             'InstrumentInterface.setup should be implemented in a subclass')
+
+    def requires_setup(self, **kwargs) -> bool:
+        if self.pulse_sequence != self.targeted_pulse_sequence:
+            return True
+        elif self.input_pulse_sequence != self.targeted_input_pulse_sequence:
+            return True
+        else:
+            return False
 
     def start(self):
         """Start instrument
