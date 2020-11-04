@@ -301,7 +301,7 @@ class E8267DInterface(InstrumentInterface):
 
         if frequency_sidebands or self.force_IQ() or (self.FM_mode() == 'IQ' and
                                                       min_frequency != max_frequency):
-            self.IQ_modulation._save_val('on')
+            settings['IQ_modulation'] = 'on'
         else:
             settings['IQ_modulation'] = 'off'
 
