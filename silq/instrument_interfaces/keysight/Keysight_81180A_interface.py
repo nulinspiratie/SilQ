@@ -216,6 +216,10 @@ class Keysight81180AInterface(InstrumentInterface):
         self.generate_waveform_sequences()
         self.instrument.ensure_idle = False
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def generate_waveform_sequences(self):
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
