@@ -448,9 +448,9 @@ def count_blips(
                 blip_list = high_blip_pts
 
             if next_idx == 0:  # Reached end of trace
-                next_idx = len(trace) - idx
-                blip_list.append(next_idx)
                 if not ignore_final:
+                    next_idx = len(trace) - idx
+                    blip_list.append(next_idx)
                     blip_events[k].append(
                         (int(trace[idx] >= threshold_voltage), next_idx)
                     )

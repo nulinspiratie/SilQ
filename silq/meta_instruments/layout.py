@@ -13,7 +13,7 @@ from pathlib import Path
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
 from silq.pulses.pulse_modules import PulseSequence
-from silq.pulses.pulse_types import Pulse, MeasurementPulse
+from silq.pulses.pulse_types import Pulse, MeasurementPulse, DummyPulse
 
 import qcodes as qc
 from qcodes.instrument.parameter_node import parameter
@@ -1114,6 +1114,10 @@ class Layout(Instrument):
               pulse is modified.
 
         """
+        if isinstance(pulse, DummyPulse):
+            # Ignore pulse
+            return
+
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.quick_add(
