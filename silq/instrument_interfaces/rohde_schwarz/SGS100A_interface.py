@@ -472,7 +472,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     frequency_start=self.pulse.frequency_start - frequency,
                     frequency_stop=self.pulse.frequency_stop - frequency,
                     amplitude=amplitude,
-                    phase=0,
+                    phase=self.pulse.phase,
                     connection_requirements={
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "I",
@@ -489,7 +489,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     frequency_start=self.pulse.frequency_start - frequency,
                     frequency_stop=self.pulse.frequency_stop - frequency,
                     amplitude=amplitude,
-                    phase=-90,
+                    phase=self.pulse.phase-90,
                     connection_requirements={
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "Q",
