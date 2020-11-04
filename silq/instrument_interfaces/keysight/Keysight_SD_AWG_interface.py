@@ -95,7 +95,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
     @property
     def active_instrument_channels(self):
-        return self.instrument.channels[self.active_channel_ids]
+        return [ch for ch in self.instrument.channels if ch.id in self.active_channel_ids]
 
     def stop(self):
         # stop all AWG channels and sets FG channels to 'No Signal'
@@ -145,7 +145,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                                  duration=15e-6,
                                  connection=trigger_connection)]
 
-    def setup(self, error_threshold=1e-6, **kwargs):
+    def setup(self, output_connections, error_threshold=1e-6, **kwargs):
         # TODO: startdelay of first waveform
         # TODO: Handle sampling rates different from default
         # TODO: think about how to configure queue behaviour (cyclic/one shot for example)
@@ -159,7 +159,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
         self.setup_trigger()
 
-        self.waveforms, self.waveform_queue = self.create_waveforms(error_threshold)
+        self.waveforms, self.waveform_queue = self.create_waveforms(error_threshold, output_connections=output_connections)
 
         self.load_waveforms(self.waveforms)
 
@@ -205,20 +205,34 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
             assert trigger_source in ['trig_in', *self._pxi_channels], \
                 f"Trigger source {trigger_source} not allowed."
-
-            self.active_instrument_channels.trigger_source(trigger_source)
-            self.active_instrument_channels.trigger_mode('rising')
+            for ch in self.active_instrument_channels:
+                ch.trigger_source(trigger_source)
+                ch.trigger_mode('rising')
 
             if trigger_source == 'trig_in':
                 self.instrument.trigger_direction('in')
 
-    def create_waveforms(self, error_threshold):
+    def create_waveforms(self, error_threshold, output_connections):
         waveform_queue = {ch: [] for ch in self.channel_selection()}
 
         # Sort the list of waveforms for each channel and calculate delays or
         # throw error on overlapping waveforms.
         for channel in self.active_instrument_channels:
-            default_sampling_rate = self.default_sampling_rates()[channel.id]
+            idx = channel.id
+            if not self.instrument.zero_based_channels:
+                idx -= 1
+            connection = next(
+                c for c in output_connections
+                if c.output['channel'].name == channel.name
+            )
+            # Inactive voltage should be high if input channel is inverted
+            # e.g. triggers when voltage drops below value
+            if connection.input['channel'].invert:
+                inactive_voltage = 1.5
+            else:
+                inactive_voltage = 0
+
+            default_sampling_rate = self.default_sampling_rates()[idx]
             prescaler = 0 if default_sampling_rate == 500e6 else int(
                 100e6 / default_sampling_rate)
 
@@ -239,7 +253,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
 
                 if pulse.t_start > t:  # Add waveform at 0V
                     logger.info(
-                        f'Ch{channel.id}: No pulse defined between t={t} s and next '
+                        f'{channel.name}: No pulse defined between t={t} s and next '
                         f'{pulse} (pulse.t_start={pulse.t_start} s), '
                         f'Adding DC pulse at 0V')
                     # Use maximum value because potentially total samples could
@@ -247,7 +261,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     samples_start_0V = max(int(round(t * clock_rate)),
                                            total_samples)
                     samples_0V = (pulse_samples_start - samples_start_0V) * default_sampling_rate / clock_rate
-                    waveform_0V = self.create_DC_waveform(voltage=0,
+                    waveform_0V = self.create_DC_waveform(voltage=inactive_voltage,
                                                           samples=samples_0V,
                                                           prescaler=prescaler,
                                                           t_start=t)
@@ -285,7 +299,7 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 final_samples = int(
                     round(self.pulse_sequence.duration * clock_rate))
                 remaining_samples = (final_samples - total_samples) * default_sampling_rate / clock_rate
-                waveform_0V = self.create_DC_waveform(voltage=0,
+                waveform_0V = self.create_DC_waveform(voltage=inactive_voltage,
                                                       samples=remaining_samples,
                                                       prescaler=prescaler,
                                                       t_start=t)
@@ -707,8 +721,9 @@ class TriggerPulseImplementation(PulseImplementation):
         prescaler = 1
         samples = int(self.pulse.duration * sampling_rate)
         if samples < instrument.waveform_minimum:
-            logger.warning(f'Trigger pulse {self.pulse} too short, setting to '
-                           f'minimum duration of 15 samples')
+            logger.warning(f'SD_AWG trigger pulse {self.pulse} duration {self.pulse.duration} too short: '
+                           f'{samples} < {instrument.waveform_minimum} samples'
+                           ', setting to minimum duration of 15 samples')
             samples = 15
 
         # Set max cycles to 1 since trigger pulses should be very short

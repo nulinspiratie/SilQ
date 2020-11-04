@@ -2,7 +2,6 @@ from typing import List, Dict
 from functools import partial
 import warnings
 import matplotlib as mpl
-from qcodes.plots.qcmatplotlib import MatPlot
 from matplotlib import pyplot as plt
 from silq.tools.notebook_tools import *
 import pyperclip
@@ -12,10 +11,12 @@ import logging
 
 
 import qcodes as qc
+from qcodes.plots.qcmatplotlib import MatPlot
 from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
 from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
+from qcodes.utils.helpers import PerformanceTimer
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
            'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
@@ -620,6 +621,9 @@ class ScanningPlot(InteractivePlot):
                  auto_start: bool = False,
                  **kwargs):
         super().__init__(**kwargs)
+
+        self.timings = PerformanceTimer()
+
         self.update_idx = 0
         self.update_start_idx = 1
         self.t_start = None
@@ -695,10 +699,14 @@ class ScanningPlot(InteractivePlot):
         if self.update_idx == self.update_start_idx:
             self.t_start = time()
 
-        self.parameter()
+        with self.timings.record('acquisition'):
+            self.parameter()
+
         if stop:
             self.layout.stop()
-        self.update_plot(initialize=initialize)
+
+        with self.timings.record('plot'):
+            self.update_plot(initialize=initialize)
 
         self.update_idx += 1
 

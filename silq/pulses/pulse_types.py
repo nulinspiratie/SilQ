@@ -1,4 +1,4 @@
-from typing import Union, Sequence, Callable
+from typing import Union, Sequence, Callable, List
 import numpy as np
 import collections
 import logging
@@ -10,10 +10,10 @@ from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
-__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'FrequencyRampPulse',
-           'DCPulse', 'DCRampPulse', 'TriggerPulse', 'MarkerPulse',
-           'TriggerWaitPulse', 'MeasurementPulse', 'CombinationPulse',
-           'AWGPulse', 'pulse_conditions']
+__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
+           'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
+           'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
+           'CombinationPulse', 'AWGPulse', 'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -124,7 +124,7 @@ class Pulse(ParameterNode):
                  duration: float = None,
                  acquire: bool = False,
                  initialize: bool = False,
-                 connection = None,
+                 connection=None,
                  enabled: bool = True,
                  average: str = 'none',
                  connection_label: str = None,
@@ -235,7 +235,9 @@ class Pulse(ParameterNode):
         if self.parent is not None:
             t_start += self.parent.t_start
 
-        return round(t_start, 11)
+        t_start = round(t_start, 11)
+        parameter._latest['raw_value'] = t_start
+        return t_start
 
     @parameter
     def duration_set_parser(self, parameter, duration):
@@ -334,7 +336,7 @@ class Pulse(ParameterNode):
             A new pulse instance representing the combination of two pulses.
 
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '+')
 
     def __radd__(self, other) -> 'Pulse':
@@ -369,7 +371,7 @@ class Pulse(ParameterNode):
         Returns:
             A new pulse instance representing the combination of two pulses.
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '-')
 
     def __mul__(self, other: 'Pulse') -> 'CombinationPulse':
@@ -382,7 +384,7 @@ class Pulse(ParameterNode):
             A new pulse instance representing the combination of two pulses.
 
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '*')
 
     def __copy__(self):
@@ -460,16 +462,16 @@ class Pulse(ParameterNode):
 
         self._connected_to_config = True
 
-    def snapshot_base(self, update: bool=False,
-                      params_to_skip_update: Sequence[str]=None):
+    def snapshot_base(self, update: bool = False,
+                      params_to_skip_update: Sequence[str] = None):
         snapshot = super().snapshot_base()
         if snapshot['connection']:
             snapshot['connection'] = repr(snapshot['connection'])
         return snapshot
 
     def satisfies_conditions(self,
-                             pulse_class = None,
-                             name: str=None,
+                             pulse_class=None,
+                             name: str = None,
                              **kwargs) -> bool:
         """Checks if pulse satisfies certain conditions.
 
@@ -519,7 +521,7 @@ class Pulse(ParameterNode):
                 if isinstance(val, (list, tuple)):
                     relation, val = val
                     if not get_truth(test_val=self.parameters[property].get_latest(),
-                            # test_val=getattr(self, property),
+                                     # test_val=getattr(self, property),
                                      target_val=val,
                                      relation=relation):
                         return False
@@ -537,6 +539,12 @@ class Pulse(ParameterNode):
         """
         raise NotImplementedError('Pulse.get_voltage should be implemented in a subclass')
 
+
+class DummyPulse(Pulse):
+    amplitude = None
+    frequency = None
+    """Pulse that will be ignored by the layout"""
+    pass
 
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
@@ -558,6 +566,7 @@ class SteeredInitialization(Pulse):
         readout_threshold_voltage: Threshold voltage for a blip.
         **kwargs: Additional parameters of `Pulse`.
     """
+
     def __init__(self,
                  name: str = None,
                  t_no_blip: float = None,
@@ -571,9 +580,9 @@ class SteeredInitialization(Pulse):
         self.t_no_blip = Parameter(initial_value=t_no_blip, unit='s',
                                    set_cmd=None, vals=vals.Numbers())
         self.t_max_wait = Parameter(initial_value=t_max_wait, unit='s',
-                                   set_cmd=None, vals=vals.Numbers())
+                                    set_cmd=None, vals=vals.Numbers())
         self.t_buffer = Parameter(initial_value=t_buffer, unit='s',
-                                   set_cmd=None, vals=vals.Numbers())
+                                  set_cmd=None, vals=vals.Numbers())
         self.readout_threshold_voltage = Parameter(initial_value=readout_threshold_voltage,
                                                    unit='V', set_cmd=None,
                                                    vals=vals.Numbers())
@@ -617,6 +626,7 @@ class SinePulse(Pulse):
         Either amplitude or power must be set, depending on the instrument
         that should output the pulse.
     """
+
     def __init__(self,
                  name: str = None,
                  frequency: float = None,
@@ -707,9 +717,131 @@ class SinePulse(Pulse):
             if self['power'].unit == 'dBm':
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
-                amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
+                amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
 
         waveform = amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
+        waveform += self.offset
+
+        return waveform
+
+
+class MultiSinePulse(Pulse):
+    """MultiSinusoidal pulse: multiple superposed (overlapping, simultaneous) sine pulses
+    with the same t_start and duration, but different amplitude, frequency and phase.
+
+    Parameters:
+        name: Pulse name
+        frequencies: list of Pulse frequencies
+        phases: list of Pulse phases
+        amplitudes: list of Pulse amplitudes; in AWG implementation these are the actual amplitudes
+         of each sinusoidal tone, while in microwave implementation they will be scaled (divided)
+         by the number of tones such that the total IQ pulse amplitude is <= 1V.
+        power: Pulse power is required only in microwave implementation, otherwise - optional.
+        offset: amplitude offset (0 by default)
+        frequency_sideband: Mixer sideband frequency (off by default)
+        sideband_mode: Sideband frequency to apply. This feature must
+            be existent in interface. Not used if not set.
+        phase_reference: What point in the the phase is with respect to.
+            Can be two modes:
+            - 'absolute': phase is with respect to t=0 (phase-coherent).
+            - 'relative': phase is with respect to `Pulse.t_start` (set by default)
+
+        **kwargs: Additional parameters of `Pulse`.
+
+    """
+
+    def __init__(self,
+                 name: str = None,
+                 frequencies: List[float] = None,
+                 phases: List[float] = None,
+                 amplitudes: List[float] = None,
+                 power: float = None,
+                 offset: float = None,
+                 frequency_sideband: float = None,
+                 sideband_mode: float = None,
+                 phase_reference: str = None,
+                 **kwargs):
+
+        super().__init__(name=name, **kwargs)
+
+        self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
+                                     set_cmd=None, vals=vals.Lists())
+        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
+                                vals=vals.Lists())
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
+                                    set_cmd=None, vals=vals.Lists())
+        self.offset = Parameter(initial_value=offset, unit='V', set_cmd=None,
+                                vals=vals.Numbers())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
+        self._connect_parameters_to_config(
+            ['frequencies', 'phases', 'power', 'amplitudes', 'offset',
+             'frequency_sideband', 'sideband_mode', 'phase_reference'])
+
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
+        if self.offset is None:
+            self.offset = 0
+
+    def __repr__(self):
+        properties_str = ''
+        try:
+            if self.power is not None:
+                properties_str = f'power={self.power} dBm'
+                properties_str += f', A={self.amplitudes} V'
+            else:
+                properties_str = f'A={self.amplitudes} V'
+            properties_str += f', f={self.frequencies} Hz'
+            properties_str += f', phases={self.phases} deg'
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+            if self.offset:
+                properties_str += f', offset={self.offset} V'
+            if self.frequency_sideband is not None:
+                properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', duration={self.duration}'
+        except:
+            pass
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and
+                `Pulse`.t_stop
+        """
+        assert is_between(t, self.t_start, self.t_stop), \
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
+
+        if self.phase_reference == 'relative':
+            t = t - self.t_start
+
+        assert self.amplitudes is not None, f'Pulse {self.name} does not have ' \
+                                            f'specified amplitudes.'
+        assert self.frequencies is not None, f'Pulse {self.name} does not have ' \
+                                             f'specified frequencies.'
+        assert self.phases is not None, f'Pulse {self.name} does not have specified phases.'
+
+        assert len(self.amplitudes) == len(self.frequencies) == len(self.phases), \
+            f'Pulse {self.name} does not have equal number of amplitudes, frequencies and phases.'
+
+        waveform = np.zeros(len(t))
+        for amp, freq, phase in zip(self.amplitudes, self.frequencies, self.phases):
+            waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset
 
         return waveform
@@ -1286,7 +1418,7 @@ class AWGPulse(Pulse):
 
     def __init__(self,
                  name: str = None,
-                 fun:Callable = None,
+                 fun: Callable = None,
                  wf_array: np.ndarray = None,
                  interpolate: bool = True,
                  **kwargs):
