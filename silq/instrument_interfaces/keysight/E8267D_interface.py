@@ -664,7 +664,15 @@ class MultiSinePulseImplementation(PulseImplementation):
         assert pulse.power is not None, "Pulse must have power defined"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface: InstrumentInterface):
+    def get_additional_pulses(
+            self,
+            interface: InstrumentInterface,
+            IQ_modulation,
+            frequency,
+            frequency_deviation,
+            power,
+            **kwargs
+    ):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
@@ -673,7 +681,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        assert (interface.IQ_modulation() == 'on') and \
+        assert (IQ_modulation == 'on') and \
                (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
                                               'for MultiSinePulse.'
 
@@ -682,7 +690,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                             interface.I_amplitude_correction())
         amplitudes_Q = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
                             interface.Q_amplitude_correction())
-        frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
+        frequencies_IQ = list(np.array(self.pulse.frequencies) - frequency)
         # Shifting all phases in order to start after envelope padding:
         dphases = - np.array(frequencies_IQ) * interface.envelope_padding() * 360  # in degrees
         phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
@@ -729,7 +737,15 @@ class SingleWaveformPulseImplementation(PulseImplementation):
         assert pulse.power is not None, "Pulse must have power defined"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface: InstrumentInterface):
+    def get_additional_pulses(
+            self,
+            interface: InstrumentInterface,
+            IQ_modulation,
+            frequency,
+            frequency_deviation,
+            power,
+            **kwargs
+    ):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
@@ -738,7 +754,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        assert (interface.IQ_modulation() == 'on') and (interface.FM_mode() == 'IQ'), \
+        assert (IQ_modulation == 'on') and (interface.FM_mode() == 'IQ'), \
             f'FM_mode should be IQ and IQ_modulation should be ON for {self.pulse.name}.'
 
         assert all(0 <= amp <= 1 for amp in
@@ -758,7 +774,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
                                         amplitudes=self.pulse.amplitudes,
-                                        frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                         phases=phases,
                                         durations=self.pulse.durations,
                                         final_delay=self.pulse.final_delay,
@@ -774,7 +790,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
                                         amplitudes=self.pulse.amplitudes,
-                                        start_frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        start_frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                         frequency_rate=self.pulse.frequency_rate,
                                         phases=phases,
                                         durations=self.pulse.durations,
@@ -791,7 +807,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                         t_start=self.pulse.t_start - interface.envelope_padding(),
                                         t_stop=self.pulse.t_stop + interface.envelope_padding(),
                                         amplitudes=self.pulse.amplitudes,
-                                        start_frequencies=list(np.array(self.pulse.frequencies) - interface.frequency()),
+                                        start_frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                         frequency_rate=self.pulse.frequency_rate,
                                         decay=self.pulse.decay,
                                         phases=phases,
