@@ -437,8 +437,8 @@ class SinePulseImplementation(PulseImplementation):
                     "Pulse.frequency_sideband must be defined when " \
                     "FM_mode = 'ramp' and IQ_modulation = 'on'"
 
-                frequency = self.pulse.frequency + self.pulse.frequency_sideband
-                frequency_difference = frequency - frequency
+                pulse_frequency = self.pulse.frequency + self.pulse.frequency_sideband
+                frequency_difference = pulse_frequency - frequency
                 amplitude_FM = frequency_difference / frequency_deviation
                 frequency_IQ = self.pulse.frequency_sideband
             else:  # interface.FM_mode() == 'IQ'
