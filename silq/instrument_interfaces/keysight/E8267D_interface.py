@@ -185,6 +185,14 @@ class E8267DInterface(InstrumentInterface):
                                      'cannot be directly set, but is determined '
                                      'by FM_mode and whether pulses have '
                                      'frequency_sideband not None.')
+        self.add_parameter('IQ_channels',
+                           initial_value='IQ',
+                           vals=vals.Enum('IQ', 'I', 'Q'),
+                           set_cmd=None,
+                           docstring="Which channels to use for IQ modulation."
+                                     "Double-sideband modulation is used if only 'I' or 'Q' "
+                                     "is chosen, while single-sideband modulation is used when "
+                                     "'IQ' is chosen.")
         self.add_parameter('force_IQ',
                            set_cmd=None,
                            initial_value=False,
@@ -450,29 +458,32 @@ class SinePulseImplementation(PulseImplementation):
 
         if frequency_IQ is not None and frequency_IQ != 0:
             t_offset = interface.envelope_padding() if interface.envelope_IQ() else 0
-            additional_pulses.extend([
-                SinePulse(name='sideband_I',
-                          t_start=self.pulse.t_start - t_offset,
-                          t_stop=self.pulse.t_stop + t_offset,
-                          frequency=frequency_IQ,
-                          amplitude=amplitude + interface.I_amplitude_correction(),
-                          phase=self.pulse.phase + interface.I_phase_correction(),
-                          phase_reference=self.pulse.phase_reference,
-                          offset=self.pulse.offset,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'I'}),
-                SinePulse(name='sideband_Q',
-                          t_start=self.pulse.t_start - t_offset,
-                          t_stop=self.pulse.t_stop + t_offset,
-                          frequency=frequency_IQ,
-                          phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                          amplitude=amplitude + interface.Q_amplitude_correction(),
-                          phase_reference=self.pulse.phase_reference,
-                          offset=self.pulse.offset,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'Q'})])
+            if 'I' in interface.IQ_channels():
+                additional_pulses.append(
+                    SinePulse(name='sideband_I',
+                              t_start=self.pulse.t_start - t_offset,
+                              t_stop=self.pulse.t_stop + t_offset,
+                              frequency=frequency_IQ,
+                              amplitude=amplitude + interface.I_amplitude_correction(),
+                              phase=self.pulse.phase + interface.I_phase_correction(),
+                              phase_reference=self.pulse.phase_reference,
+                              offset=self.pulse.offset,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'I'}))
+            if 'Q' in interface.IQ_channels():
+                additional_pulses.append(
+                    SinePulse(name='sideband_Q',
+                              t_start=self.pulse.t_start - t_offset,
+                              t_stop=self.pulse.t_stop + t_offset,
+                              frequency=frequency_IQ,
+                              phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
+                              amplitude=amplitude + interface.Q_amplitude_correction(),
+                              phase_reference=self.pulse.phase_reference,
+                              offset=self.pulse.offset,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'Q'}))
         elif frequency_IQ == 0:
             # Frequency is zero, add DC pulses instead of sine pulses
             amplitudes = {
@@ -486,16 +497,15 @@ class SinePulseImplementation(PulseImplementation):
                 # Pulse is probably not needed if amplitude is 0, but we leave it for now.
                 # if amplitude == 0:
                 #     continue
-                additional_pulses.append(
-                    DCPulse(name=f'sideband_{quadrature}',
-                            t_start=self.pulse.t_start - interface.envelope_padding(),
-                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                            amplitude=amplitude_quadrature,
-                            connection_requirements={
-                                'input_instrument': interface.instrument_name(),
-                                'input_channel': quadrature}
-                            )
-                )
+                if quadrature in interface.IQ_channels():
+                    additional_pulses.append(
+                        DCPulse(name=f'sideband_{quadrature}',
+                                t_start=self.pulse.t_start - interface.envelope_padding(),
+                                t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                                amplitude=amplitude_quadrature,
+                                connection_requirements={
+                                    'input_instrument': interface.instrument_name(),
+                                    'input_channel': quadrature}))
 
         if amplitude_FM is not None:
             assert abs(amplitude_FM) <= 1 + 1e-13, \
@@ -574,55 +584,61 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         amplitude = 10.0 ** (attenuation / 20)
 
         if frequency_IQ is not None:
-            additional_pulses.extend([
-                SinePulse(name='sideband_I',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=frequency_IQ,
-                          amplitude=amplitude + interface.I_amplitude_correction(),
-                          phase=self.pulse.phase + interface.I_phase_correction(),
-                          phase_reference=self.pulse.phase_reference,
-                          offset=self.pulse.offset,
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'I'}),
-                SinePulse(name='sideband_Q',
-                          t_start=self.pulse.t_start - interface.envelope_padding(),
-                          t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                          frequency=frequency_IQ,
-                          phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                          phase_reference=self.pulse.phase_reference,
-                          offset=self.pulse.offset,
-                          amplitude=amplitude + interface.Q_amplitude_correction(),
-                          connection_requirements={
-                              'input_instrument': interface.instrument_name(),
-                              'input_channel': 'Q'})])
+            if 'I' in interface.IQ_channels():
+                additional_pulses.append(
+                    SinePulse(name='sideband_I',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=frequency_IQ,
+                              amplitude=amplitude + interface.I_amplitude_correction(),
+                              phase=self.pulse.phase + interface.I_phase_correction(),
+                              phase_reference=self.pulse.phase_reference,
+                              offset=self.pulse.offset,
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'I'}))
+            if 'Q' in interface.IQ_channels():
+                additional_pulses.append(
+                    SinePulse(name='sideband_Q',
+                              t_start=self.pulse.t_start - interface.envelope_padding(),
+                              t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                              frequency=frequency_IQ,
+                              phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
+                              phase_reference=self.pulse.phase_reference,
+                              offset=self.pulse.offset,
+                              amplitude=amplitude + interface.Q_amplitude_correction(),
+                              connection_requirements={
+                                  'input_instrument': interface.instrument_name(),
+                                  'input_channel': 'Q'}))
         elif frequency_IQ_start is not None:
-            additional_pulses.extend([
-                FrequencyRampPulse(name='sideband_I',
-                                   t_start=self.pulse.t_start,
-                                   t_stop=self.pulse.t_stop,
-                                   frequency_start=frequency_IQ_start,
-                                   frequency_stop=frequency_IQ_stop,
-                                   amplitude=amplitude + interface.I_amplitude_correction(),
-                                   phase=self.pulse.phase + interface.I_phase_correction(),
-                                   phase_reference=self.pulse.phase_reference,
-                                   offset=self.pulse.offset,
-                                   connection_requirements={
-                                       'input_instrument': interface.instrument_name(),
-                                       'input_channel': 'I'}),
-                FrequencyRampPulse(name='sideband_Q',
-                                   t_start=self.pulse.t_start,
-                                   t_stop=self.pulse.t_stop,
-                                   frequency_start=frequency_IQ_start,
-                                   frequency_stop=frequency_IQ_stop,
-                                   amplitude=amplitude + interface.Q_amplitude_correction(),
-                                   phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
-                                   phase_reference=self.pulse.phase_reference,
-                                   offset=self.pulse.offset,
-                                   connection_requirements={
-                                       'input_instrument': interface.instrument_name(),
-                                       'input_channel': 'Q'})])
+            if 'I' in interface.IQ_channels():
+                additional_pulses.append(
+                    FrequencyRampPulse(name='sideband_I',
+                                       t_start=self.pulse.t_start,
+                                       t_stop=self.pulse.t_stop,
+                                       frequency_start=frequency_IQ_start,
+                                       frequency_stop=frequency_IQ_stop,
+                                       amplitude=amplitude + interface.I_amplitude_correction(),
+                                       phase=self.pulse.phase + interface.I_phase_correction(),
+                                       phase_reference=self.pulse.phase_reference,
+                                       offset=self.pulse.offset,
+                                       connection_requirements={
+                                           'input_instrument': interface.instrument_name(),
+                                           'input_channel': 'I'}))
+            if 'Q' in interface.IQ_channels():
+                additional_pulses.append(
+                    FrequencyRampPulse(name='sideband_Q',
+                                       t_start=self.pulse.t_start,
+                                       t_stop=self.pulse.t_stop,
+                                       frequency_start=frequency_IQ_start,
+                                       frequency_stop=frequency_IQ_stop,
+                                       amplitude=amplitude + interface.Q_amplitude_correction(),
+                                       phase=self.pulse.phase - 90 + interface.Q_phase_correction(),
+                                       phase_reference=self.pulse.phase_reference,
+                                       offset=self.pulse.offset,
+                                       connection_requirements={
+                                           'input_instrument': interface.instrument_name(),
+                                           'input_channel': 'Q'}))
 
         if frequency_offset is not None:  # Add a DC ramp pulse for FM
             amplitude_start = (self.pulse.frequency_start - frequency_offset) \
@@ -662,7 +678,15 @@ class MultiSinePulseImplementation(PulseImplementation):
         assert pulse.power is not None, "Pulse must have power defined"
         return super().target_pulse(pulse, interface, **kwargs)
 
-    def get_additional_pulses(self, interface: InstrumentInterface):
+    def get_additional_pulses(
+            self,
+            interface: InstrumentInterface,
+            IQ_modulation,
+            frequency,
+            frequency_deviation,
+            power,
+            **kwargs
+    ):
         # Add an envelope pulse
         additional_pulses = [
             MarkerPulse(t_start=self.pulse.t_start, t_stop=self.pulse.t_stop,
@@ -671,7 +695,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                             'input_instrument': interface.instrument_name(),
                             'input_channel': 'trig_in'})]
 
-        assert (interface.IQ_modulation() == 'on') and \
+        assert (IQ_modulation == 'on') and \
                (interface.FM_mode() == 'IQ'), 'FM_mode should be IQ and IQ_modulation should be ON ' \
                                               'for MultiSinePulse.'
 
@@ -680,7 +704,7 @@ class MultiSinePulseImplementation(PulseImplementation):
                             interface.I_amplitude_correction())
         amplitudes_Q = list(np.array(self.pulse.amplitudes) / len(self.pulse.amplitudes) +
                             interface.Q_amplitude_correction())
-        frequencies_IQ = list(np.array(self.pulse.frequencies) - interface.frequency())
+        frequencies_IQ = list(np.array(self.pulse.frequencies) - frequency)
         # Shifting all phases in order to start after envelope padding:
         dphases = - np.array(frequencies_IQ) * interface.envelope_padding() * 360  # in degrees
         phases_I = list(np.array(self.pulse.phases) + dphases + interface.I_phase_correction())
@@ -694,27 +718,30 @@ class MultiSinePulseImplementation(PulseImplementation):
         assert (max_input_I <= 1) and (max_input_Q <= 1), \
             f"Input_I ({max_input_I}) or Input_Q ({max_input_Q}) voltages are above 1V."
 
-        additional_pulses.extend([
-            MultiSinePulse(name='sideband_I',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
-                           amplitudes=amplitudes_I,
-                           phases=phases_I,
-                           phase_reference=self.pulse.phase_reference,
-                           offset=self.pulse.offset,
-                           connection_requirements={
-                               'input_instrument': interface.instrument_name(),
-                               'input_channel': 'I'}),
-            MultiSinePulse(name='sideband_Q',
-                           t_start=self.pulse.t_start - interface.envelope_padding(),
-                           t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                           frequencies=frequencies_IQ,
-                           amplitudes=amplitudes_Q,
-                           phases=phases_Q,
-                           phase_reference=self.pulse.phase_reference,
-                           offset=self.pulse.offset,
-                           connection_requirements={
-                               'input_instrument': interface.instrument_name(),
-                               'input_channel': 'Q'})])
+        if 'I' in interface.IQ_channels():
+            additional_pulses.append(
+                MultiSinePulse(name='sideband_I',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               amplitudes=amplitudes_I,
+                               phases=phases_I,
+                               phase_reference=self.pulse.phase_reference,
+                               offset=self.pulse.offset,
+                               connection_requirements={
+                                   'input_instrument': interface.instrument_name(),
+                                   'input_channel': 'I'}))
+        if 'Q' in interface.IQ_channels():
+            additional_pulses.append(
+                MultiSinePulse(name='sideband_Q',
+                               t_start=self.pulse.t_start - interface.envelope_padding(),
+                               t_stop=self.pulse.t_stop + interface.envelope_padding(),
+                               frequencies=frequencies_IQ,
+                               amplitudes=amplitudes_Q,
+                               phases=phases_Q,
+                               phase_reference=self.pulse.phase_reference,
+                               offset=self.pulse.offset,
+                               connection_requirements={
+                                   'input_instrument': interface.instrument_name(),
+                                   'input_channel': 'Q'}))
         return additional_pulses
