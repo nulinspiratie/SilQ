@@ -615,7 +615,7 @@ def analyse_traces(
         ax = MatPlot()[0] if plot is True else plot
         t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0])) * 1e3
 
-        # A
+        # Use a diverging colormap that is white at the threshold voltage
         if threshold_voltage:
             divnorm = TwoSlopeNorm(vmin=np.min(traces), vcenter=threshold_voltage, vmax=np.max(traces))
         else:
