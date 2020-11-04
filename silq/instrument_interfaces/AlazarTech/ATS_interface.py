@@ -286,7 +286,15 @@ class ATSInterface(InstrumentInterface):
         Called at the start of targeting a pulse sequence.
         """
         super().initialize()
+        # TODO once new acquisition controllers are regularly used, the line
+        # below should be moved elsewhere or removed entirely.
         self.acquisition_controller(self.default_acquisition_controller())
+
+    def requires_setup(self, **kwargs) -> bool:
+        requires_setup = super().requires_setup(**kwargs)
+        if kwargs['samples'] != self.samples():
+            requires_setup = True
+        return requires_setup
 
     def setup(self,
               samples: Union[int, None] = None,
@@ -324,6 +332,10 @@ class ATSInterface(InstrumentInterface):
             # Add instruction for target instrument setup and to skip start
             target_instrument = self._acquisition_controller.target_instrument()
             return {'skip_start': target_instrument}
+
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
     def setup_trigger(self):
         """Configure settings related to triggering of the ATS

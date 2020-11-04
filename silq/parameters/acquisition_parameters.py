@@ -394,11 +394,14 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         """Print results whose keys are in ``AcquisitionParameter.names``"""
         names = self.names if self.names is not None else [self.name]
         for name in names:
-            value = self.results[name]
-            if isinstance(value, (int, float)):
-                print(f'{name}: {value:.3f}')
+            if name not in self.results:
+                print(f'{name}: NOT FOUND')
             else:
-                print(f'{name}: {value}')
+                value = self.results[name]
+                if isinstance(value, (int, float)):
+                    print(f'{name}: {value:.3f}')
+                else:
+                    print(f'{name}: {value}')
 
     @clear_single_settings
     def get_raw(self):
@@ -1690,7 +1693,7 @@ class NMRParameter(AcquisitionParameter):
     ``up_proportion`` is measured. By looking over successive samples and
     measuring how often the ``up_proportions`` switch between above/below
     ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
-    (see `NMRParameter.analyse` and `analyse_flips`).
+    (see `NMRParameter.analyse` and `analyse_flips_old`).
 
     Args:
         name: Parameter name
@@ -1974,9 +1977,9 @@ class NMRParameter(AcquisitionParameter):
                 results['state_probability'] = state_probability[f_idx]
                 results['threshold_up_proportion'] = threshold_up_proportion[f_idx]
 
-        # Add singleton dimension because analyse_flips handles 3D up_proportions
+        # Add singleton dimension because analyse_flips_old handles 3D up_proportions
         up_proportions = np.expand_dims(up_proportions, 1)
-        results_flips = analysis.analyse_flips(
+        results_flips = analysis.analyse_flips_old(
             up_proportions_arrs=up_proportions,
             threshold_up_proportion=self.threshold_up_proportion,
             shots_per_frequency=self.ESR['shots_per_frequency'])

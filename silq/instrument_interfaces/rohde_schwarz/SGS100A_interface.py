@@ -360,6 +360,10 @@ class SGS100AInterface(InstrumentInterface):
         else:
             self.instrument.IQ_modulation("off")
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         """Turn all active instrument channels on"""
         self.instrument.on()
@@ -468,7 +472,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     frequency_start=self.pulse.frequency_start - frequency,
                     frequency_stop=self.pulse.frequency_stop - frequency,
                     amplitude=amplitude,
-                    phase=0,
+                    phase=self.pulse.phase,
                     connection_requirements={
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "I",
@@ -485,7 +489,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
                     frequency_start=self.pulse.frequency_start - frequency,
                     frequency_stop=self.pulse.frequency_stop - frequency,
                     amplitude=amplitude,
-                    phase=-90,
+                    phase=self.pulse.phase-90,
                     connection_requirements={
                         "input_instrument": interface.instrument_name(),
                         "input_channel": "Q",

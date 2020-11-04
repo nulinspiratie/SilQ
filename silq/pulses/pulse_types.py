@@ -13,12 +13,11 @@ from qcodes.utils import validators as vals
 __all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
            'SingleWaveformPulse', 'FrequencyRampPulse', 'DCPulse',
            'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
-           'MeasurementPulse', 'CombinationPulse', 'AWGPulse',
-           'pulse_conditions']
+           'MeasurementPulse', 'CombinationPulse', 'AWGPulse', 'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
-pulse_conditions = ['name', 'id', 't', 't_start', 't_stop',
+pulse_conditions = ['name', 'parent_name', 'id', 't', 't_start', 't_stop',
                     'duration', 'acquire', 'initialize', 'connection',
                     'amplitude', 'enabled', 'average', 'pulse_class']
 
@@ -130,9 +129,11 @@ class Pulse(ParameterNode):
                  average: str = 'none',
                  connection_label: str = None,
                  connection_requirements: dict = {},
-                 connect_to_config: bool = True):
+                 connect_to_config: bool = True,
+                 parent: ParameterNode = None):
         super().__init__(use_as_attributes=True,
                          log_changes=False,
+                         parent=parent,
                          simplify_snapshot=True)
 
         self.name = Parameter(initial_value=name, vals=vals.Strings(), set_cmd=None)
@@ -145,7 +146,11 @@ class Pulse(ParameterNode):
         # Set attributes that can also be retrieved from pulse_config
         self.t_start = Parameter(initial_value=t_start,
                                  unit='s', set_cmd=None, wrap_get=False)
-        self.duration = Parameter(initial_value=duration, unit='s', set_cmd=None, wrap_get=False)
+        self['t_start']._relative_value = t_start
+        self.duration = Parameter(
+            initial_value=duration, unit='s', set_cmd=None, wrap_get=False,
+            vals=vals.Numbers(min_value=0, allow_none=True)
+        )
         self.t_stop = Parameter(unit='s', wrap_get=False)
 
         # We separately set and get t_stop to ensure duration is also updated
@@ -189,10 +194,15 @@ class Pulse(ParameterNode):
 
     @parameter
     def full_name_get(self, parameter):
-        if self.id is None:
-            return self.name
-        else:
-            return f'{self.name}[{self.id}]'
+        full_name = self.name
+
+        if getattr(self.parent, 'name', None):
+            full_name = f'{self.parent.name}.{full_name}'
+
+        if self.id is not None:
+            full_name = f'{full_name}[{self.id}]'
+
+        return full_name
 
     @parameter
     def t_start_set_parser(self, parameter, t_start):
@@ -202,9 +212,32 @@ class Pulse(ParameterNode):
 
     @parameter
     def t_start_set(self, parameter, t_start):
+        if t_start is not None:
+            if self.parent is not None:
+                if t_start < self.parent.t_start:
+                    raise RuntimeError('pulse.t_start cannot be less than pulse_sequence.t_start')
+
+                parameter._relative_value = round(t_start - self.parent.t_start, 11)
+            else:
+                parameter._relative_value = round(t_start, 11)
+
         # Emit a t_stop signal when t_start is set
-        self['t_start']._latest['raw_value'] = t_start
+        parameter._latest['raw_value'] = t_start
         self['t_stop'].set(self.t_stop, evaluate=False)
+
+    @parameter
+    def t_start_get(self, parameter):
+        t_start = parameter._relative_value
+
+        if t_start is None:
+            return t_start
+
+        if self.parent is not None:
+            t_start += self.parent.t_start
+
+        t_start = round(t_start, 11)
+        parameter._latest['raw_value'] = t_start
+        return t_start
 
     @parameter
     def duration_set_parser(self, parameter, duration):
@@ -361,10 +394,20 @@ class Pulse(ParameterNode):
         also connects the copied parameters to the config if the original ones
         are also connected
         """
+        return self.copy(connect_to_config=True)
+
+    def copy(self, connect_to_config=True):
         self_copy = super().__copy__()
-        if self._connected_to_config:
+        self_copy.parent = self.parent
+
+        if connect_to_config and self._connected_to_config:
             self_copy._connect_parameters_to_config()
         return self_copy
+
+    def __repr__(self):
+        properties_str = f't_start={self.t_start}'
+        properties_str += f', duration={self.duration}'
+        return self._get_repr(properties_str)
 
     def _get_repr(self, properties_str):
         """Get standard representation for pulse.
@@ -412,11 +455,10 @@ class Pulse(ParameterNode):
 
         for parameter_name, parameter in parameters.items():
             config_link = f'{self.config_link}.{self.name}.{parameter_name}'
-            config_value = parameter.set_config_link(config_link=config_link)
-
-            # Update parameter value if not yet set, and set in config
-            if parameter.raw_value is None and config_value is not None:
-                parameter(config_value)
+            # Attach to config, and only update if not explicit value set
+            parameter.set_config_link(
+                config_link=config_link, update=(parameter.raw_value is None)
+            )
 
         self._connected_to_config = True
 
@@ -457,7 +499,14 @@ class Pulse(ParameterNode):
                 # Pulse id is part of name
                 name, id = name[:-1].split('[')
                 kwargs['id'] = int(id)
+            if '.' in name:  # Pulse contains pulse sequence with name
+                parent_name, name = name.split('.')
+                kwargs['parent_name'] = parent_name
             kwargs['name'] = name
+
+        if 'parent_name' in kwargs:
+            if getattr(self.parent, 'name', None) != kwargs.pop('parent_name'):
+                return False
 
         for property, val in kwargs.items():
             if val is None:
@@ -490,6 +539,12 @@ class Pulse(ParameterNode):
         """
         raise NotImplementedError('Pulse.get_voltage should be implemented in a subclass')
 
+
+class DummyPulse(Pulse):
+    amplitude = None
+    frequency = None
+    """Pulse that will be ignored by the layout"""
+    pass
 
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
@@ -1154,6 +1209,7 @@ class FrequencyRampPulse(Pulse):
     def get_voltage(self, t):
         frequency_rate = 2 * self.frequency_deviation / self.duration
         frequency_start = self.frequency - self.frequency_deviation
+
         amplitude = self.amplitude
         if amplitude is None:
             assert self.power is not None, f'Pulse {self.name} does not have a specified power or amplitude.'
