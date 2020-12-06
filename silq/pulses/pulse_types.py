@@ -124,7 +124,7 @@ class Pulse(ParameterNode):
                  duration: float = None,
                  acquire: bool = False,
                  initialize: bool = False,
-                 connection = None,
+                 connection=None,
                  enabled: bool = True,
                  average: str = 'none',
                  connection_label: str = None,
@@ -235,7 +235,9 @@ class Pulse(ParameterNode):
         if self.parent is not None:
             t_start += self.parent.t_start
 
-        return round(t_start, 11)
+        t_start = round(t_start, 11)
+        parameter._latest['raw_value'] = t_start
+        return t_start
 
     @parameter
     def duration_set_parser(self, parameter, duration):
@@ -334,7 +336,7 @@ class Pulse(ParameterNode):
             A new pulse instance representing the combination of two pulses.
 
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '+')
 
     def __radd__(self, other) -> 'Pulse':
@@ -369,7 +371,7 @@ class Pulse(ParameterNode):
         Returns:
             A new pulse instance representing the combination of two pulses.
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '-')
 
     def __mul__(self, other: 'Pulse') -> 'CombinationPulse':
@@ -382,7 +384,7 @@ class Pulse(ParameterNode):
             A new pulse instance representing the combination of two pulses.
 
         """
-        name = f'CombinationPulse_{id(self)+id(other)}'
+        name = f'CombinationPulse_{id(self) + id(other)}'
         return CombinationPulse(name, self, other, '*')
 
     def __copy__(self):
@@ -460,16 +462,16 @@ class Pulse(ParameterNode):
 
         self._connected_to_config = True
 
-    def snapshot_base(self, update: bool=False,
-                      params_to_skip_update: Sequence[str]=None):
+    def snapshot_base(self, update: bool = False,
+                      params_to_skip_update: Sequence[str] = None):
         snapshot = super().snapshot_base()
         if snapshot['connection']:
             snapshot['connection'] = repr(snapshot['connection'])
         return snapshot
 
     def satisfies_conditions(self,
-                             pulse_class = None,
-                             name: str=None,
+                             pulse_class=None,
+                             name: str = None,
                              **kwargs) -> bool:
         """Checks if pulse satisfies certain conditions.
 
@@ -519,7 +521,7 @@ class Pulse(ParameterNode):
                 if isinstance(val, (list, tuple)):
                     relation, val = val
                     if not get_truth(test_val=self.parameters[property].get_latest(),
-                            # test_val=getattr(self, property),
+                                     # test_val=getattr(self, property),
                                      target_val=val,
                                      relation=relation):
                         return False
@@ -537,6 +539,12 @@ class Pulse(ParameterNode):
         """
         raise NotImplementedError('Pulse.get_voltage should be implemented in a subclass')
 
+
+class DummyPulse(Pulse):
+    amplitude = None
+    frequency = None
+    """Pulse that will be ignored by the layout"""
+    pass
 
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
@@ -558,6 +566,7 @@ class SteeredInitialization(Pulse):
         readout_threshold_voltage: Threshold voltage for a blip.
         **kwargs: Additional parameters of `Pulse`.
     """
+
     def __init__(self,
                  name: str = None,
                  t_no_blip: float = None,
@@ -571,9 +580,9 @@ class SteeredInitialization(Pulse):
         self.t_no_blip = Parameter(initial_value=t_no_blip, unit='s',
                                    set_cmd=None, vals=vals.Numbers())
         self.t_max_wait = Parameter(initial_value=t_max_wait, unit='s',
-                                   set_cmd=None, vals=vals.Numbers())
+                                    set_cmd=None, vals=vals.Numbers())
         self.t_buffer = Parameter(initial_value=t_buffer, unit='s',
-                                   set_cmd=None, vals=vals.Numbers())
+                                  set_cmd=None, vals=vals.Numbers())
         self.readout_threshold_voltage = Parameter(initial_value=readout_threshold_voltage,
                                                    unit='V', set_cmd=None,
                                                    vals=vals.Numbers())
@@ -617,6 +626,7 @@ class SinePulse(Pulse):
         Either amplitude or power must be set, depending on the instrument
         that should output the pulse.
     """
+
     def __init__(self,
                  name: str = None,
                  frequency: float = None,
@@ -707,7 +717,7 @@ class SinePulse(Pulse):
             if self['power'].unit == 'dBm':
                 # This formula assumes the source is 50 Ohm matched and power is in dBm
                 # A factor of 2 comes from the conversion from amplitude to RMS.
-                amplitude = np.sqrt(10**(self.power/10) * 1e-3 * 100)
+                amplitude = np.sqrt(10 ** (self.power / 10) * 1e-3 * 100)
 
         waveform = amplitude * np.sin(2 * np.pi * (self.frequency * t + self.phase / 360))
         waveform += self.offset
@@ -739,6 +749,7 @@ class MultiSinePulse(Pulse):
         **kwargs: Additional parameters of `Pulse`.
 
     """
+
     def __init__(self,
                  name: str = None,
                  frequencies: List[float] = None,
@@ -812,7 +823,7 @@ class MultiSinePulse(Pulse):
             AssertionError: not all ``t`` between `Pulse`.t_start and
                 `Pulse`.t_stop
         """
-        assert is_between(t, self.t_start, self.t_stop),\
+        assert is_between(t, self.t_start, self.t_stop), \
             f"voltage at {t} s is not in the time range " \
             f"{self.t_start} s - {self.t_stop} s of pulse {self}"
 
@@ -1407,7 +1418,7 @@ class AWGPulse(Pulse):
 
     def __init__(self,
                  name: str = None,
-                 fun:Callable = None,
+                 fun: Callable = None,
                  wf_array: np.ndarray = None,
                  interpolate: bool = True,
                  **kwargs):

@@ -316,6 +316,12 @@ class PulseSequence(ParameterNode):
             docstring="All pulses, including those from nested pulse sequences"
         )
 
+        self.flags = Parameter(
+            initial_value=dict(),
+            set_cmd=None,
+            docstring="Optional flags to be passed onto instrument interfaces." \
+                      "key must be the interface name, and value a dict."
+        )
         self.modifiers = []
 
         # Remember last pulse of pulse sequence, to ensure t_stop of pulse sequence
@@ -373,7 +379,7 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def t_stop_get(self, parameter):
-        return self.t_start + self.duration
+        return np.round(self.t_start + self.duration, 11)
 
     @parameter
     def t_start_list_get(self, parameter):
@@ -449,6 +455,15 @@ class PulseSequence(ParameterNode):
             return f'{self.parent.full_name}.{self.name}'
         else:
             return self.name
+
+    @property
+    def parents(self):
+        parents = []
+        layer = self
+        while isinstance(layer.parent, PulseSequence):
+            parents.append(layer.parent)
+            layer = layer.parent
+        return parents
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -646,7 +661,8 @@ class PulseSequence(ParameterNode):
             reset_duration: bool = True,
             copy: bool = True,
             nest: bool = False,
-            connect: bool = True
+            connect: bool = True,
+            set_parent:bool = None
             ):
         """Adds pulse(s) to the PulseSequence.
 
@@ -675,11 +691,15 @@ class PulseSequence(ParameterNode):
             original pulse remains unmodified.
             For an speed-optimized version, see `PulseSequence.quick_add`
         """
+        # If set_parent is None, the parent is only set if the pulse is copied
+        if set_parent is None:
+            set_parent = copy
+
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
             raise ValueError(
                 'Please specify pulse duration in silq.config.pulses for the '
-                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+                'following pulses: ' + ', '.join(p.name for p in pulses_no_duration)
             )
 
         if copy:
@@ -691,7 +711,6 @@ class PulseSequence(ParameterNode):
                 # t_start of the pulse sequence
                 pulse_copy = copy_alias(pulse)
                 pulse_copy.id = None  # Remove any pre-existing pulse id
-                pulse_copy.parent = self
                 pulse_copies.append(pulse_copy)
         else:
             pulse_copies = pulses
@@ -709,9 +728,14 @@ class PulseSequence(ParameterNode):
                     )
                 else:
                     # Add to nested pulse sequence. Note that we already copied pulse
-                    added_pulse, = nested_sequence.quick_add(pulse_copy, copy=False)
+                    added_pulse, = nested_sequence.quick_add(
+                        pulse_copy, copy=False, set_parent=set_parent
+                    )
                     added_pulses.append(added_pulse)
                     continue
+
+            if set_parent:
+                pulse_copy.parent = self
 
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
@@ -783,7 +807,8 @@ class PulseSequence(ParameterNode):
                   copy: bool = True,
                   connect: bool = True,
                   reset_duration: bool = True,
-                  nest=False):
+                  nest=False,
+                  set_parent: bool = None):
         """"Quickly add pulses to a sequence skipping steps and checks.
 
         This method is used in the during the `Layout` targeting of a pulse
@@ -810,6 +835,10 @@ class PulseSequence(ParameterNode):
                 be copied to the same nested pulse sequence.
                 This requires that this pulse sequence also contains a nested
                 pulse sequence with the same name
+            set_parent: Whether to set the pulse parent, either to the current
+                or the nested pulse sequence if applicable.
+                If set to None, the pulse parent is only set if the pulse is
+                copied.
 
         Returns:
             Added pulses. If copy is False, the original pulses are returned.
@@ -819,6 +848,10 @@ class PulseSequence(ParameterNode):
             `PulseSequence.quick_add`.
 
         """
+        # If set_parent is None, the parent is only set if the pulse is copied
+        if set_parent is None:
+            set_parent = copy
+
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
             raise SyntaxError('Please specify pulse duration in silq.config.pulses'
@@ -840,7 +873,8 @@ class PulseSequence(ParameterNode):
                         pulse,
                         copy=copy,
                         connect=connect,
-                        reset_duration=reset_duration
+                        reset_duration=reset_duration,
+                        set_parent=set_parent
                     )
                     added_pulses.append(added_pulse)
                     continue
@@ -853,7 +887,8 @@ class PulseSequence(ParameterNode):
             if copy:
                 pulse = copy_alias(pulse)
 
-            pulse.parent = self
+            if set_parent:
+                pulse.parent = self
 
             # TODO set t_start if not set
             # If pulse does not have t_start defined, it will be attached to
@@ -888,7 +923,7 @@ class PulseSequence(ParameterNode):
 
         return added_pulses
 
-    def finish_quick_add(self):
+    def finish_quick_add(self, connect=True):
         """Finish adding pulses via `PulseSequence.quick_add`
 
         Steps performed:
@@ -927,15 +962,34 @@ class PulseSequence(ParameterNode):
                     for k, pulse in enumerate(same_name_pulses):
                         pulse.id = k
 
-            self._update_last_pulse()
+            if connect:
+                self._update_last_pulse()
 
             for pulse_sequence in self.pulse_sequences:
-                pulse_sequence.finish_quick_add()
+                pulse_sequence.finish_quick_add(connect=connect)
         except AssertionError:  # Likely error is that pulses overlap
             self.clear()
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
+        """Add pulse sequence(s) as nested pulse sequences
+
+        Args:
+            *pulse_sequences: pulse sequences to sequentially append.
+
+        Notes:
+            - Successive pulse sequences are connected to each other such
+              that if a previous pulse sequence duration changes, the subsequent
+              pulse sequences are also shifted.
+            - Pulse sequences are not copied. This means that if you want to
+              nest a pulse sequence to multiple parent pulse sequences, you must
+              manually copy the pulse sequence.
+            - For each nested pulse sequence, pulse_sequence.parent is set to
+             this pulse sequence.
+
+        Raises:
+             RuntimeError if current pulse sequence already contains pulses
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -949,6 +1003,12 @@ class PulseSequence(ParameterNode):
         self._link_pulse_sequences()
 
     def insert_pulse_sequence(self, index, pulse_sequence):
+        """Insert a nested pulse sequence at a specific pulse sequence index
+
+        Args:
+            index: Index at which to insert pulse sequence
+            pulse_sequence: Pulse sequence to insert
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -999,7 +1059,7 @@ class PulseSequence(ParameterNode):
         for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
-                
+
                 # Remove any pre-existing connection to pulse_sequence.enabled
                 # This may link to another parent pulse sequence
                 enabled_receivers = pulse_sequence['enabled'].signal.receivers
@@ -1458,10 +1518,20 @@ class PulseSequence(ParameterNode):
         return all(pulse_sequence.up_to_date() for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
+        """Separate pulses into enabled and disabled pulses"""
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
         self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
 
     def _update_last_pulse(self):
+        """Attaches pulse_sequence.t_stop to t_stop of last pulse
+
+        Called whenever pulses are added
+        Notes:
+            - If the t_stop of a pulse that is not the last pulse is increased
+              such that it becomes the last t_stop, this will cause issues since
+              it is not connected to pulse_sequence.t_stop.
+
+        """
         if not self.my_pulses:
             return
 
@@ -1481,6 +1551,11 @@ class PulseSequence(ParameterNode):
             self._last_pulse['t_stop'].connect(self['t_stop'])
 
     def clone_skeleton(self, pulse_sequence):
+        """Clone the structure of a pulse sequence into this one
+
+        This skeleton copy includes copies of all nested pulse sequences,
+        but does not include copies of the pulses
+        """
         self.clear()
         for subsequence in pulse_sequence.pulse_sequences:
             clone_subsequence = PulseSequence()
@@ -1491,6 +1566,7 @@ class PulseSequence(ParameterNode):
         self.duration = pulse_sequence.duration
         self.final_delay = pulse_sequence.final_delay
         self.enabled = pulse_sequence.enabled
+        self.flags = copy_alias(pulse_sequence.flags)
 
 
 class PulseImplementation:
@@ -1645,3 +1721,28 @@ class PulseImplementation:
         """
         raise NotImplementedError('PulseImplementation.implement should be '
                                   'implemented in a subclass')
+
+def find_matching_pulse_sequence(pulse, pulse_sequence):
+    """Find matching (nested) pulse sequence where a pulse should be placed in
+
+    Args:
+        pulse: pulse for which pulse sequence should be found
+        pulse_sequence: Primary pulse sequence. The nested pulse sequences are
+            recursively traversed until a bottom-level pulse sequence is found
+            that has a t_start and t_stop encompassing the pulse
+
+    Returns:
+        Pulse sequence, either nested or the original pulse sequence that has
+            been passed as an arg.
+    """
+    # assert pulse.t_start + 1e-12 >= pulse_sequence.t_start
+    # assert pulse.t_stop - 1e-12 <= pulse_sequence.t_stop
+
+    for subpulse_sequence in pulse_sequence.pulse_sequences:
+        if not subpulse_sequence.enabled:
+            continue
+        elif pulse.t_start >= subpulse_sequence.t_start - 1e-12 \
+                and pulse.t_stop <= subpulse_sequence.t_stop + 1e-12:
+            return find_matching_pulse_sequence(pulse, subpulse_sequence)
+    else:
+        return pulse_sequence

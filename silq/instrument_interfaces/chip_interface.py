@@ -54,7 +54,10 @@ class ChipInterface(InstrumentInterface):
         Args:
             **kwargs: Ignored kwargs passed by layout.
         """
-        pass
+
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
     def start(self):
         """Start instrument (ignored)."""

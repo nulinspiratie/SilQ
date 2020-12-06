@@ -136,6 +136,10 @@ class Bayesian_Update_Interface(InstrumentInterface):
         timeout_ticks = int(self.timeout()*self._clk_freq)
         ctrl.blip_timeout(timeout_ticks)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         self.instrument.start()
 

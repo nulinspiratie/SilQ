@@ -2,6 +2,7 @@ import numpy as np
 import functools
 import itertools
 from matplotlib.axis import Axis
+from matplotlib.colors import TwoSlopeNorm
 import peakutils
 import logging
 from typing import Union, Dict, Any, List, Sequence, Iterable, Tuple
@@ -43,6 +44,8 @@ analysis_config = config["analysis"]
 
 
 class Analysis(ParameterNode):
+    delegate_attr_dicts = ['parameters', 'parameter_nodes', 'functions',
+                           'submodules', 'settings']
     def __init__(self, name):
         super().__init__(name=name, use_as_attributes=True)
         self.settings = ParameterNode(use_as_attributes=True)
@@ -432,6 +435,7 @@ def count_blips(
 
     blip_events = [[] for _ in range(len(traces))]
     for k, trace in enumerate(traces):
+
         idx = start_idx
         trace_above_threshold = trace > threshold_voltage
         trace_below_threshold = ~trace_above_threshold
@@ -444,9 +448,9 @@ def count_blips(
                 blip_list = high_blip_pts
 
             if next_idx == 0:  # Reached end of trace
-                next_idx = len(trace) - idx
-                blip_list.append(next_idx)
                 if not ignore_final:
+                    next_idx = len(trace) - idx
+                    blip_list.append(next_idx)
                     blip_events[k].append(
                         (int(trace[idx] >= threshold_voltage), next_idx)
                     )
@@ -469,6 +473,7 @@ def count_blips(
     blips = len(low_blip_durations) / len(traces)
 
     duration = len(traces[0]) / sample_rate
+
     return {
         "blips": blips,
         "blip_events": blip_events,
@@ -483,10 +488,12 @@ def count_blips(
 def analyse_traces(
     traces: np.ndarray,
     sample_rate: float,
+    filtered_shots: np.ndarray = None,
     filter: Union[str, None] = None,
     min_filter_proportion: float = 0.5,
     t_skip: float = 0,
     t_read: Union[float, None] = None,
+    t_read_vals: Union[int, None, Sequence] = None,
     segment: str = "begin",
     threshold_voltage: Union[float, None] = None,
     threshold_method: str = "config",
@@ -506,6 +513,11 @@ def analyse_traces(
         t_read: duration of each trace to use for calculating up_proportion etc.
             e.g. for a long trace, you want to compare up proportion of start
             and end segments.
+        t_read_vals: Optional range of t_read values for which to extract
+            up proportion. Can be:
+            - an int, indicating that t_read should be uniformly chosen across
+              the trace duration.
+            - a list of t_read values
         segment: Use beginning or end of trace for ``t_read``.
             Allowed values are ``begin`` and ``end``.
         threshold_voltage: threshold voltage for a ``high`` voltage (blip).
@@ -544,6 +556,11 @@ def analyse_traces(
         * **blips** (float): average blips per trace.
         * **mean_low_blip_duration** (float): average duration in low state
         * **mean_high_blip_duration** (float): average duration in high state
+        * **t_read_vals** (list(float)): t_read list if provided as kwarg.
+          If t_read_vals was an int, this is converted to a list.
+          Not returned if t_read_vals is not set.
+        * **up_proportions** (list(float)): up_proportion values for each t_read
+          if t_read_vals is provided. Not returned if t_read_vals is not set.
 
     Note:
         If no threshold voltage is provided, and no two peaks can be discerned,
@@ -560,6 +577,7 @@ def analyse_traces(
     # Initialize all results to None
     results = {
         "up_proportion": 0,
+        "up_proportion_idxs": np.nan * np.zeros(len(traces)),
         "end_high": 0,
         "end_low": 0,
         "num_traces": 0,
@@ -575,22 +593,6 @@ def analyse_traces(
     # minimum trace idx to include (to discard initial capacitor spike)
     start_idx = int(round(t_skip * sample_rate))
 
-    if plot is not False:  # Create plot for traces
-        ax = MatPlot()[0] if plot is True else plot
-        t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0]))
-        print(ax.get_xlim())
-        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float), cmap="seismic")
-        print(ax.get_xlim())
-        # Modify x-limits to add blips information
-        xlim = ax.get_xlim()
-        xpadding = 0.05 * (xlim[1] - xlim[0])
-        if segment == "begin":
-            xpadding_range = [-xpadding + xlim[0], xlim[0]]
-            ax.set_xlim(-xpadding + xlim[0], xlim[1])
-        else:
-            xpadding_range = [xlim[1], xlim[1] + xpadding]
-            ax.set_xlim(xlim[0], xlim[1] + xpadding)
-
     # Calculate threshold voltage if not provided
     if threshold_voltage is None or np.isnan(threshold_voltage):
         # Histogram trace voltages to find two peaks corresponding to high and low
@@ -604,19 +606,44 @@ def analyse_traces(
 
         results["threshold_voltage"] = threshold_voltage
 
-        if threshold_voltage is None or np.isnan(threshold_voltage):
-            logger.debug("Could not determine threshold voltage")
-            if plot is not False:
-                ax.text(
-                    np.mean(xlim),
-                    len(traces) + 0.5,
-                    "Unknown threshold voltage",
-                    horizontalalignment="center",
-                )
-            return results
     else:
         # We don't know voltage difference since we skip a high_low measure.
         results["voltage_difference"] = np.nan
+        results["threshold_voltage"] = threshold_voltage
+
+    if plot is not False:  # Create plot for traces
+        ax = MatPlot()[0] if plot is True else plot
+        t_list = np.linspace(0, len(traces[0]) / sample_rate, len(traces[0])) * 1e3
+
+        # Use a diverging colormap that is white at the threshold voltage
+        if threshold_voltage:
+            divnorm = TwoSlopeNorm(vmin=np.min(traces), vcenter=threshold_voltage, vmax=np.max(traces))
+        else:
+            divnorm = None
+
+        ax.add(traces, x=t_list, y=np.arange(len(traces), dtype=float), cmap="seismic", norm=divnorm)
+        # Modify x-limits to add blips information
+        xlim = ax.get_xlim()
+        xpadding = 0.05 * (xlim[1] - xlim[0])
+        if segment == "begin":
+            xpadding_range = [-xpadding + xlim[0], xlim[0]]
+            ax.set_xlim(-xpadding + xlim[0], xlim[1])
+        else:
+            xpadding_range = [xlim[1], xlim[1] + xpadding]
+            ax.set_xlim(xlim[0], xlim[1] + xpadding)
+        ax.set_xlabel('Time (ms)')
+        ax.set_ylabel('Sample')
+
+    if threshold_voltage is None or np.isnan(threshold_voltage):
+        logger.debug("Could not determine threshold voltage")
+        if plot is not False:
+            ax.text(
+                np.mean(xlim),
+                len(traces) + 0.5,
+                "Unknown threshold voltage",
+                horizontalalignment="center",
+            )
+        return results
 
     # Analyse blips (disabled because it's very slow)
     # blips_results = count_blips(traces=traces,
@@ -646,6 +673,9 @@ def analyse_traces(
     else:  # Do not filter traces
         filtered_traces_idx = np.ones(len(traces), dtype=bool)
 
+    if filtered_shots is not None:
+        filtered_traces_idx = filtered_traces_idx & filtered_shots
+
     results["filtered_traces_idx"] = filtered_traces_idx
     filtered_traces = traces[filtered_traces_idx]
     results["num_traces"] = len(filtered_traces)
@@ -669,23 +699,46 @@ def analyse_traces(
             )
         return results
 
-    if t_read is not None:  # Only use a time segment of each trace
-        read_pts = int(round(t_read * sample_rate))
+    # Determine all the t_read's for which to determine up proportion
+    total_duration = filtered_traces.shape[1] / sample_rate
+    if t_read is None:  # Only use a time segment of each trace
+        t_read = total_duration
+
+    if isinstance(t_read_vals, int):
+        # Choose equidistantly spaced t_read values
+        t_read_vals = np.linspace(total_duration/t_read_vals, total_duration, num=t_read_vals)
+    elif t_read_vals is None:
+        t_read_vals = []
+    elif not isinstance(t_read_vals, Sequence):
+        raise ValueError('t_read_vals must be an int, Sequence, or None')
+
+    # Determine up_proportion for each t_read
+    up_proportions = []
+    for k, t_read_val in enumerate(list(t_read_vals) + [t_read]):
+
+        read_pts = int(round(t_read_val * sample_rate))
         if segment == "begin":
             segmented_filtered_traces = filtered_traces[:, :read_pts]
         else:
             segmented_filtered_traces = filtered_traces[:, -read_pts:]
-    else:
-        segmented_filtered_traces = filtered_traces
 
-    # Calculate up proportion of traces
-    up_proportion_idxs = find_up_proportion(
-        segmented_filtered_traces,
-        start_idx=start_idx,
-        threshold_voltage=threshold_voltage,
-        return_array=True,
-    )
-    results["up_proportion"] = sum(up_proportion_idxs) / len(traces)
+        # Calculate up proportion of traces
+        up_proportion_idxs = find_up_proportion(
+            segmented_filtered_traces,
+            start_idx=start_idx,
+            threshold_voltage=threshold_voltage,
+            return_array=True,
+        )
+        up_proportion = sum(up_proportion_idxs) / len(traces)
+        if k == len(t_read_vals):
+            results["up_proportion"] = up_proportion
+            results["up_proportion_idxs"][filtered_traces_idx] = up_proportion_idxs
+        else:
+            up_proportions.append(up_proportion)
+
+    if t_read_vals is not None:
+        results['up_proportions'] = up_proportions
+        results['t_read_vals'] = t_read_vals
 
     # Calculate ratio of traces that end up with low voltage
     idx_end_low = edge_voltage(
@@ -721,18 +774,18 @@ def analyse_traces(
 
         # Add vertical line for t_read
         if t_read is not None:
-            ax.vlines(t_read, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
+            ax.vlines(t_read*1e3, -0.5, len(traces + 0.5), lw=2, linestyle="--", color="orange")
             ax.text(
-                t_read,
+                t_read*1e3,
                 len(traces) + 0.5,
                 f"t_read={t_read*1e3} ms",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
             ax.text(
-                t_skip,
+                t_skip*1e3,
                 len(traces) + 0.5,
-                f"t_skip={t_skip*1e3} ms",
+                f"t_skip={t_skip*1e6:.0f} us",
                 horizontalalignment="center",
                 verticalalignment="bottom",
             )
@@ -749,6 +802,7 @@ def analyse_EPR(
     t_read: float,
     min_filter_proportion: float = 0.5,
     threshold_voltage: Union[float, None] = None,
+    threshold_method='config',
     filter_traces=True,
     plot: bool = False,
 ):
@@ -806,6 +860,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
         plot=plot[0],
     )
@@ -817,6 +872,7 @@ def analyse_EPR(
         filter="high" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
         plot=plot[1],
     )
@@ -828,6 +884,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_skip=t_skip,
     )
     results_read_begin = analyse_traces(
@@ -836,6 +893,7 @@ def analyse_EPR(
         filter="low" if filter_traces else None,
         min_filter_proportion=min_filter_proportion,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         t_read=t_read,
         segment="begin",
         t_skip=t_skip,
@@ -846,6 +904,7 @@ def analyse_EPR(
         sample_rate=sample_rate,
         t_read=t_read,
         threshold_voltage=threshold_voltage,
+        threshold_method=threshold_method,
         segment="end",
         t_skip=t_skip,
         plot=plot[2],
@@ -901,6 +960,12 @@ class AnalyseEPR(Analysis):
             config_link="analysis.threshold_voltage",
             update_from_config=True,
         )
+        self.settings.threshold_method = Parameter(
+            initial_value=None,
+            set_cmd=None,
+            config_link="analysis.threshold_method",
+            update_from_config=True,
+        )
         self.settings.filter_traces = Parameter(
             initial_value=True,
             set_cmd=None,
@@ -945,10 +1010,12 @@ class AnalyseEPR(Analysis):
 def analyse_electron_readout(
     traces: dict,
     sample_rate: float,
+    filtered_shots: np.ndarray = None,
     shots_per_frequency: int = 1,
     labels: List[str] = None,
     t_skip: float = 0,
     t_read: Union[float, None] = None,
+    t_read_vals: Union[int, None, Sequence] = None,
     threshold_voltage: Union[float, None] = None,
     threshold_method: str = "config",
     min_filter_proportion: float = 0.5,
@@ -963,7 +1030,8 @@ def analyse_electron_readout(
         )
     num_frequencies = int(len(traces) / shots_per_frequency)
 
-    results = {"read_results": [[] for _ in range(num_frequencies)]}
+    results = {}
+    read_results = [[] for _ in range(num_frequencies)]
 
     # Extract samples and points per shot
     first_trace = next(iter(traces.values()))
@@ -982,7 +1050,7 @@ def analyse_electron_readout(
     )
     if threshold_voltage is None or np.isnan(threshold_voltage):
         threshold_voltage = high_low["threshold_voltage"]
-    results["threshold_voltage"] = high_low["threshold_voltage"]
+    results["threshold_voltage"] = threshold_voltage
     results["voltage_difference"] = high_low["voltage_difference"]
 
     if shots_per_frequency == 1:
@@ -1001,26 +1069,36 @@ def analyse_electron_readout(
                 read_traces[f_idx][sample_idx][shot_idx] = read_trace
 
     # Iterate through traces and extract data
-    up_proportions = np.zeros((num_frequencies, samples))
+    if shots_per_frequency == 1:
+        up_proportions = np.zeros((num_frequencies, shots_per_frequency))
+        up_proportions_idxs = np.nan * np.zeros((num_frequencies, shots_per_frequency, samples))
+    else:
+        up_proportions = np.zeros((num_frequencies, samples))
+        up_proportions_idxs = np.nan * np.zeros((num_frequencies, samples, shots_per_frequency))
+
     num_traces = np.zeros((num_frequencies, samples))
     for f_idx, read_traces_single_frequency in enumerate(read_traces):
         for sample_idx, read_traces_arr in enumerate(read_traces_single_frequency):
+            # read_traces_arr is 2D (shots_per_frequency, points_per_shot)
             read_result = analyse_traces(
                 traces=read_traces_arr,
                 sample_rate=sample_rate,
+                filtered_shots=filtered_shots,
                 t_read=t_read,
                 t_skip=t_skip,
+                t_read_vals=t_read_vals,
                 threshold_voltage=threshold_voltage,
                 min_filter_proportion=min_filter_proportion,
                 plot=plot,
             )
-            results["read_results"][f_idx].append(read_result)
+            read_results[f_idx].append(read_result)
 
             up_proportions[f_idx, sample_idx] = read_result["up_proportion"]
+            up_proportions_idxs[f_idx, sample_idx] = read_result["up_proportion_idxs"]
             num_traces[f_idx, sample_idx] = read_result["num_traces"]
 
     # Add all up proportions as measurement results
-    for k, up_proportion_arr in enumerate(up_proportions):
+    for k, (up_proportion_arr, up_proportion_idxs_arr) in enumerate(zip(up_proportions, up_proportions_idxs)):
         # Determine the right up_proportion label
         label = "up_proportion" if shots_per_frequency == 1 else "up_proportions"
         if labels is not None:
@@ -1032,8 +1110,10 @@ def analyse_electron_readout(
 
         if shots_per_frequency == 1:  # Remove outer dimension
             up_proportion_arr = up_proportion_arr[0]
+            up_proportion_idxs_arr = up_proportion_idxs_arr[0]
 
-        results[label + suffix] = up_proportion_arr
+        results[f"{label}{suffix}"] = up_proportion_arr
+        results[f"{label}_idxs{suffix}"] = up_proportion_idxs_arr
 
         if threshold_up_proportion:
             results["filtered_shots" + suffix] = up_proportion_arr > threshold_up_proportion
@@ -1042,6 +1122,9 @@ def analyse_electron_readout(
             results["contrast" + suffix] = up_proportion_arr - dark_counts
 
         results["num_traces" + suffix] = sum(num_traces[k])
+
+    results["read_results"] = read_results
+
     return results
 
 
@@ -1074,6 +1157,10 @@ class AnalyseElectronReadout(Analysis):
             set_cmd=None,
             config_link="properties.t_read",
             update_from_config=True,
+        )
+        self.settings.t_read_vals = Parameter(
+            initial_value=None,
+            set_cmd=None,
         )
         self.settings.threshold_voltage = Parameter(
             initial_value=None,
@@ -1113,10 +1200,22 @@ class AnalyseElectronReadout(Analysis):
         self.outputs.filtered_shots = Parameter(
             initial_value=False, set_cmd=None
         )
+        self.outputs.up_proportion_idxs = Parameter(
+            initial_value=False, set_cmd=None
+        )
 
     @property
     def result_parameters(self):
         parameters = []
+
+        if self.settings.labels is not None:
+            suffixes = [f"_{label}" for label in self.settings.labels]
+        elif self.settings.num_frequencies > 1:
+            # Note that we avoid an underscore
+            suffixes = [str(k) for k in range(self.settings.num_frequencies)]
+        else:
+            suffixes = [""] * self.settings.num_frequencies
+
         for name, output in self.outputs.parameters.items():
             if not output():
                 continue
@@ -1124,22 +1223,28 @@ class AnalyseElectronReadout(Analysis):
             if name in ["up_proportion", "contrast", "num_traces", "filtered_shots"]:
                 # Add a label for each frequency
                 for k in range(self.settings.num_frequencies):
-                    if self.settings.labels is not None:
-                        suffix = f"_{self.settings.labels[k]}"
-                    elif self.settings.num_frequencies > 1:
-                        suffix = str(k)  # Note that we avoid an underscore
-                    else:
-                        suffix = ""
-
                     output_copy = copy(output)
-                    output_copy.name = name + suffix
+                    output_copy.name = name + suffixes[k]
 
                     if (
                         name == "up_proportion"
                         and self.settings.shots_per_frequency > 1
                     ):
-                        output_copy.name = "up_proportions" + suffix
+                        output_copy.name = "up_proportions" + suffixes[k]
                         output_copy.shape = (self.settings.samples,)
+
+                    parameters.append(output_copy)
+            elif name == 'up_proportion_idxs':
+                # Add a label for each frequency
+                for k in range(self.settings.num_frequencies):
+                    output_copy = copy(output)
+
+                    if self.settings.shots_per_frequency > 1:
+                        output_copy.name = "up_proportions_idxs" + suffixes[k]
+                        output_copy.shape = (self.settings.samples, self.settings.shots_per_frequency)
+                    else:
+                        output_copy.name = "up_proportion_idxs" + suffixes[k]
+                        output_copy.shape = (self.settings.samples, )
 
                     parameters.append(output_copy)
             else:
@@ -1462,7 +1567,7 @@ def parse_flip_pairs(
         if flip_pairs == "neighbouring":
             flip_pair_indices = list(zip(range(num_states - 1), range(1, num_states)))
         elif flip_pairs == "all":
-            flip_pair_indices = itertools.combinations(range(num_states), r=2)
+            flip_pair_indices = list(itertools.combinations(range(num_states), r=2))
         else:
             raise RuntimeError(f"Flip pairs {flip_pairs} not understood")
 
@@ -1470,6 +1575,7 @@ def parse_flip_pairs(
             flip_pairs = flip_pair_indices
         else:
             flip_pairs = [(labels[k1], labels[k2]) for (k1, k2) in flip_pair_indices]
+
     elif isinstance(flip_pairs[0][0], str):
         # Flip pairs use state labels, convert to state indices
         assert labels is not None
@@ -1478,7 +1584,6 @@ def parse_flip_pairs(
         flip_pair_indices = flip_pairs
     # Ensure flip_pairs_int are tuples and sorted
     flip_pair_indices = [tuple(sorted(flip_pair)) for flip_pair in flip_pair_indices]
-
     return flip_pairs, flip_pair_indices
 
 

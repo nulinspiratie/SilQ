@@ -368,6 +368,10 @@ class AWG520Interface(InstrumentInterface):
         self.waveform_filenames = waveform_filenames
         self.sequence = sequence
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         for ch in self.active_channels():
             self.instrument[f'{ch}_status']('ON')
