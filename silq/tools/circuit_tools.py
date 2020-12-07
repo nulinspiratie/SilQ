@@ -4,10 +4,10 @@ import numpy as np
 import regex as re
 pi = np.pi
 
-from pygsti.objects.circuit import Circuit
-
 
 def convert_circuit(circuit, target_type: Type = str):
+    from pygsti.objects.circuit import Circuit
+    
     # First convert all types to string
     if isinstance(circuit, Circuit):
         expanded_circuit = []
