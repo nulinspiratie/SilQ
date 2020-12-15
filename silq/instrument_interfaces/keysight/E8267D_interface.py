@@ -784,19 +784,34 @@ class SingleWaveformPulseImplementation(PulseImplementation):
             'I': list(np.array(self.pulse.phases) + interface.I_phase_correction()),
             'Q': list(np.array(self.pulse.phases) - 90 + interface.Q_phase_correction())
         }
+        t_offset = interface.envelope_padding() if interface.envelope_IQ() else 0
         for quadrature, phases in phases_IQ.items():
+            if t_offset:
+                single_wf_amps = [0]
+                single_wf_freqs = [0]
+                single_wf_phases = [0]
+                single_wf_durs = [t_offset]
+                single_wf_amps.extend(self.pulse.amplitudes)
+                single_wf_freqs.extend(list(np.array(self.pulse.frequencies) - frequency))
+                single_wf_phases.extend(phases)
+                single_wf_durs.extend(self.pulse.durations)
+            else:
+                single_wf_amps = self.pulse.amplitudes
+                single_wf_freqs = list(np.array(self.pulse.frequencies) - frequency)
+                single_wf_phases = phases
+                single_wf_durs = self.pulse.durations
             if quadrature in interface.IQ_channels():
                 if self.pulse.pulse_type == 'sine':
                     additional_pulses.append(
                         SingleWaveformPulse(name=f'sideband_{quadrature}',
                                             pulse_type='sine',
                                             AM_type=self.pulse.AM_type,
-                                            t_start=self.pulse.t_start - interface.envelope_padding(),
-                                            t_stop=self.pulse.t_stop + interface.envelope_padding(),
-                                            amplitudes=self.pulse.amplitudes,
-                                            frequencies=list(np.array(self.pulse.frequencies) - frequency),
-                                            phases=phases,
-                                            durations=self.pulse.durations,
+                                            t_start=self.pulse.t_start - t_offset,
+                                            t_stop=self.pulse.t_stop,
+                                            amplitudes=single_wf_amps,
+                                            frequencies=single_wf_freqs,
+                                            phases=single_wf_phases,
+                                            durations=single_wf_durs,
                                             final_delay=self.pulse.final_delay,
                                             phase_reference=self.pulse.phase_reference,
                                             connection_requirements={
