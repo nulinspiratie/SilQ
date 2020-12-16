@@ -141,30 +141,18 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         frequencies = []
         for pulse in self.pulse_settings['RF_pulses']:
             if isinstance(pulse, Pulse):
-                if getattr(pulse, 'frequency', None):
-                    frequencies.append(pulse.frequency)
-                elif getattr(pulse, 'frequencies', None):
-                    frequencies.extend(pulse.frequencies)
+                frequencies.append(pulse.frequency)
             elif isinstance(pulse, str):
-                if getattr(self.pulse_settings[pulse], 'frequency', None):
-                    frequencies.append(self.pulse_settings[pulse].frequency)
-                elif getattr(self.pulse_settings[pulse], 'frequencies', None):
-                    frequencies.extend(self.pulse_settings[pulse].frequencies)
+                frequencies.append(self.pulse_settings[pulse].frequency)
             elif isinstance(pulse, list):
                 # Pulse is a list containing other pulses
                 # These pulses will be joined in a single plunge
                 subfrequencies = []
                 for subpulse in pulse:
                     if isinstance(subpulse, Pulse):
-                        if getattr(subpulse, 'frequency', None):
-                            subfrequencies.append(subpulse.frequency)
-                        elif getattr(subpulse, 'frequencies', None):
-                            subfrequencies.extend(subpulse.frequencies)
+                        subfrequencies.append(subpulse.frequency)
                     elif isinstance(subpulse, str):
-                        if getattr(self.pulse_settings[subpulse], 'frequency', None):
-                            subfrequencies.append(self.pulse_settings[subpulse].frequency)
-                        elif getattr(self.pulse_settings[subpulse], 'frequencies', None):
-                            subfrequencies.extend(self.pulse_settings[subpulse].frequencies)
+                        subfrequencies.append(self.pulse_settings[subpulse].frequency)
                     elif isinstance(subpulse, PulseSequence):
                         subfrequencies.append(None)
                     else:
@@ -661,15 +649,9 @@ class ESRPulseSequence(PulseSequenceGenerator):
         ESR_frequencies = []
         for pulse in self.ESR['ESR_pulses']:
             if isinstance(pulse, Pulse):
-                if getattr(pulse, 'frequencies', None):
-                    ESR_frequencies.extend(pulse.frequencies)
-                elif getattr(pulse, 'frequency', None):
-                    ESR_frequencies.append(pulse.frequency)
+                ESR_frequencies.append(pulse.frequency)
             elif isinstance(pulse, str):
-                if getattr(self.ESR[pulse], 'frequencies', None):
-                    ESR_frequencies.extend(self.ESR[pulse].frequencies)
-                elif getattr(self.ESR[pulse], 'frequency', None):
-                    ESR_frequencies.append(self.ESR[pulse].frequency)
+                ESR_frequencies.append(self.ESR[pulse].frequency)
             elif isinstance(pulse, list):
                 # Pulse is a list containing other pulses
                 # These pulses will be joined in a single plunge
