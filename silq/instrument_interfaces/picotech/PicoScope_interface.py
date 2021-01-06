@@ -109,22 +109,8 @@ class PicoScopeInterface(InstrumentInterface):
             t_start = 0
             t_stop = self.pulse_sequence.duration
 
-        #  !!! Changed np.ceil to np.round !!!
         samples_per_trace = (t_stop - t_start) * self.sample_rate()
         self.points_per_trace(samples_per_trace)
-
-        # Set read timeout interval
-        # This is the interval for requesting an acquisition.
-        # This allows us to interrupt an acquisition prematurely.
-        # timeout_interval = max(2.1 * self.pulse_sequence.duration,
-        #                        self.minimum_timeout_interval())
-        # self.instrument.timeout_interval(timeout_interval)
-        # An error is raised if no data has been acquired within 64 seconds.
-        # self.acquisition_controller().timeout(64.0)
-
-        # Traces per read should not be longer than the timeout interval
-        # self.acquisition_controller().traces_per_read(traces_per_read)
-
 
         # targeted_pulse_sequence is the pulse sequence that is currently setup
         self.targeted_pulse_sequence = self.pulse_sequence
@@ -248,6 +234,7 @@ class PicoScopeInterface(InstrumentInterface):
 
         """
         self.instrument.acquisition()
+        self.traces = self.instrument.buffers
         self.pulse_traces = self.segment_traces(self.instrument.buffers)
         return self.pulse_traces
 
