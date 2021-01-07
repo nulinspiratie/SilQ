@@ -29,20 +29,6 @@ class PicoScopeInterface(InstrumentInterface):
 
         self.pulse_implementations = []
 
-        # self.add_parameter(name="acquisition",
-        #                    parameter_class=PicoAcquisitionParameter)
-
-        # self.add_parameter(name='default_acquisition_controller',
-        #                    set_cmd=None,
-        #                    initial_value='None',
-        #                    vals=vals.Enum(None,
-        #                        'None', *self.acquisition_controllers.keys()))
-        #
-        # self.add_parameter(name='acquisition_controller',
-        #                    set_cmd=None,
-        #                    vals=vals.Enum(
-        #                        'None', *self.acquisition_controllers.keys()))
-
         # Names of acquisition channels [chA, chB, etc.]
         self.add_parameter(name='acquisition_channels',
                            set_cmd=None,
@@ -129,7 +115,7 @@ class PicoScopeInterface(InstrumentInterface):
             List of additional pulses, empty by default.
         """
         if self.input_pulse_sequence.get_pulses(trigger=True):
-            logger.warning('SD digitizer has a manual trigger pulse defined.'
+            logger.warning('Picoscope has a manual trigger pulse defined.'
                            'This should normally be done automatically instead.')
             return []
         elif not self.pulse_sequence.get_pulses(acquire=True):
@@ -163,7 +149,7 @@ class PicoScopeInterface(InstrumentInterface):
         """ Segment traces by acquisition pulses.
 
         For each pulse with ``acquire`` set to True (which should be all pulses
-        passed along to the ATSInterface), the relevant portion of each channel
+        passed along to the PicoscopeInterface), the relevant portion of each channel
         trace is segmented and returned in a new dict
 
         Args:
