@@ -10,7 +10,7 @@ from silq.pulses.pulse_sequences import (
     NMRPulseSequenceComposite,
 )
 from silq.pulses.pulse_types import Pulse
-from silq.pulses.pulse_sequences import NMRCircuitPulseSequence
+from silq.pulses.pulse_sequences import CircuitPulseSequence
 from silq.tools import property_ignore_setter
 from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
 
@@ -499,7 +499,7 @@ class NMRCircuitParameter(NMRParameterComposite):
     """
 
     def __init__(self, name: str = "NMR_circuit", **kwargs):
-        pulse_sequence = NMRCircuitPulseSequence('NMR_circuit')
+        pulse_sequence = CircuitPulseSequence('NMR_circuit')
         super().__init__(name=name, pulse_sequence=pulse_sequence, **kwargs)
 
         self.circuit = self.pulse_sequence['circuit']
