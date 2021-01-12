@@ -6,6 +6,18 @@ pi = np.pi
 
 
 def convert_circuit(circuit, target_type: Type = str):
+    """Convert a circuit to a target type (e.g. list, str)
+    
+    Args:
+        circuit: Circuit that should be converted
+            Can be a str, list, or pygsti Circuit
+        target_type: Target circuit type
+            can be str, list, pygsti Circuit
+            
+    Examples:
+        >>> convert_circuit('GxGi', target_type=list)
+        ['Gx', 'Gi']
+    """
     from pygsti.objects.circuit import Circuit
     
     # First convert all types to string
@@ -63,6 +75,7 @@ def convert_circuit(circuit, target_type: Type = str):
 
 
 def save_circuits(circuits, filepath):
+    """Save list of circuits to a .txt file"""
     filepath = Path(filepath)
     if not filepath.suffix:
         filepath = filepath.with_suffix('.txt')
