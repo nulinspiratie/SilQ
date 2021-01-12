@@ -66,6 +66,7 @@ setup(name='silq',
           'pyperclip>=1.5',
           'blinker',
           'dill',
+          'regex'
       ],
       extras_require=extras_require,
       zip_safe=False)
