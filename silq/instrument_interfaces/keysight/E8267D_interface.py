@@ -262,6 +262,8 @@ class E8267DInterface(InstrumentInterface):
             frequency_sideband = pulse.frequency_sideband
 
             if multiple_frequencies is not None:
+                if np.ndim(multiple_frequencies) == 2:
+                    multiple_frequencies = np.reshape(multiple_frequencies, -1)
                 pulse_min_frequency = min(multiple_frequencies)
                 pulse_max_frequency = max(multiple_frequencies)
             else:
@@ -776,9 +778,19 @@ class SingleWaveformPulseImplementation(PulseImplementation):
         assert (IQ_modulation == 'on') and (interface.FM_mode() == 'IQ'), \
             f'FM_mode should be IQ and IQ_modulation should be ON for {self.pulse.name}.'
 
-        assert all(0 <= amp <= 1 for amp in
-                   self.pulse.amplitudes), f"Not all amplitudes in {self.pulse.name} list: " \
-                                           f"{self.pulse.amplitudes} are between 0 and 1V."
+        # To ensure the waveform is limited to +- 1V:
+        if self.pulse.pulse_type == 'multi_sine':
+            amplitudes_list = [list(np.array(amps) / len(amps)) for amps in self.pulse.amplitudes]
+            max_inputs = [sum(amps) for amps in amplitudes_list]
+            assert all(0 <= amp <= 1 for amp in max_inputs), f"Amplitudes {self.pulse.amplitudes}" \
+                                                             f" in {self.pulse.name} are too high."
+            amplitude_check = np.reshape(self.pulse.amplitudes, -1)
+        else:
+            amplitude_check = self.pulse.amplitudes
+            amplitudes_list = self.pulse.amplitudes
+        assert all(0 <= amp <= 1 for amp in amplitude_check), \
+            f"Not all amplitudes in {self.pulse.name} list: " \
+            f"{self.pulse.amplitudes} are between 0 and 1V."
 
         phases_IQ = {
             'I': list(np.array(self.pulse.phases) + interface.I_phase_correction()),
@@ -786,14 +798,14 @@ class SingleWaveformPulseImplementation(PulseImplementation):
         }
         for quadrature, phases in phases_IQ.items():
             if quadrature in interface.IQ_channels():
-                if self.pulse.pulse_type == 'sine':
+                if self.pulse.pulse_type == 'sine' or self.pulse.pulse_type == 'multi_sine':
                     additional_pulses.append(
                         SingleWaveformPulse(name=f'sideband_{quadrature}',
-                                            pulse_type='sine',
+                                            pulse_type=self.pulse.pulse_type,
                                             AM_type=self.pulse.AM_type,
                                             t_start=self.pulse.t_start,
                                             t_stop=self.pulse.t_stop,
-                                            amplitudes=self.pulse.amplitudes,
+                                            amplitudes=amplitudes_list,
                                             frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                             phases=phases,
                                             durations=self.pulse.durations,
@@ -809,7 +821,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                             pulse_type='ramp_lin',
                                             t_start=self.pulse.t_start,
                                             t_stop=self.pulse.t_stop,
-                                            amplitudes=self.pulse.amplitudes,
+                                            amplitudes=amplitudes_list,
                                             start_frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                             frequency_rate=self.pulse.frequency_rate,
                                             phases=phases,
@@ -826,7 +838,7 @@ class SingleWaveformPulseImplementation(PulseImplementation):
                                             pulse_type='ramp_expsat',
                                             t_start=self.pulse.t_start,
                                             t_stop=self.pulse.t_stop,
-                                            amplitudes=self.pulse.amplitudes,
+                                            amplitudes=amplitudes_list,
                                             start_frequencies=list(np.array(self.pulse.frequencies) - frequency),
                                             frequency_rate=self.pulse.frequency_rate,
                                             decay=self.pulse.decay,
