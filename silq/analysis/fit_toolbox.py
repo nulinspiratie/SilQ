@@ -2,15 +2,22 @@ from typing import Union, Tuple, List, Optional
 import numpy as np
 from lmfit import Parameters, Model
 from lmfit.model import ModelResult
+
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
-from scipy.signal import find_peaks
-from scipy.ndimage.filters import gaussian_filter1d
+import matplotlib.cbook as cbook
+import matplotlib.lines as mlines
+
 import logging
 from qcodes.data.data_array import DataArray
 
 logger = logging.getLogger(__name__)
 
+fit_rc_params = {
+    "lines.color": "k",
+    "lines.linestyle": "--",
+    "lines.linewidth": "2"
+}
 
 class Fit():
     """Base fitting class.
@@ -44,7 +51,6 @@ class Fit():
         - The fit function can be evaluated with the fitted parameter values
           using ``fit({sweep_values})``
     """
-    plot_kwargs = {'linestyle': '--', 'color': 'k', 'lw': 2}
     sweep_parameter = None
 
     def __init__(
@@ -298,10 +304,11 @@ class Fit():
             **{self.sweep_parameter: x_vals_full})
         x_vals_full *= xscale
         y_vals_full *= yscale
-        plot_kwargs = {**self.plot_kwargs, **kwargs}
-        self.plot_handle, = ax.plot(
-            x_vals_full, y_vals_full, **plot_kwargs
-        )
+
+        with plt.rc_context(fit_rc_params):
+            self.plot_handle, = ax.plot(
+                x_vals_full, y_vals_full, **kwargs
+            )
         return self.plot_handle
 
 
@@ -1149,7 +1156,7 @@ class FermiFit(Fit):
             exponential data points
         """
 
-        return A / (np.exp((V - U) / (DoubleFermiFit.kB * T)) + 1) + offset
+        return A / (np.exp((V - U) / (FermiFit.kB * T)) + 1) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
