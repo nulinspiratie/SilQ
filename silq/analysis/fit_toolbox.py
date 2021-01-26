@@ -5,6 +5,7 @@ from lmfit.model import ModelResult
 
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
+import matplotlib as mpl
 import matplotlib.cbook as cbook
 import matplotlib.lines as mlines
 
@@ -14,7 +15,7 @@ from qcodes.data.data_array import DataArray
 logger = logging.getLogger(__name__)
 
 fit_rc_params = {
-    "lines.color": "k",
+    "axes.prop_cycle": mpl.cycler(color=['k']),
     "lines.linestyle": "--",
     "lines.linewidth": "2"
 }
@@ -51,6 +52,7 @@ class Fit():
         - The fit function can be evaluated with the fitted parameter values
           using ``fit({sweep_values})``
     """
+    default_plot_kwargs = {'linestyle': '--', 'color': 'k', 'linewidth': 2}
     sweep_parameter = None
 
     def __init__(
@@ -305,10 +307,12 @@ class Fit():
         x_vals_full *= xscale
         y_vals_full *= yscale
 
-        with plt.rc_context(fit_rc_params):
-            self.plot_handle, = ax.plot(
-                x_vals_full, y_vals_full, **kwargs
-            )
+        kwargs = cbook.normalize_kwargs(kwargs, mlines.Line2D)
+        plot_kwargs = self.default_plot_kwargs
+        plot_kwargs.update(**kwargs)
+        self.plot_handle, = ax.plot(
+            x_vals_full, y_vals_full, **plot_kwargs
+        )
         return self.plot_handle
 
 
