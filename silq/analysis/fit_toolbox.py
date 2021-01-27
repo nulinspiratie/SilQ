@@ -13,6 +13,7 @@ from qcodes.data.data_array import DataArray
 
 logger = logging.getLogger(__name__)
 
+
 class Fit():
     """Base fitting class.
 
@@ -50,7 +51,7 @@ class Fit():
 
     def __init__(
             self,
-            ydata: Union[DataArray, np.ndarray]=None,
+            ydata: Union[DataArray, np.ndarray] = None,
             *,
             xvals: Optional[Union[DataArray, np.ndarray]] = None,
             fit: bool = True,
@@ -843,8 +844,7 @@ class SineFit(Fit):
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
         fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips) / 2)]
-        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(
-            fft_flips) / 2)]
+        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
         initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
@@ -1032,7 +1032,7 @@ class RabiFrequencyFit(Fit):
                         xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
         initial_parameters.setdefault('t', np.pi / initial_parameters['gamma'] / 2)
-        initial_parameters.setdefault('offset',  np.min(ydata))
+        initial_parameters.setdefault('offset', np.min(ydata))
         initial_parameters.setdefault('amplitude', 1 - initial_parameters['offset'])
 
         for key in initial_parameters:
