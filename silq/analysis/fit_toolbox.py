@@ -5,7 +5,6 @@ from lmfit.model import ModelResult
 
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
-import matplotlib as mpl
 import matplotlib.cbook as cbook
 import matplotlib.lines as mlines
 
@@ -13,12 +12,6 @@ import logging
 from qcodes.data.data_array import DataArray
 
 logger = logging.getLogger(__name__)
-
-fit_rc_params = {
-    "axes.prop_cycle": mpl.cycler(color=['k']),
-    "lines.linestyle": "--",
-    "lines.linewidth": "2"
-}
 
 class Fit():
     """Base fitting class.
@@ -307,11 +300,12 @@ class Fit():
         x_vals_full *= xscale
         y_vals_full *= yscale
 
-        kwargs = cbook.normalize_kwargs(kwargs, mlines.Line2D)
-        plot_kwargs = self.default_plot_kwargs
-        plot_kwargs.update(**kwargs)
+        # Set default plot kwargs while de-aliasing (e.g. 'lw' -> 'linewidth')
+        # kwargs to prevent duplicate keys
+        kwargs = {**self.default_plot_kwargs,
+                  **cbook.normalize_kwargs(kwargs, mlines.Line2D)}
         self.plot_handle, = ax.plot(
-            x_vals_full, y_vals_full, **plot_kwargs
+            x_vals_full, y_vals_full, **kwargs
         )
         return self.plot_handle
 
