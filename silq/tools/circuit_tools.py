@@ -97,7 +97,7 @@ def load_circuits(
 
     # Check if line already contains data
     if lines[0].startswith('##'):
-        # Remove two headers
+        # Remove header line
         lines = lines[1:]
 
     # Remove any existing results
@@ -111,8 +111,7 @@ def load_circuits(
 
     if load_probabilities:
         # Ignore when there is more than one space
-        lines = [line.replace('   ', ' ') for line in lines]
-        lines = [line.replace('  ', ' ') for line in lines]
+        lines = [' '.join(line.split()) for line in lines]
         state_events = np.array([
             [int(elem) for elem in line.split(' ')[1:]]
             for line in lines
