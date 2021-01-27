@@ -1187,7 +1187,6 @@ class FermiFit(Fit):
             parameters.add(key, initial_parameters[key])
 
         parameters['T'].min = 0
-        parameters['offset'].min = 0
 
         return parameters
 
