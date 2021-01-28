@@ -10,6 +10,7 @@ from silq.pulses.pulse_sequences import (
     NMRPulseSequenceComposite,
 )
 from silq.pulses.pulse_types import Pulse
+from silq.pulses.pulse_sequences import CircuitPulseSequence, ElectronReadoutPulseSequence
 from silq.tools import property_ignore_setter
 from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
 
@@ -182,6 +183,8 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
     Args:
         name: Parameter name
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+            Default is `NMRPulseSequenceComposite`
         **kwargs: Additional kwargs passed to `AcquisitionParameter`
 
     Parameters:
@@ -390,3 +393,55 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         contrast = up_proportion - dark_counts
         print(f'Contrast = {up_proportion:.2f} - {dark_counts:.2f} = {contrast:.2f}')
         return plot
+
+
+class NMRCircuitParameter(NMRParameterComposite):
+    """ Parameter for most measurements involving NMR pulses in a circuit.
+
+    Args:
+        name: Parameter name
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+            Default is `NMRPulseSequenceComposite` where the nested NMR
+            pulse sequence is a `CircuitPulseSequence`
+        **kwargs: Additional kwargs passed to `AcquisitionParameter`
+
+    Parameters:
+        NMR (CircuitPulseSequence): Pulse sequence for NMR portion
+            of pulse sequence
+        ESR (ElectronReadoutPulseSequence): pulse sequence to read out nuclear
+            state via electron. Generally the setting ``shots_per_frequency``
+            should be larger than 1
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        samples (int): Number of acquisition samples
+        results (dict): Results obtained after analysis of traces.
+        traces (dict): Acquisition traces segmented by pulse and acquisition
+            label
+        silent (bool): Print results after acquisition
+        continuous (bool): If True, instruments keep running after acquisition.
+            Useful if stopping/starting instruments takes a considerable amount
+            of time.
+        save_traces (bool): Save acquired traces to disk.
+            If the acquisition has been part of a measurement, the traces are
+            stored in a subfolder of the corresponding data set.
+            Otherwise, a new dataset is created.
+
+    Note:
+        - The `NMRPulseSequence` does not have an empty-plunge-read (EPR)
+          sequence, and therefore does not add a contrast or dark counts.
+          Verifying that the system is in tune is therefore a little bit tricky.
+
+    """
+
+    def __init__(self, name: str = "NMR_circuit", pulse_sequence=None, **kwargs):
+        if pulse_sequence is None:
+            pulse_sequence = NMRPulseSequenceComposite(
+                pulse_sequences=[
+                    CircuitPulseSequence('NMR'),
+                    ElectronReadoutPulseSequence(name='ESR')
+                ]
+            )
+        super().__init__(name=name, pulse_sequence=pulse_sequence, **kwargs)
+
+        self.circuit = self.NMR['circuit']
+        self.circuit_index = self.NMR['circuit_index']
+        self.circuits = self.NMR['circuits']
