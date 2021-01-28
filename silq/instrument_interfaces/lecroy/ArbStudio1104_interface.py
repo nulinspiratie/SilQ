@@ -11,7 +11,6 @@ from qcodes.utils.helpers import arreqclose_in_list
 from qcodes.instrument.parameter import Parameter
 from qcodes.instrument.parameter_node import parameter
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -48,6 +47,7 @@ class ArbStudio1104Interface(InstrumentInterface):
     already have restarted its sequence. Not sure how to best deal with this.
 
     """
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name, **kwargs)
 
@@ -167,7 +167,8 @@ class ArbStudio1104Interface(InstrumentInterface):
                     # Next pulse starts some time after the current point in time.
                     # Add DC pulse at amplitude zero to bridge the gap
                     dc_pulse = self.get_pulse_implementation(
-                        DCPulse(t_start=t, t_stop=pulse.t_start, amplitude=0, connection=connection)
+                        DCPulse(t_start=t, t_stop=pulse.t_start, amplitude=0,
+                                connection=connection)
                     )
                     self.pulse_sequence.add(dc_pulse)
 
@@ -290,8 +291,11 @@ class ArbStudio1104Interface(InstrumentInterface):
 
         # Unused channels load a single zero volt DC pulse sequence to ensure
         # that no signal plays from these channels, this has minimal overhead
-        self.waveforms = {ch: ([np.zeros(4)] if ch not in self.active_channels() else []) for ch in self._output_channels}
-        self.sequences = {ch: ([0] if ch not in self.active_channels() else []) for ch in self._output_channels}
+        self.waveforms = {
+            ch: ([np.zeros(4)] if ch not in self.active_channels() else []) for
+            ch in self._output_channels}
+        self.sequences = {ch: ([0] if ch not in self.active_channels() else [])
+                          for ch in self._output_channels}
 
         for pulse in self.pulse_sequence:
             # For each channel, obtain list of waveforms, and the sequence
@@ -448,9 +452,10 @@ class SinePulseImplementation(PulseImplementation):
                     f"{self.max_waveform_points}. Could not segment sine waveform"
                 )
             elif points_per_period > 1000:
-                # Frequency is fairly low, so we can create a waveform consisting
-                # of a single oscillation. We modify the frequency a tiny bit
-                # to ensure that a full period exactly fits in the waveform.
+                # Frequency is fairly low, so we can create a waveform
+                # consisting of a single oscillation. We modify the
+                # frequency a tiny bit to ensure that a full period
+                # exactly fits in the waveform.
                 original_frequency = self.pulse.frequency
                 modified_frequency = sample_rate / points_per_period
                 self.pulse.frequency = modified_frequency
@@ -460,12 +465,13 @@ class SinePulseImplementation(PulseImplementation):
 
                 self.pulse.frequency = original_frequency
             else:
-                # Pulse has a high frequency, so if we would put a single oscillation
-                # in the waveform, the frequency might deviate significantly.
-                # Instead, we add multiple oscillations, close to 50000 points
-                # such that roughly an integer number of periods fit into the
-                # waveform.
-                # TODO improve by modifying the frequency and fix the duration of the waveform
+                # Pulse has a high frequency, so if we would put a single
+                # oscillation in the waveform, the frequency might deviate
+                # significantly. Instead, we add multiple oscillations,
+                # close to 50000 points such that roughly an integer number
+                # of periods fit into the waveform.
+                # TODO improve by modifying the frequency and fix the
+                #  duration of the waveform
                 # TODO in the commented code below:
                 # periods = 50000 // points_per_period
                 # waveform_points = int(periods * points_per_period)
@@ -518,7 +524,8 @@ class MultiSinePulseImplementation(PulseImplementation):
             t_stop=('<', self.pulse.t_stop),
             trigger=True)
         assert len(trigger_pulses) == 0, \
-            "Cannot implement multi sine pulse if the Arbstudio receives intermediary triggers"
+            "Cannot implement multi sine pulse if the Arbstudio receives intermediary " \
+            "triggers"
 
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
@@ -575,7 +582,8 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             t_stop=('<', self.pulse.t_stop),
             trigger=True)
         assert len(trigger_pulses) == 0, \
-            "Cannot implement frequency ramp pulse if the arbstudio receives intermediary triggers"
+            "Cannot implement frequency ramp pulse if the arbstudio receives " \
+            "intermediary triggers"
 
         if isinstance(self.pulse.connection, SingleConnection):
             channels = [self.pulse.connection.output['channel'].name]
