@@ -288,10 +288,13 @@ class ArbStudio1104Interface(InstrumentInterface):
         # that there are no times between pulses
         t_pulse = {ch: 0 for ch in self.active_channels()}
 
-        self.waveforms = {ch: [] for ch in self.active_channels()}
-        self.sequences = {ch: [] for ch in self.active_channels()}
+        # Unused channels load a single zero volt DC pulse sequence to ensure
+        # that no signal plays from these channels, this has minimal overhead
+        self.waveforms = {ch: ([np.zeros(4)] if ch not in self.active_channels() else []) for ch in self._output_channels}
+        self.sequences = {ch: ([0] if ch not in self.active_channels() else []) for ch in self._output_channels}
+
         for pulse in self.pulse_sequence:
-            # For each channel, obtain list of waverforms, and the sequence
+            # For each channel, obtain list of waveforms, and the sequence
             # in which to perform the waveforms
             channels_waveforms, channels_sequence = pulse.implementation.implement(
                 sampling_rates=sampling_rates,
@@ -357,7 +360,7 @@ class ArbStudio1104Interface(InstrumentInterface):
             Only upload waveforms that have not previously been uploaded instead
             of uploading all waveforms if not all waveforms have been uploaded
         """
-        for ch in self.active_channels():
+        for ch in self._output_channels:
             # Get corresponding instrument channel object
             channel = self.instrument.channels[ch]
 
