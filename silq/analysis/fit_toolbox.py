@@ -2,10 +2,12 @@ from typing import Union, Tuple, List, Optional
 import numpy as np
 from lmfit import Parameters, Model
 from lmfit.model import ModelResult
+
 from matplotlib import pyplot as plt
 from matplotlib.axis import Axis
-from scipy.signal import find_peaks
-from scipy.ndimage.filters import gaussian_filter1d
+import matplotlib.cbook as cbook
+import matplotlib.lines as mlines
+
 import logging
 from qcodes.data.data_array import DataArray
 
@@ -44,12 +46,12 @@ class Fit():
         - The fit function can be evaluated with the fitted parameter values
           using ``fit({sweep_values})``
     """
-    plot_kwargs = {'linestyle': '--', 'color': 'k', 'lw': 2}
+    default_plot_kwargs = {'linestyle': '--', 'color': 'k', 'linewidth': 2}
     sweep_parameter = None
 
     def __init__(
             self,
-            ydata: Union[DataArray, np.ndarray]=None,
+            ydata: Union[DataArray, np.ndarray] = None,
             *,
             xvals: Optional[Union[DataArray, np.ndarray]] = None,
             fit: bool = True,
@@ -298,9 +300,13 @@ class Fit():
             **{self.sweep_parameter: x_vals_full})
         x_vals_full *= xscale
         y_vals_full *= yscale
-        plot_kwargs = {**self.plot_kwargs, **kwargs}
+
+        # Set default plot kwargs while de-aliasing (e.g. 'lw' -> 'linewidth')
+        # kwargs to prevent duplicate keys
+        kwargs = {**self.default_plot_kwargs,
+                  **cbook.normalize_kwargs(kwargs, mlines.Line2D)}
         self.plot_handle, = ax.plot(
-            x_vals_full, y_vals_full, **plot_kwargs
+            x_vals_full, y_vals_full, **kwargs
         )
         return self.plot_handle
 
@@ -838,8 +844,7 @@ class SineFit(Fit):
         dt = (xvals[1] - xvals[0])
         fft_flips = np.fft.fft(ydata)
         fft_flips_abs = np.abs(fft_flips)[:int(len(fft_flips) / 2)]
-        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(
-            fft_flips) / 2)]
+        fft_freqs = np.fft.fftfreq(len(fft_flips), dt)[:int(len(fft_flips) / 2)]
         frequency_idx = np.argmax(fft_flips_abs[1:]) + 1
 
         initial_parameters.setdefault('frequency', fft_freqs[frequency_idx])
@@ -1027,7 +1032,7 @@ class RabiFrequencyFit(Fit):
                         xvals[FWHM_max_idx] - xvals[FWHM_min_idx]) / 2
 
         initial_parameters.setdefault('t', np.pi / initial_parameters['gamma'] / 2)
-        initial_parameters.setdefault('offset',  np.min(ydata))
+        initial_parameters.setdefault('offset', np.min(ydata))
         initial_parameters.setdefault('amplitude', 1 - initial_parameters['offset'])
 
         for key in initial_parameters:
@@ -1149,7 +1154,7 @@ class FermiFit(Fit):
             exponential data points
         """
 
-        return A / (np.exp((V - U) / (DoubleFermiFit.kB * T)) + 1) + offset
+        return A / (np.exp((V - U) / (FermiFit.kB * T)) + 1) + offset
 
     def find_initial_parameters(self,
                                 xvals: np.ndarray,
