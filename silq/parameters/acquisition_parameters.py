@@ -929,6 +929,14 @@ class DCSweepParameter(AcquisitionParameter):
         return names
 
     @property_ignore_setter
+    def setpoint_labels(self):
+        iter_sweep_parameters = reversed([p.capitalize() for p in self.sweep_parameters.keys()])
+        labels = tuple(iter_sweep_parameters),
+        if self.trace_pulse.enabled:
+            labels += (('Time',),)
+        return labels
+
+    @property_ignore_setter
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
         if self.trace_pulse.enabled:
