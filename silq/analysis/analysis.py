@@ -173,8 +173,8 @@ def find_high_low(
     if skip_pts > 0:
         traces = [trace[:, skip_pts:] for trace in traces]
 
-    # Turn list of 2D traces into a single 1D array
-    traces = np.concatenate([np.ravel(trace) for trace in traces])
+    # Turn list of 2D traces into a single 2D array
+    traces = np.ravel(traces)
 
     # Retrieve properties from config.analysis
     analysis_config = config.get("analysis", {})
