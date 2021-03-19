@@ -608,7 +608,7 @@ def analyse_traces(
 
     else:
         # We don't know voltage difference since we skip a high_low measure.
-        results["voltage_difference"] = np.nan
+        results["voltage_difference"] = [np.nan]
         results["threshold_voltage"] = threshold_voltage
 
     if plot is not False:  # Create plot for traces
@@ -2085,7 +2085,7 @@ def analyse_flips_old(
             if possible_flips > 0:
                 combined_flip_probability = combined_flips / possible_flips
             else:
-                combined_flip_probability = np.nan
+                combined_flip_probability = [np.nan]
             results["combined_flip_probability" + suffix] = combined_flip_probability
 
             # Check if all up_proportion pairs satisfy threshold condition
@@ -2095,8 +2095,8 @@ def analyse_flips_old(
                     "filtered_combined_flip_probability" + suffix
                 ] = combined_flip_probability
             else:
-                results["filtered_combined_flips" + suffix] = np.nan
-                results["filtered_combined_flip_probability" + suffix] = np.nan
+                results["filtered_combined_flips" + suffix] = [np.nan]
+                results["filtered_combined_flip_probability" + suffix] = [np.nan]
 
             results["threshold_up_proportion"] = (threshold_low, threshold_high)
 
