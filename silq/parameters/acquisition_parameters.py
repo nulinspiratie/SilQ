@@ -861,7 +861,7 @@ class DCSweepParameter(AcquisitionParameter):
             sweep_voltages = sweep_dict.sweep_voltages
             if sweep_dict.offset_parameter is not None:
                 sweep_voltages = sweep_voltages + sweep_dict.offset_parameter.get_latest()
-            setpoints = (convert_setpoints(sweep_voltages),),
+            setpoints = (convert_setpoints(sweep_voltages), )
 
         elif len(self.sweep_parameters) == 2:
             inner_sweep_dict = next(iter_sweep_parameters)
@@ -874,7 +874,7 @@ class DCSweepParameter(AcquisitionParameter):
                 outer_sweep_voltages = outer_sweep_voltages + outer_sweep_dict.offset_parameter.get_latest()
 
             setpoints = (convert_setpoints(outer_sweep_voltages,
-                                           inner_sweep_voltages)),
+                                           inner_sweep_voltages), )
 
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
@@ -882,6 +882,9 @@ class DCSweepParameter(AcquisitionParameter):
             trace_setpoints = tuple(
                 np.linspace(0, self.trace_pulse.duration, points))
             setpoints += (convert_setpoints(trace_setpoints),)
+        # else:
+        #     setpoints = next(iter(setpoints)) # Without a trace pulse we only have a single
+        #                                 # value to acquire, so we squeeze the outer dimension.
         return setpoints
 
     @property_ignore_setter
