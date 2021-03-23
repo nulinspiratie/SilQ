@@ -52,8 +52,9 @@ class Keysight81180AInterface(InstrumentInterface):
           ``silq.config.properties.sine_waveform_settings``
     """
 
-    def __init__(self, instrument_name, max_amplitude=1.5, **kwargs):
-        assert max_amplitude <= 2
+    def __init__(self, instrument_name, max_amplitude=1, **kwargs):
+        # The output waveform of the Keysight 81180A is limited by 2Vpp, hence max waveform amplitude is 1V.
+        assert max_amplitude <= 1
 
         super().__init__(instrument_name, **kwargs)
 
@@ -218,6 +219,8 @@ class Keysight81180AInterface(InstrumentInterface):
         # targeted_pulse_sequence is the pulse sequence that is currently setup
         self.targeted_pulse_sequence = self.pulse_sequence
         self.targeted_input_pulse_sequence = self.input_pulse_sequence
+        assert self.pulse_sequence.final_delay >= 0.175e-6, \
+            f'Final pulse sequence delay {self.pulse_sequence.final_delay} must be >= 175ns.'
 
     def _get_single_waveform_pulse_sequences(
         self, pulse_sequence=None, always_true=False
@@ -512,7 +515,7 @@ class Keysight81180AInterface(InstrumentInterface):
             )
 
         # Get waveform of current pulse
-        waveform = pulse.implementation.implement(sample_rate=sample_rate,)
+        waveform = pulse.implementation.implement(sample_rate=sample_rate, pulse=pulse)
 
         # Add waveform and sequence steps
         sequence_steps = self.add_pulse_waveforms(
