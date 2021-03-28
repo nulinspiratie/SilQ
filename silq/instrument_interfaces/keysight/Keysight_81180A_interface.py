@@ -362,9 +362,10 @@ class Keysight81180AInterface(InstrumentInterface):
                 amplitude=amplitude,
             )
         )
-        waveform = DCPulseImplementation.implement(
-            pulse=DC_pulse, sample_rate=sample_rate
+        pulse_implementation = DCPulseImplementation().target_pulse(
+            DC_pulse, interface=None, connections=None
         )
+        waveform = pulse_implementation.implement(sample_rate=sample_rate)
         sequence_steps = self.add_pulse_waveforms(
             channel_name,
             **waveform,
@@ -515,7 +516,7 @@ class Keysight81180AInterface(InstrumentInterface):
             )
 
         # Get waveform of current pulse
-        waveform = pulse.implementation.implement(sample_rate=sample_rate, pulse=pulse)
+        waveform = pulse.implementation.implement(sample_rate=sample_rate)
 
         # Add waveform and sequence steps
         sequence_steps = self.add_pulse_waveforms(
@@ -885,9 +886,11 @@ class SinePulseImplementation(PulseImplementation):
                 t_stop=self.pulse.t_stop,
                 amplitude=self.pulse.get_voltage(self.pulse.t_start),
             )
-            return DCPulseImplementation.implement(
-                pulse=DC_pulse, sample_rate=sample_rate
+            
+            pulse_implementation = DCPulseImplementation().target_pulse(
+                DC_pulse, interface=None, connections=None
             )
+            return pulse_implementation.implement(sample_rate=sample_rate)
         settings = copy(self.settings)
         settings.update(**config.properties.get("sine_waveform_settings", {}))
         settings.update(
