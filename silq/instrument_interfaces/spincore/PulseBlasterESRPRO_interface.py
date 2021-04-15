@@ -154,6 +154,8 @@ class PulseBlasterESRPROInterface(InstrumentInterface):
         # Add final instructions
         # Wait until end of pulse sequence
         # If the first pulse starts at t > 0, bridge the gap with another wait for this time
+        # Used to be the commented line (see PR 281). If the PulseBlaster has triggering issues, try reverting this line.
+        # wait_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay - t
         wait_duration = self.pulse_sequence.duration + self.pulse_sequence.final_delay + sorted(t_list)[0] - t
 
         if wait_duration > 0:
