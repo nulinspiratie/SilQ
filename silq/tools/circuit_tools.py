@@ -5,7 +5,7 @@ import regex as re
 pi = np.pi
 
 
-def convert_circuit(circuit, target_type: Type = str):
+def convert_circuit(circuit, target_type: Type = str, qubit_labels=None):
     """Convert a circuit to a target type (e.g. list, str)
     
     Args:
@@ -19,6 +19,12 @@ def convert_circuit(circuit, target_type: Type = str):
         ['Gx', 'Gi']
     """
     from pygsti.objects.circuit import Circuit
+    if qubit_labels is None:
+        idle_label = 'Gi'
+        final_suffix = ''
+    else:
+        idle_label = 'Gi:0'
+        final_suffix = f"@({','.join(map(str, qubit_labels))})"
     
     # First convert all types to string
     if isinstance(circuit, Circuit):
@@ -27,19 +33,19 @@ def convert_circuit(circuit, target_type: Type = str):
             if gate.issimple():
                 expanded_circuit.append(gate.name)
             elif str(gate) == '[]':
-                gate.append('Gi')
+                gate.append(idle_label)
             else:
                 raise RuntimeError(f'Cannot understand gate {gate}')
 
     elif isinstance(circuit, str):
         # Replace [] by identity gate
-        expanded_circuit = circuit.replace('[]', 'Gi')
+        expanded_circuit = circuit.replace('[]', idle_label)
 
         # Expand any expressions ({gates})^exponent
         expand_subcircuit = lambda match: match.group(0).replace(
             match.group(0), match.group(1) * int(match.group(2))
         )
-        expanded_circuit = re.sub(r'\(([A-Za-z]+)\)\^([0-9]+)', expand_subcircuit, expanded_circuit)
+        expanded_circuit = re.sub(r'\(([A-Za-z:0-9]+)\)\^([0-9]+)', expand_subcircuit, expanded_circuit)
 
         # Expand any expressions {gate}^exponent (notice missing parentheses
         expand_subcircuit = lambda match: match.group(0).replace(
@@ -65,9 +71,9 @@ def convert_circuit(circuit, target_type: Type = str):
 
     if target_type == str:
         if expanded_circuit:
-            return ''.join(expanded_circuit)
+            return ''.join(expanded_circuit) + final_suffix
         else:
-            return '{}'
+            return '[]' + final_suffix
     elif target_type == list:
         return expanded_circuit
     else:
