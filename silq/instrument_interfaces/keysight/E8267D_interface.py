@@ -455,6 +455,7 @@ class SinePulseImplementation(PulseImplementation):
 
         attenuation = self.pulse.power - power
         amplitude = 10.0 ** (attenuation / 20)
+        assert amplitude <= 1, "IQ input voltages must be <= 1V. Check pulse and microwave source powers."
 
         if frequency_IQ is not None and frequency_IQ != 0:
             t_offset = interface.envelope_padding() if interface.envelope_IQ() else 0
@@ -582,6 +583,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
 
         attenuation = self.pulse.power - power
         amplitude = 10.0 ** (attenuation / 20)
+        assert amplitude <= 1, "IQ input voltages must be <= 1V. Check pulse and microwave source powers."
 
         if frequency_IQ is not None:
             if 'I' in interface.IQ_channels():
