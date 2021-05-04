@@ -79,7 +79,7 @@ class PCDDSInterface(InstrumentInterface):
         assert self.use_trig_in(), "Interface not yet programmed for pxi triggering"
         if self.auto_advance():
             # Only trigger once at start of sequence
-            t_list = min(self.pulse_sequence.t_list)
+            t_list = [min(self.pulse_sequence.t_list)]
         else:
             # Get list of unique pulse start and stop times
             t_list = self.pulse_sequence.t_list
@@ -121,8 +121,8 @@ class PCDDSInterface(InstrumentInterface):
             # Only trigger on first pulse
 
             # Use clock cycles for maximum accuracy
-            clk = self.instrument.clk
-            timing_offset = self.instrument.pulse_timing_offset
+            clk = self.instrument.ch1.clk
+            timing_offset = self.instrument.ch1.pulse_timing_offset
 
             t_min = min(self.pulse_sequence.t_list)
             cycles_min = int(round(t_min * clk))
@@ -140,6 +140,7 @@ class PCDDSInterface(InstrumentInterface):
                         pulse_implementation['pulse_idx'] = pulse_idx
                         pulse_implementation['next_pulse'] = pulse_idx + 1
                         pulse_implementation['duration'] = delta_cycles / clk
+                        channel.write_instr(pulse_implementation)
 
                         # Increment counters
                         pulse_idx += 1
@@ -176,7 +177,7 @@ class PCDDSInterface(InstrumentInterface):
                     cycles += delta_cycles
 
                 # Add a final DC pulse that requires triggering to restart
-                DC_0V_pulse.implement()
+                pulse_implementation = DC_0V_pulse.implementation.implement()
                 pulse_implementation['pulse_idx'] = pulse_idx
                 pulse_implementation['next_pulse'] = 1
                 channel.write_instr(pulse_implementation)
