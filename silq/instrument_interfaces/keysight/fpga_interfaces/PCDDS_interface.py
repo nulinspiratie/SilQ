@@ -1,8 +1,12 @@
-from typing import Any, Dict, List
-from copy import copy
+from typing import List
+import logging
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, DCPulse, SinePulse, FrequencyRampPulse, \
     TriggerPulse, PulseImplementation, MarkerPulse
+from qcodes.instrument.parameter import Parameter
+from qcodes.utils import validators as vals
+
+logger = logging.getLogger(__name__)
 
 
 class PCDDSInterface(InstrumentInterface):
@@ -31,18 +35,28 @@ class PCDDSInterface(InstrumentInterface):
             MarkerPulseImplementation()
         ]
 
-        self.add_parameter('use_trig_in',
-                           initial_value=True,
-                           set_cmd=None,
-                           docstring="Whether to use trig_in for triggering."
-                                     "All DDS channels listen simultaneosly to"
-                                     "trig_in, while the pxi channels can "
-                                     "trigger individual dds channels")
+        self.use_trig_in = Parameter(
+            initial_value=True,
+            set_cmd=None,
+            vals=vals.Bool(),
+            docstring="Whether to use trig_in for triggering. " \
+                      "All DDS channels listen simultaneosly to trig_in, " \
+                      "while the pxi channels can trigger individual dds channels"
+        )
 
-        self.add_parameter('trigger_in_duration',
-                           initial_value=.1e-6,
-                           set_cmd=None,
-                           docstring="Duration for a trigger input")
+        self.trigger_in_duration = Parameter(
+            initial_value=.1e-6,
+            set_cmd=None,
+            vals=vals.Numbers(),
+            docstring="Duration for a trigger input"
+        )
+
+        self.auto_advance = Parameter(
+            initial_value=False,
+            set_cmd=None,
+            vals=vals.Bool(),
+            docstring="Whether to only trigger once at the start or every pulse"
+        )
 
     @property
     def active_channel_ids(self):
@@ -59,11 +73,17 @@ class PCDDSInterface(InstrumentInterface):
     def get_additional_pulses(self, connections) -> List[Pulse]:
         """Get list of pulses required by instrument (trigger pulses)
 
-        A trigger pulse is returned for each pulse start and stop time.
+        If auto_advance == True, only one trigger pulse is requested at start
+        of first pulse. Else a trigger pulse is returned for each pulse start and stop time.
         """
         assert self.use_trig_in(), "Interface not yet programmed for pxi triggering"
-        # Get list of unique pulse start and stop times
-        t_list = self.pulse_sequence.t_list
+        if self.auto_advance():
+            # Only trigger once at start of sequence
+            t_list = min(self.pulse_sequence.t_list)
+        else:
+            # Get list of unique pulse start and stop times
+            t_list = self.pulse_sequence.t_list
+
         trigger_pulses = [TriggerPulse(t_start=t,
                                        duration=self.trigger_in_duration(),
                                        connection_requirements={
@@ -89,11 +109,6 @@ class PCDDSInterface(InstrumentInterface):
                                                             amplitude=0))
         current_pulses = {channel.name: DC_0V_pulse
                           for channel in self.active_instrument_channels}
-        # for channel in self.active_instrument_channels:
-            # current_pulses[channel.name]: copy(DC_0V_pulse)
-            # current_pulses[channel.name].t_start = 0
-            # next_pulse = next(self.pulse_sequence.get_pulses(output_channel=channel.name))
-            # current_pulses[channel.name].t_stop = next_pulse.t_start
 
         for channel in self.active_instrument_channels:
             current_pulse = current_pulses[channel.name]
@@ -102,27 +117,94 @@ class PCDDSInterface(InstrumentInterface):
             pulse_implementation['next_pulse'] = 1
             channel.write_instr(pulse_implementation)
 
-        total_instructions = len(self.pulse_sequence.t_list)
-        for pulse_idx, t in enumerate(self.pulse_sequence.t_list):
-            if t == self.pulse_sequence.duration:
-                continue
-            pulse_idx += 1  # We start with 1 since we have initial 0V pulse
-            for channel in self.active_instrument_channels:
-                active_pulse = self.pulse_sequence.get_pulse(t_start=t,
-                                                             output_channel=channel.name)
-                if active_pulse is not None:  # New pulse starts
-                    current_pulses[channel.name] = active_pulse
-                elif t >= current_pulses[channel.name].t_stop:
-                    current_pulses[channel.name] = DC_0V_pulse
+        if self.auto_advance():
+            # Only trigger on first pulse
 
-                pulse_implementation = current_pulses[channel.name].implementation.implement()
-                pulse_implementation['pulse_idx'] = pulse_idx
-                if pulse_idx + 1 < total_instructions:
+            # Use clock cycles for maximum accuracy
+            clk = self.instrument.clk
+            timing_offset = self.instrument.pulse_timing_offset
+
+            t_min = min(self.pulse_sequence.t_list)
+            cycles_min = int(round(t_min * clk))
+
+            for channel in self.active_instrument_channels:
+                cycles = cycles_min
+                channel_pulses = self.pulse_sequence.get_pulses(output_channel=channel.name)
+                pulse_idx = 1
+                for pulse in channel_pulses:
+                    start_cycles = int(round(pulse.t_start * clk))
+                    delta_cycles = start_cycles - cycles
+                    if delta_cycles > timing_offset:
+                        # Add 0V pulse to bridge gap
+                        pulse_implementation = DC_0V_pulse.implementation.implement()
+                        pulse_implementation['pulse_idx'] = pulse_idx
+                        pulse_implementation['next_pulse'] = pulse_idx + 1
+                        pulse_implementation['duration'] = delta_cycles / clk
+
+                        # Increment counters
+                        pulse_idx += 1
+                        cycles += delta_cycles
+                    elif delta_cycles > 1:
+                        logger.warning(
+                            f'Pulse {pulse} starts too early: {start_cycles} vs {cycles}. '
+                            'Could mean the pulse has insufficient delay. '
+                            'Next pulse will have a longer duration to bridge gap'
+                        )
+                    elif delta_cycles < -1:
+                        logger.warning(
+                            f'Pulse {pulse} starts too early: {start_cycles} vs {cycles}. '
+                            'This error should not occur unless pulses overlap. '
+                            'Next pulse will have shorter duration to bridge gap'
+                        )
+
+                    stop_cycles = int(round(pulse.t_stop * clk))
+                    delta_cycles = stop_cycles - cycles
+                    if delta_cycles <= timing_offset:
+                        logger.warning(f'Pulse {pulse} is too short. '
+                                       f'{stop_cycles} vs {cycles} cycles')
+                        delta_cycles = 15
+
+                    # Implement pulse
+                    pulse_implementation = pulse.implementation.implement()
+                    pulse_implementation['pulse_idx'] = pulse_idx
                     pulse_implementation['next_pulse'] = pulse_idx + 1
-                else:
-                    # Loop back to second pulse (ignore first 0V pulse)
-                    pulse_implementation['next_pulse'] = 1
+                    pulse_implementation['duration'] = delta_cycles / clk
+                    channel.write_instr(pulse_implementation)
+
+                    # Increment counters
+                    pulse_idx += 1
+                    cycles += delta_cycles
+
+                # Add a final DC pulse that requires triggering to restart
+                DC_0V_pulse.implement()
+                pulse_implementation['pulse_idx'] = pulse_idx
+                pulse_implementation['next_pulse'] = 1
                 channel.write_instr(pulse_implementation)
+                # TODO: Add check that final DC pulse is not added if last pulse
+                # ends at pulsesequence.duration, in which case the last pulse
+                # should be triggered
+        else:
+            total_instructions = len(self.pulse_sequence.t_list)
+            for pulse_idx, t in enumerate(self.pulse_sequence.t_list):
+                if t == self.pulse_sequence.duration:
+                    continue
+                pulse_idx += 1  # We start with 1 since we have initial 0V pulse
+                for channel in self.active_instrument_channels:
+                    active_pulse = self.pulse_sequence.get_pulse(t_start=t,
+                                                                 output_channel=channel.name)
+                    if active_pulse is not None:  # New pulse starts
+                        current_pulses[channel.name] = active_pulse
+                    elif t >= current_pulses[channel.name].t_stop:
+                        current_pulses[channel.name] = DC_0V_pulse
+
+                    pulse_implementation = current_pulses[channel.name].implementation.implement()
+                    pulse_implementation['pulse_idx'] = pulse_idx
+                    if pulse_idx + 1 < total_instructions:
+                        pulse_implementation['next_pulse'] = pulse_idx + 1
+                    else:
+                        # Loop back to second pulse (ignore first 0V pulse)
+                        pulse_implementation['next_pulse'] = 1
+                    channel.write_instr(pulse_implementation)
 
         # targeted_pulse_sequence is the pulse sequence that is currently setup
         self.targeted_pulse_sequence = self.pulse_sequence
