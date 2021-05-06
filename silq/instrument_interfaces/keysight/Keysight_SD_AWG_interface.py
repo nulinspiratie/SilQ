@@ -6,7 +6,7 @@ import logging
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
-    AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse
+    AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse, FrequencyRampPulse
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from silq.tools.general_tools import find_approximate_divisor
 from qcodes.utils.helpers import arreqclose_in_list
@@ -57,7 +57,15 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
             TriggerPulseImplementation(
                 pulse_requirements=[]),
             MarkerPulseImplementation(
-                pulse_requirements=[])
+                pulse_requirements=[]),
+            FrequencyRampPulseImplementation(
+                pulse_requirements=[
+                    ("frequency_start", {"min": -200e6, "max": 200e6}),
+                    ("frequency_stop", {"min": -200e6, "max": 200e6}),
+                    ("amplitude", {"min": 0, "max": 1.5}),
+                    ("duration", {"min": 100e-9}),
+                ]
+            ),
         ]
 
         self.add_parameter('channel_selection',
@@ -501,8 +509,6 @@ class SinePulseImplementation(PulseImplementation):
         # channel independent parameters
         sampling_rate = default_sampling_rate
         duration = self.pulse.duration
-        period = 1 / self.pulse.frequency
-        cycles = duration // period
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
         waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15  # the minimum size of a waveform
@@ -618,6 +624,37 @@ class DCPulseImplementation(PulseImplementation):
 
 class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
+
+    def implement(self, interface, instrument, default_sampling_rate, threshold):
+        full_name = self.pulse.full_name or 'none'
+
+        sampling_rate = default_sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+
+        samples = int(self.pulse.duration * sampling_rate)
+        samples -= samples % instrument.waveform_multiple
+        assert samples >= instrument.waveform_minimum, \
+            f"pulse {self.pulse} too short"
+
+        t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, samples)
+
+        waveform_data = self.pulse.get_voltage(t_list) / 1.5
+
+        waveform = {'waveform': waveform_data,
+                    'points': samples,
+                    'points_100MHz': (int(samples / 5) if prescaler == 0
+                                      else samples * prescaler),
+                    'name': full_name,
+                    'points': samples,
+                    'cycles': 1,
+                    't_start': self.pulse.t_start,
+                    't_stop': self.pulse.t_stop,
+                    'prescaler': prescaler}
+
+        return [waveform]
+
+class FrequencyRampPulseImplementation(PulseImplementation):
+    pulse_class = FrequencyRampPulse
 
     def implement(self, interface, instrument, default_sampling_rate, threshold):
         full_name = self.pulse.full_name or 'none'
