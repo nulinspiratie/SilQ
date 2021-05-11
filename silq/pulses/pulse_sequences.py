@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from collections import Iterable, Sequence
 from pathlib import Path
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
@@ -41,6 +41,54 @@ class PulseSequenceGenerator(PulseSequence):
 
     def generate(self):
         raise NotImplementedError('Needs to be implemented in subclass')
+
+    def _update_latest_pulse_settings(
+            self,
+            deepcopy_pulse=False,
+            deepcopy_pulse_sequence=False,
+            **kwargs
+    ):
+        element = kwargs.get('element', self.pulse_settings)
+
+        if isinstance(element, dict):
+            # print(f'copying dict {element}')
+            copied_element = {
+                key: self._update_latest_pulse_settings(
+                    element=val,
+                    deepcopy_pulse_sequence=deepcopy_pulse_sequence,
+                    deepcopy_pulse=deepcopy_pulse
+                ) for key, val in element.items()
+            }
+        elif isinstance(element, (list, tuple, set)):
+            # print('copying iterable')
+            copied_element = [
+                self._update_latest_pulse_settings(
+                    element=val,
+                    deepcopy_pulse_sequence=deepcopy_pulse_sequence,
+                    deepcopy_pulse=deepcopy_pulse
+                ) for val in element
+            ]
+            if isinstance(element, tuple):
+                copied_element = tuple(copied_element)
+            elif isinstance(element, set):
+                copied_element = set(copied_element)
+        elif isinstance(element, Pulse):
+            # print('copying pulse')
+            if deepcopy_pulse:
+                copied_element = deepcopy(element)
+            else:
+                copied_element = element.copy()
+        elif isinstance(element, PulseSequence):
+            # print('copying pulse sequence')
+            if deepcopy_pulse_sequence:
+                copied_element = deepcopy(element)
+            else:
+                copied_element = element.copy()
+        else:
+            # print('copying other')
+            copied_element = copy(element)
+
+        return copied_element
 
 
     def up_to_date(self):
