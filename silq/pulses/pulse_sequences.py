@@ -88,6 +88,10 @@ class PulseSequenceGenerator(PulseSequence):
             # print('copying other')
             copied_element = copy(element)
 
+        # Update latest pulse settings
+        if not kwargs:
+            self._latest_pulse_settings = copied_element
+
         return copied_element
 
 
@@ -820,7 +824,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
         self._ESR_pulses = self.add(*self.post_pulses)
 
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class T2ElectronPulseSequence(PulseSequenceGenerator):
