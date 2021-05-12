@@ -185,7 +185,10 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_settings = deepcopy(ElectronReadoutPulseSequence.pulse_settings)
+        # Create a copy of pulse settings
+        self.pulse_settings = self._update_latest_pulse_settings(
+            element=ElectronReadoutPulseSequence.pulse_settings
+        )
 
         self.frequencies = Parameter()
 
@@ -416,7 +419,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         for modifier in self.modifiers:
             modifier(self)
 
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class ESRPulseSequenceComposite(PulseSequence):
@@ -976,7 +979,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class NMRPulseSequence(PulseSequenceGenerator):
@@ -1216,7 +1219,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class NMRCPMGPulseSequence(NMRPulseSequence):
@@ -1449,7 +1452,7 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class FlipFlopPulseSequence(PulseSequenceGenerator):
