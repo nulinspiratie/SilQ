@@ -59,6 +59,8 @@ class PulseSequenceGenerator(PulseSequence):
                     deepcopy_pulse=deepcopy_pulse
                 ) for key, val in element.items()
             }
+            if isinstance(element, DotDict):
+                copied_element = DotDict(copied_element)
         elif isinstance(element, (list, tuple, set)):
             # print('copying iterable')
             copied_element = [
