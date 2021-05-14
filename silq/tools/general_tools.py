@@ -643,8 +643,8 @@ def find_approximate_divisor(
                 "cycles": int(cycles),
                 "remaining_points": int(remaining_points),
             }
-    else:
-        return None
+        else:
+            return None
         
         
 def slice_length(s, l):
