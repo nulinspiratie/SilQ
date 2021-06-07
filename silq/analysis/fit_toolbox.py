@@ -801,6 +801,83 @@ class DoubleExponentialFit(Fit):
         return parameters
 
 
+class ExponentialGrowthFit(Fit):
+    """Fitting class for an exponential growth function.
+
+    To fit data to a function, use the method `Fit.perform_fit`.
+    This will find its initial parameters via `Fit.find_initial_parameters`,
+    after which it will fit the data to `Fit.fit_function`.
+
+    Note:
+        The fitting routine uses lmfit, a wrapper package around scipy.optimize.
+    """
+    sweep_parameter = 't'
+
+    @staticmethod
+    def fit_function(t: Union[float, np.ndarray],
+                     tau: float,
+                     amplitude: float,
+                     exponent_factor: float,
+                     offset: float) -> Union[float, np.ndarray]:
+        """Exponential function using time as x-coordinate
+
+        Args:
+            t: Time.
+            tau: Decay constant.
+            amplitude:
+            exponent_factor:
+            offset:
+
+        Returns:
+            exponential data points
+        """
+        return amplitude * np.exp(np.power(t / tau, exponent_factor)) + offset
+
+    def find_initial_parameters(self,
+                                xvals: np.ndarray,
+                                ydata: np.ndarray,
+                                initial_parameters: dict) -> Parameters:
+        """Estimate initial parameters from data.
+
+        This is needed to ensure that the fitting will converge.
+
+        Args:
+            xvals: x-coordinates of data points
+            ydata: data points
+            initial_parameters: Fixed initial parameters to be skipped.
+
+        Returns:
+            Parameters object containing initial parameters.
+        """
+        if initial_parameters is None:
+            initial_parameters = {}
+
+        parameters = Parameters()
+
+        if not 'offset' in initial_parameters:
+            initial_parameters['offset'] = np.min(ydata)
+        if not 'exponent_factor' in initial_parameters:
+            initial_parameters['exponent_factor'] = 1
+
+        if not 'tau' in initial_parameters:
+            initial_parameters['tau'] = np.nanmean(
+                np.power(np.log(ydata), 1 / initial_parameters['exponent_factor']) / xvals
+            )
+
+        if not 'amplitude' in initial_parameters:
+            initial_parameters['amplitude'] = np.nanmean(
+                (ydata - initial_parameters['offset']) / np.exp(
+                    np.power(xvals / initial_parameters['tau'], initial_parameters['exponent_factor'])
+                )
+            )
+
+        for key in initial_parameters:
+            parameters.add(key, initial_parameters[key])
+
+        parameters['tau'].min = 0
+        return parameters
+
+
 class SineFit(Fit):
     sweep_parameter = 't'
 
