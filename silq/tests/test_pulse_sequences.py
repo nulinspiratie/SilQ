@@ -1336,6 +1336,8 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         pulse_sequence.generate()
 
         pulse_sequence = copy(pulse_sequence)
+        pulse_sequence.ESR = next(pseq for pseq in pulse_sequence.pulse_sequences if pseq.name == 'ESR')
+        pulse_sequence.EPR = next(pseq for pseq in pulse_sequence.pulse_sequences if pseq.name == 'EPR')
 
         self.assertTrue(hasattr(pulse_sequence, 'EPR'))
         self.assertTrue(hasattr(pulse_sequence, 'ESR'))
@@ -1372,6 +1374,8 @@ class TestPulseSequenceGenerators(unittest.TestCase):
         pulse_sequence['ESR.plunge'].duration = 1.4
 
         pulse_sequence = copy(pulse_sequence)
+        pulse_sequence.ESR = next(pseq for pseq in pulse_sequence.pulse_sequences if pseq.name == 'ESR')
+        pulse_sequence.EPR = next(pseq for pseq in pulse_sequence.pulse_sequences if pseq.name == 'EPR')
 
         self.assertEqual(pulse_sequence.ESR.t_start, 0)
         self.assertEqual(pulse_sequence.ESR.duration, 4.4)
@@ -1521,6 +1525,31 @@ class TestElectronReadoutPulseSequence(unittest.TestCase):
         self.assertEqual(sub_ESR_pulse.t_start, 3.2e-3)
         self.assertEqual(sub_ESR_pulse.t_stop, 5.2e-3)
         self.assertEqual(stage_pulses[1].t_stop, 7.9e-3)
+
+    def test_nested_sequence_generate(self):
+        pulse_sequence = self.pulse_sequence
+        RF_pulse_sequence = ElectronReadoutPulseSequence(
+            name='RF_subsequence'
+        )
+        RF_pulse_sequence.settings.RF_pulses = [SinePulse('ESR_nested', duration=1e-3)]
+        RF_pulse_sequence.duration = 5e-3
+
+        pulse_sequence.settings.RF_pulses = [
+            SinePulse('ESR', duration=1.5e-3),
+            RF_pulse_sequence
+        ]
+
+        pulse_sequence.generate()
+
+        self.assertTrue(pulse_sequence.up_to_date())
+
+    def test_deepcopy_electron_readout_sequence(self):
+        pseq = self.pulse_sequence
+        pseq.settings.RF_pulses = [SinePulse('ESR', duration=1.5e-3)]
+        pseq.generate()
+        pseq_copy = deepcopy(pseq)
+        print(repr(pseq_copy))
+        self.assertNotEqual(pseq_copy.duration, 0)
 
 
 if __name__ == '__main__':
