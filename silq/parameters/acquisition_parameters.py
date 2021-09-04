@@ -141,6 +141,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.continuous = continuous
 
         self.samples = None
+        self.raw_traces = None
         self.traces = None
         self.dataset = None
         self.results = None
@@ -256,6 +257,20 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if select is None or key in select:
             setattr(self, key, val)
 
+    def preprocess_traces(self, traces):
+        """Optional routine to modify traces as soon as they are acquired.
+
+        One example for needing this function is if you have to reshuffle the
+        pulses, e.g. by doing soft averaging.
+
+        Args:
+            traces: Traces to preprocess
+
+        Returns:
+            Preprocessed traces
+        """
+        return traces
+
     def setup(self,
               start: bool = None,
               **kwargs):
@@ -319,8 +334,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             save_traces = False
 
         # Perform acquisition
-        self.traces = self.layout.acquisition(stop=stop,
+        self.raw_traces = self.layout.acquisition(stop=stop,
                                               save_traces=save_traces,**kwargs)
+        self.traces = self.preprocess_traces(self.raw_traces)
+
         return self.traces
 
     def analyse(self,
