@@ -579,11 +579,18 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
             self.settings['inter_delay'].append(inter_delay)
 
         # Replace all inter_delays by offresonant pulses
-        if self.settings['RF_inter_pulse'] is not None and self.settings['RF_inter_pulse'].enabled:
+        if self.settings['RF_inter_pulse'] is not None:
+            RF_inter_pulses =  self.settings['RF_inter_pulse']
+            RF_inter_pulses = [RF_inter_pulses] * (self.settings['num_refocusing'] + 1)
+
             RF_pulses = []
-            for RF_pulse, inter_delay in zip(self.settings['RF_pulses'][0], self.settings['inter_delay']):
+            for RF_pulse, RF_pulse_inter, inter_delay in zip(
+                    self.settings['RF_pulses'][0],
+                    RF_inter_pulses,
+                    self.settings['inter_delay']
+            ):
                 RF_pulses.append(RF_pulse)
-                RF_pulse_inter = self.settings['RF_inter_pulse'].copy()
+                RF_pulse_inter = RF_pulse_inter.copy()
                 RF_pulse_inter.duration = inter_delay
                 RF_pulses.append(RF_pulse_inter)
 
@@ -1576,7 +1583,9 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 class CircuitPulseSequence(ElectronReadoutPulseSequence):
     def __init__(self, name='circuit', circuits_file=None, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.settings["pulses"] = {}
+        self.settings["pulses"] = {},
+        # Optionally add additional  RF pulses, each with its own readout
+        self.settings['additional_RF_pulses'] = []
 
         self.circuit_index = Parameter(vals=vals.Ints(), parent=False)
         self.circuit = Parameter(vals=vals.Strings())
@@ -1607,7 +1616,10 @@ class CircuitPulseSequence(ElectronReadoutPulseSequence):
                 f'CircuitPulseSequence.settings.pulses: {unknown_gates}'
             )
 
-        self.settings.RF_pulses = self.gates_to_RF_pulses(gates)
+        self.settings.RF_pulses = [
+            *self.gates_to_RF_pulses(gates),
+            *self.settings["additional_RF_pulses"]
+        ]
 
         self.generate()
 

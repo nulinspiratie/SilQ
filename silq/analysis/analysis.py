@@ -2101,3 +2101,82 @@ def analyse_flips_old(
             results["threshold_up_proportion"] = (threshold_low, threshold_high)
 
     return results
+
+
+def analyse_joint_readout(readout_shots_arrs):
+    if not isinstance(readout_shots_arrs, np.ndarray):
+        readout_shots_arrs = np.array(readout_shots_arrs)
+
+    assert readout_shots_arrs.ndim == 2
+    N_readouts, N_shots = readout_shots_arrs.shape
+
+    state_sequence = np.zeros(N_shots)
+
+    # Iterate through each set of single shots and calculate the binary-weighted sum
+    # of the sets.
+    # The readout_shot_arrs are reversed because we readout the target qubit before the control qubit
+    # but the control qubit is the most significant bit, i.e. our state labels are |control,target>
+    for k, readout_shots_arr in enumerate(readout_shots_arrs[::-1], start=0):
+        state_sequence += (2**k) * readout_shots_arr
+
+    states = np.array([list(state_sequence).count(k) for k in range(2 ** N_readouts)])
+    assert sum(states) == N_shots
+
+    state_probabilities = states / N_shots
+    assert np.abs(np.sum(state_probabilities) - 1) < 1e-12
+
+    return {
+        'state_sequence': state_sequence,
+        'states': states,
+        'state_probabilities': state_probabilities
+    }
+
+
+class AnalyseJointReadout(Analysis):
+    def __init__(self, name):
+        super().__init__(name=name)
+        self.settings.num_readouts = Parameter(
+            initial_value=2, set_cmd=None, vals=vals.Ints()
+        )
+        self.settings.num_shots = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Ints()
+        )
+        self.settings.readout_labels = Parameter(
+            initial_value=None, set_cmd=None, vals=vals.Lists(allow_none=True)
+        )
+
+        self.outputs.state_sequence = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.states = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.state_probabilities = Parameter(initial_value=True, set_cmd=None)
+
+    @property
+    def result_parameters(self):
+        parameters = []
+        for name, output in self.outputs.parameters.items():
+            if not output():
+                continue
+            else:
+                parameter = copy(output)
+                if name == 'state_sequence':
+                    parameter.shape = (self.settings.num_shots,)
+                elif name in ['states', 'state_probabilities']:
+                    parameter.shape = (self.settings.num_readouts,)
+                parameters.append(parameter)
+        return parameters
+
+    @functools.wraps(analyse_multi_state_readout)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+
+        # Collect readout shots
+        results = settings.pop('results')
+        settings['readout_shots_arrs'] = np.array([results[key] for key in self.settings.readout_labels])
+
+        # Remove all unnecessary settings (pretty much all)
+        settings.pop('num_readouts', None)
+        settings.pop('num_shots', None)
+        settings.pop('readout_labels', None)
+
+        self.results = analyse_joint_readout(**settings)
+        return self.results
