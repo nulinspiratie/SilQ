@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class PCDDSInterface(InstrumentInterface):
+    # Maximum pulse and instruction idx to be cleared.
+    # Only used in decoupled mode
+    pulse_max_idx = 200
+    instruction_max_idx = 500
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name=instrument_name, **kwargs)
 
@@ -100,6 +105,25 @@ class PCDDSInterface(InstrumentInterface):
 
     def setup_decoupled(self):
         assert self.auto_advance(), "decoupled setup has only been programmed with auto_advance enabled"
+
+        # Clear pulses and instruction up to a max idx
+        # Max idx is added in case you want to keep high-index pulses/instructions
+        for channel in self.instrument.channels:
+            if self.pulse_max_idx is not None:
+                pulses = [p for p in channel.pulses() if p['pulse_idx'] > self.pulse_max_idx]
+            else:
+                pulses = []
+            channel.pulses(pulses)
+
+            if self.instruction_max_idx is not None:
+                instructions = [
+                    instr for instr in channel.instruction_sequence()
+                    if instr['instruction_idx'] > self.instruction_max_idx
+                ]
+            else:
+                instructions = []
+            channel.instruction_sequence(instructions)
+
         PCDDS_pulses = []
         PCDDS_instructions = []
 
@@ -199,7 +223,10 @@ class PCDDSInterface(InstrumentInterface):
             for instruction in PCDDS_instructions:
                 channel.write_instruction(**instruction)
 
-    def setup_coupled(self,):
+    def setup_coupled(self):
+        for channel in self.instrument.channels:
+            channel.instruction_sequence().clear()
+
         # First pulses are 0V DC pulses
         # t_start and duration must be set but are irrelevant
         DC_0V_pulse = self.get_pulse_implementation(DCPulse('initial_0V',
@@ -307,8 +334,6 @@ class PCDDSInterface(InstrumentInterface):
                     channel.write_instr(pulse_implementation)
 
     def setup(self, **kwargs):
-        for channel in self.instrument.channels:
-            channel.instruction_sequence().clear()
         self.instrument.channels.output_enable(False)
         self.instrument.channels.pcdds_enable(True)
 
