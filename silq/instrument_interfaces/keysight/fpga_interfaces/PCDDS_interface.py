@@ -124,24 +124,28 @@ class PCDDSInterface(InstrumentInterface):
                 instructions = []
             channel.instruction_sequence(instructions)
 
-        PCDDS_pulses = []
-        PCDDS_instructions = []
+        PCDDS_pulses = {channel.id: [] for channel in self.active_instrument_channels}
+        PCDDS_instructions = {channel.id: [] for channel in self.active_instrument_channels}
+        # Keep second pulse list without idxs for indexing
+        _PCDDS_pulses_no_idxs = {channel.id: [] for channel in self.active_instrument_channels}
 
-        def add_pulse_and_instruction(pulse_implementation):
+        def add_pulse_and_instruction(channel, pulse_implementation):
             try:
-                pulse_idx = PCDDS_pulses.index(pulse_implementation)
+                pulse_idx = _PCDDS_pulses_no_idxs[channel.id].index(pulse_implementation)
             except ValueError:
-                pulse_idx = len(PCDDS_pulses)
+                _PCDDS_pulses_no_idxs[channel.id].append(pulse_implementation.copy())
+                pulse_idx = len(PCDDS_pulses[channel.id])
                 pulse_implementation['pulse_idx'] = pulse_idx
-                PCDDS_pulses.append(pulse_implementation)
+                PCDDS_pulses[channel.id].append(pulse_implementation)
 
             # Add corresponding instruction
-            instruction_idx = len(PCDDS_instructions)
-            PCDDS_instructions.append({
+            instruction_idx = len(PCDDS_instructions[channel.id])
+            PCDDS_instructions[channel.id].append({
                 'instruction_idx': instruction_idx,
                 'pulse_idx': pulse_idx,
                 'next_instruction': instruction_idx+1
             })
+
             return pulse_idx, instruction_idx
 
         # First pulses are 0V DC pulses
@@ -157,7 +161,7 @@ class PCDDSInterface(InstrumentInterface):
         for channel in self.active_instrument_channels:
             current_pulse = current_pulses[channel.name]
             pulse_implementation = current_pulse.implementation.implement()
-            add_pulse_and_instruction(pulse_implementation)
+            add_pulse_and_instruction(channel, pulse_implementation)
 
         # Use clock cycles for maximum accuracy
         clk = self.instrument.ch1.clk
@@ -176,7 +180,7 @@ class PCDDSInterface(InstrumentInterface):
                     # Add 0V pulse to bridge gap
                     pulse_implementation = DC_0V_pulse.implementation.implement()
                     pulse_implementation['duration'] = delta_cycles / clk
-                    add_pulse_and_instruction(pulse_implementation)
+                    add_pulse_and_instruction(channel, pulse_implementation)
 
                     # Increment counters
                     cycles += delta_cycles
@@ -203,24 +207,24 @@ class PCDDSInterface(InstrumentInterface):
                 # Implement pulse
                 pulse_implementation = pulse.implementation.implement()
                 pulse_implementation['duration'] = delta_cycles / clk
-                add_pulse_and_instruction(pulse_implementation)
+                add_pulse_and_instruction(channel, pulse_implementation)
 
                 # Increment counters
                 cycles += delta_cycles
 
             # Add a final DC pulse that requires triggering to restart
             pulse_implementation = DC_0V_pulse.implementation.implement()
-            add_pulse_and_instruction(pulse_implementation)
+            add_pulse_and_instruction(channel, pulse_implementation)
 
-            PCDDS_instructions[-1]['next_instruction'] = 1
+            PCDDS_instructions[channel.id][-1]['next_instruction'] = 1
             # TODO: Add check that final DC pulse is not added if last pulse
             # ends at pulsesequence.duration, in which case the last pulse
             # should be triggered
 
-            for pulse in PCDDS_pulses:
+            for pulse in PCDDS_pulses[channel.id]:
                 channel.write_instr(pulse)
 
-            for instruction in PCDDS_instructions:
+            for instruction in PCDDS_instructions[channel.id]:
                 channel.write_instruction(**instruction)
 
     def setup_coupled(self):
