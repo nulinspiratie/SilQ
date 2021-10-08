@@ -4,12 +4,18 @@ from copy import copy, deepcopy
 copy_alias = copy  # Alias for functions that have copy as a kwarg
 from blinker import Signal
 from matplotlib import pyplot as plt
+import matplotlib as mpl
+from collections.abc import Iterable
 from functools import partial
+from scipy.interpolate import interp1d
 
 from qcodes.instrument.parameter_node import parameter
 from qcodes import ParameterNode, Parameter
 from qcodes.utils import validators as vals
+from qcodes.utils import scale_engineering_units
 from qcodes.instrument.parameter_node import __deepcopy__ as _deepcopy_parameterNode
+
+from silq.pulses.pulse_types import SinePulse, DCPulse, DCRampPulse, FrequencyRampPulse
 
 __all__ = ['PulseRequirement', 'PulseSequence', 'PulseImplementation']
 
@@ -1427,6 +1433,219 @@ class PulseSequence(ParameterNode):
             pulse_slices = {k: (v.start, v.stop) for k, v in pulse_slices.items()}
 
         return pulse_slices
+
+    def plot_schematic(self,
+                       connections: Union[list, np.ndarray] = None,
+                       stage_label: str = 'stage',
+                       points_per_pulse: int = 100,
+                       connection_spacing: float = 1.75,
+                       label_pad: float = -0.25,
+                       pulse_labels: bool = True,
+                       connection_labels: bool = True,
+                       show_acquire: bool = False,
+                       decimal_digits = 3,
+                       cmap=None,
+                       **fig_kwargs
+                       ):
+        """This method plots a schematic version of a pulse sequence.
+        The pulses have the right shape, although they do not have the right
+        pulse
+        properties, e.g. frequency and duration.
+
+        Args:
+            connections: An ordered list of connection labels to plot, if not provided
+                         all connections in the sequence are used.
+            stage_label: The name of a donor staging connection label,
+                         default 'stage'
+            points_per_pulse: The maximum number of points to use for each
+                              pulse.
+            connection_spacing: The amount of space between each connection row.
+            label_pad: The x coordinate to right-align connection labels to.
+            pulse_labels: Enables pulse properties being added to the plot.
+            connection_labels: Enables connection labels being added to the plot.
+            show_acquire: Enables the pulses with acquire=True from being
+                          highlighted by a green fill.
+            decimal_digits: The precision used for numbers in pulse labels.
+            cmap: A list or colormap to use for the connection signals.
+            **fig_kwargs:
+
+        Returns:
+
+        """
+        if not self.pulses:
+            raise RuntimeError(
+                'Pulse sequence is empty, it may need to be generated before '
+                'being plotted.')
+        max_time = len(self.t_list)
+
+        # Utility function to find nearest idx
+        get_idx = lambda val, l: np.where(abs(val - np.array(l)) < 1e-6)[0][0]
+
+        if connections is None:
+            connections = set([pulse.connection_label for pulse in self])
+
+        pulses = {}
+        t_start_stop = {}
+        for c in connections:
+            pulses[c] = []
+            t_start_stop[c] = []
+            for pulse in self.get_pulses(connection_label=c):
+                pulses[c].append(pulse)
+                t_start_stop[c].append((pulse.t_start, pulse.t_stop), )
+
+        # Scale frequencies of Sine pulse, shows NMR as low frequency and
+        # ESR as high frequency
+        max_frequency = -np.inf
+        min_frequency = np.inf
+        for pulse in self:
+            if hasattr(pulse, 'frequency'):
+                max_frequency = np.max([pulse.frequency, max_frequency])
+                min_frequency = np.min([pulse.frequency, min_frequency])
+
+        f_norm = interp1d([min_frequency, max_frequency], [0.5, 2],
+                          bounds_error=False, fill_value='extrapolate')
+
+        # Convert pulses into schematic signals
+        signals = {c: [] for c in connections}
+        times = {c: [] for c in connections}
+
+        for k, c in enumerate(connections):
+            prev_p_stop = 0
+
+            # For each connection, scale all signals between -1 and 1
+            max_amplitude = -np.inf
+            min_amplitude = np.inf
+            for pulse in pulses[c]:
+                if hasattr(pulse, 'amplitude'):
+                    max_amplitude = np.max([pulse.amplitude, max_amplitude])
+                    min_amplitude = np.min([pulse.amplitude, min_amplitude])
+                elif hasattr(pulse, 'amplitude_start'):
+                    max_amplitude = np.max(
+                        [pulse.amplitude_start, pulse.amplitude_stop, max_amplitude])
+                    min_amplitude = np.min(
+                        [pulse.amplitude_start, pulse.amplitude_stop,
+                         min_amplitude])
+
+            amp_map = interp1d([min_amplitude, max_amplitude], [-1, 1])
+
+            for pulse, (t_start, t_stop) in zip(pulses[c], t_start_stop[c]):
+                p_start = get_idx(t_start, self.t_list)
+                p_stop = get_idx(t_stop, self.t_list)
+
+                if isinstance(pulse, DCPulse):
+                    t = np.linspace(p_start, p_stop, 2)
+                    y = np.ones_like(t) * amp_map(pulse.amplitude)
+                elif isinstance(pulse, DCRampPulse):
+                    t = np.linspace(p_start, p_stop, 2)
+                    y = np.linspace(amp_map(pulse.amplitude_start),
+                                    amp_map(pulse.amplitude_stop), 2)
+                elif isinstance(pulse, SinePulse):
+                    t = np.linspace(p_start, p_stop, points_per_pulse)
+                    f = f_norm(pulse.frequency)
+                    y = np.sin(2 * np.pi * f * (t - t[0]))
+                elif isinstance(pulse, FrequencyRampPulse):
+                    t = np.linspace(p_start, p_stop, points_per_pulse)
+                    f = f_norm(pulse.frequency_start)
+                    kappa = 3
+                    y = np.sin(2 * np.pi * (
+                                f * (t - t[0]) + kappa * np.power(t - t[0],
+                                                                  2) / 2))
+
+                if abs(prev_p_stop - p_start) > 1e-6:
+                    t = np.hstack([[prev_p_stop, p_start], t])
+                    y = np.hstack([[0, 0], y])
+
+                y = y * 0.5 + 0.5
+                signals[c].append(y)
+                times[c].append(t)
+
+                prev_p_stop = p_stop
+            else:
+                p_start = get_idx(t_stop, self.t_list)
+                p_stop = len(self.t_list)
+
+                t = np.linspace(p_start, p_stop, 2)
+                y = np.zeros_like(t)
+                y = y * 0.5 + 0.5
+                signals[c].append(y)
+                times[c].append(t)
+
+        joined_signals = {c: np.hstack(signals[c]) for c in connections}
+        joined_times = {c: np.hstack(times[c]) for c in connections}
+
+        # Plot signals
+        fig = plt.figure(**fig_kwargs)
+        ax = fig.gca()
+        if cmap is not None:
+            if isinstance(cmap, mpl.colors.ColorMap):
+                ax.set_prop_cycle('color', cmap.colors)
+            elif isinstance(cmap, Iterable):
+                ax.set_prop_cycle('color', cmap)
+            else:
+                raise ValueError('cmap must be either a ColorMap or a list of colors.')
+
+        for k, c in enumerate(connections):
+            ax.plot(joined_times[c], joined_signals[c] + k * connection_spacing)
+            if connection_labels:
+                if c != stage_label:
+                    ax.text(label_pad, k * connection_spacing + 0.5, c, ha='right',
+                            va='center')
+                else:
+                    ax.text(label_pad, k * connection_spacing + 1, r'$D^{0}$', ha='right',
+                            va='center')
+                    ax.text(label_pad, k * connection_spacing + 0.5, r'read', ha='right',
+                            va='center')
+                    ax.text(label_pad, k * connection_spacing, r'$D^{+}$', ha='right',
+                            va='center')
+
+            ax.hlines(k * connection_spacing + 0.5, 0, max_time,
+                      color=plt.rcParams['grid.color'],
+                      lw=plt.rcParams['grid.linewidth'])
+            if c == stage_label:
+                ax.hlines(k * connection_spacing + 1, 0, max_time,
+                          color=plt.rcParams['grid.color'],
+                          lw=plt.rcParams['grid.linewidth'])
+                ax.hlines(k * connection_spacing + 0, 0, max_time,
+                          color=plt.rcParams['grid.color'],
+                          lw=plt.rcParams['grid.linewidth'])
+
+            # Short circuit so we don't waste time looping
+            if not show_acquire and not pulse_labels:
+                continue
+
+            for kk, pulse in enumerate(pulses[c]):
+                if show_acquire and pulse.acquire:
+                    ax.fill_between([times[c][kk][0], times[c][kk][-1]],
+                                    k * connection_spacing,
+                                    k * connection_spacing + 1,
+                                    color='g', lw=0, alpha=0.3, zorder=-10)
+
+                if pulse_labels:
+                    if isinstance(pulse, SinePulse):
+                        f, prefix = scale_engineering_units(pulse.frequency)
+                        ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
+                                r'$f =$' + f'{f:.{decimal_digits}f} {prefix}Hz',
+                                ha='center', va='top', fontsize=8, rotation=15)
+                    elif isinstance(pulse, FrequencyRampPulse):
+                        f0, prefix = scale_engineering_units(pulse.frequency)
+                        fdev, prefix_dev = scale_engineering_units(
+                            pulse.frequency_deviation)
+                        ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
+                                r'$f_0 =$' + f'{f0:.{decimal_digits}f} {prefix}Hz' + '\n' + \
+                                r' $\Delta f =$' + f'{fdev:.{decimal_digits}f} {prefix_dev}Hz',
+                                ha='center', va='top', fontsize=8, rotation=15)
+
+        for spine_label, spine in ax.spines.items():
+            spine.set_visible(False)
+
+        ax.set_yticks([])
+        ax.set_xticks([])
+        # Set the left xlim based on how far to the right we go.
+        ax.set_xlim(left=-ax.get_xlim()[1] / 8)
+        ax.set_ylim(bottom=-1)
+        plt.tight_layout()
+
+        return fig, ax, (joined_times, joined_signals)
 
     def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
              figsize=None, legend=True,
