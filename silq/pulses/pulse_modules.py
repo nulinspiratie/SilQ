@@ -1502,7 +1502,7 @@ class PulseSequence(ParameterNode):
                 max_frequency = np.max([pulse.frequency, max_frequency])
                 min_frequency = np.min([pulse.frequency, min_frequency])
 
-        f_norm = interp1d([min_frequency, max_frequency], [0.5, 2],
+        f_norm = interp1d([min_frequency, max_frequency], [1, 2],
                           bounds_error=False, fill_value='extrapolate')
 
         # Convert pulses into schematic signals
@@ -1546,7 +1546,7 @@ class PulseSequence(ParameterNode):
                 elif isinstance(pulse, FrequencyRampPulse):
                     t = np.linspace(p_start, p_stop, points_per_pulse)
                     f = f_norm(pulse.frequency_start)
-                    kappa = 3
+                    kappa = 1.5*f
                     y = np.sin(2 * np.pi * (
                                 f * (t - t[0]) + kappa * np.power(t - t[0],
                                                                   2) / 2))
