@@ -1535,6 +1535,10 @@ class PulseSequence(ParameterNode):
                 if isinstance(pulse, DCPulse):
                     t = np.linspace(p_start, p_stop, 2)
                     y = np.ones_like(t) * amp_map(pulse.amplitude)
+                    # In the case of donor staging, we just use the sign
+                    # of the pulse to determine if it's load, read or empty.
+                    if c == stage_label:
+                        y = np.ones_like(t) * np.sign(pulse.amplitude)
                 elif isinstance(pulse, DCRampPulse):
                     t = np.linspace(p_start, p_stop, 2)
                     y = np.linspace(amp_map(pulse.amplitude_start),
