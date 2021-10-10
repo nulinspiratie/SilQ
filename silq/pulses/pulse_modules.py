@@ -1581,12 +1581,12 @@ class PulseSequence(ParameterNode):
         fig = plt.figure(**fig_kwargs)
         ax = fig.gca()
         if cmap is not None:
-            if isinstance(cmap, mpl.colors.ColorMap):
+            if isinstance(cmap, mpl.colors.ListedColormap):
                 ax.set_prop_cycle('color', cmap.colors)
             elif isinstance(cmap, Iterable):
                 ax.set_prop_cycle('color', cmap)
             else:
-                raise ValueError('cmap must be either a ColorMap or a list of colors.')
+                raise ValueError('cmap must be either a ListedColormap or a list of colors.')
 
         for k, c in enumerate(connections):
             ax.plot(joined_times[c], joined_signals[c] + k * connection_spacing)
