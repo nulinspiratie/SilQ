@@ -10,7 +10,7 @@ from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
-__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
+__all__ = ['Pulse', 'DummyPulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
            'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
            'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
            'CombinationPulse', 'AWGPulse', 'pulse_conditions']
@@ -545,6 +545,7 @@ class DummyPulse(Pulse):
     frequency = None
     """Pulse that will be ignored by the layout"""
     pass
+
 
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
