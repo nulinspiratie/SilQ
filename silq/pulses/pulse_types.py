@@ -10,7 +10,7 @@ from qcodes.instrument.parameter_node import ParameterNode, parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
-__all__ = ['Pulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
+__all__ = ['Pulse', 'DummyPulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
            'SingleWaveformPulse', 'FrequencyRampPulse', 'DCPulse',
            'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
            'MeasurementPulse', 'CombinationPulse', 'AWGPulse', 'pulse_conditions']
@@ -867,6 +867,7 @@ class SingleWaveformPulse(Pulse):
         phases: list or 2D list (if 'multi_sine') of Pulse phases
         power: Pulse power
         final_delay: For possible correction of waveform cut-off in the end due to triggering.
+        offset: DC offset (e.g. plunge pulse) of SingleWaveform pulse
         frequency_sideband: Mixer sideband frequency (off by default).
         sideband_mode: Sideband frequency to apply. This feature must
             be existent in interface. Not used if not set.
@@ -888,6 +889,7 @@ class SingleWaveformPulse(Pulse):
                  phases: List[float] = None,
                  power: float = None,
                  durations: List[float] = None,
+                 offset: float = None,
                  frequency_sideband: float = None,
                  sideband_mode: float = None,
                  phase_reference: str = None,
@@ -926,11 +928,13 @@ class SingleWaveformPulse(Pulse):
                                                                       'absolute'))
         self.final_delay = Parameter(initial_value=final_delay, unit='s',
                                      set_cmd=None, vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V',
+                                set_cmd=None, vals=vals.Numbers())
 
         self._connect_parameters_to_config(
             ['pulse_type', 'AM_type', 'power', 'amplitudes', 'frequencies',
              'start_frequencies', 'frequency_rate', 'decay', 'phases', 'durations',
-             'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay'])
+             'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay', 'offset'])
 
         if self.pulse_type is None:
             self.pulse_type = 'sine'
@@ -942,6 +946,8 @@ class SingleWaveformPulse(Pulse):
             self.phase_reference = 'relative'
         if self.final_delay is None:
             self.final_delay = 2e-6
+        if self.offset is None:
+            self.offset = 0
         if self.pulse_type == 'ramp_lin' or self.pulse_type == 'ramp_expsat':
             self.frequencies = self.start_frequencies
 
@@ -980,6 +986,7 @@ class SingleWaveformPulse(Pulse):
                                   f'{self.sideband_mode}'
             properties_str += f', t_start={self.t_start}'
             properties_str += f', full_duration={self.duration}'
+            properties_str += f', offset={self.offset} V'
         except:
             pass
 
@@ -1014,7 +1021,7 @@ class SingleWaveformPulse(Pulse):
                                  f' frequencies, durations and phases.'
 
         if isinstance(t, collections.Iterable):
-            waveform = np.zeros(len(t))
+            waveform = np.zeros(len(t)) + self.offset
             for idx, (amplitude, frequency, duration, phase) in enumerate(
                     zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
                 idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
@@ -1022,14 +1029,14 @@ class SingleWaveformPulse(Pulse):
 
                 if self.pulse_type == 'sine':
                     if self.AM_type == 'square':
-                        waveform[idx_list] = amplitude * np.sin(
+                        waveform[idx_list] += amplitude * np.sin(
                             2 * np.pi * (frequency * t[idx_list] +
                                          phase / 360))
                     elif self.AM_type == 'gauss':
                         t_start = sum(self.durations[:idx])
                         t_end = sum(self.durations[:idx + 1])
                         peak_t = (t_start + t_end) / 2
-                        waveform[idx_list] = amplitude * np.exp(
+                        waveform[idx_list] += amplitude * np.exp(
                             -8 * (t[idx_list] - peak_t) ** 2 / (duration ** 2)) * np.sin(
                             2 * np.pi * (frequency * t[idx_list] + phase / 360))
 
@@ -1039,30 +1046,30 @@ class SingleWaveformPulse(Pulse):
                                                                         phi / 360))
 
                 elif self.pulse_type == 'ramp_lin':
-                    waveform[idx_list] = amplitude * np.sin(2 * np.pi * (
+                    waveform[idx_list] += amplitude * np.sin(2 * np.pi * (
                             frequency * t[idx_list] + self.frequency_rate * np.power(
                         t[idx_list], 2) / 2 + phase / 360))
 
                 elif self.pulse_type == 'ramp_expsat':
-                    waveform[idx_list] = amplitude * np.sin(2 * np.pi * (
+                    waveform[idx_list] += amplitude * np.sin(2 * np.pi * (
                             frequency * t[idx_list] + self.frequency_rate * np.exp(
                         -t[idx_list] / self.decay) + phase / 360))
                 else:
                     raise ValueError('Pulse type is not set or not available.')
         else:
-            waveform = 0
+            waveform = self.offset
             for idx, (amplitude, frequency, duration, phase) in enumerate(
                     zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
                 if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
 
                     if self.pulse_type == 'sine':
                         if self.AM_type == 'square':
-                            waveform = amplitude * np.sin(2 * np.pi * (frequency * t + phase / 360))
+                            waveform += amplitude * np.sin(2 * np.pi * (frequency * t + phase / 360))
                         elif self.AM_type == 'gauss':
                             t_start = sum(self.durations[:idx])
                             t_end = sum(self.durations[:idx + 1])
                             peak_t = (t_start + t_end) / 2
-                            waveform = amplitude * np.exp(
+                            waveform += amplitude * np.exp(
                                 -8 * (t - peak_t) ** 2 / (duration ** 2)) * np.sin(
                                 2 * np.pi * (frequency * t + phase / 360))
 
@@ -1071,11 +1078,11 @@ class SingleWaveformPulse(Pulse):
                             waveform += amp * np.sin(2 * np.pi * (freq * t + phi / 360))
 
                     elif self.pulse_type == 'ramp_lin':
-                        waveform = amplitude * np.sin(
+                        waveform += amplitude * np.sin(
                             2 * np.pi * (frequency * t + self.frequency_rate * t / 2 + phase / 360))
 
                     elif self.pulse_type == 'ramp_expsat':
-                        waveform = amplitude * np.sin(2 * np.pi * (
+                        waveform += amplitude * np.sin(2 * np.pi * (
                                 frequency * t + self.frequency_rate * np.exp(-t / self.decay) +
                                 phase / 360))
                     else:
