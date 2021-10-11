@@ -1702,6 +1702,7 @@ class Layout(Instrument):
                                           chunks=True, compression='gzip',
                                           compression_opts=compression)
         file.flush()
+        file.swmr_mode = True  # Enable multiple readers to access this process
         return file
 
     def save_traces(self,
