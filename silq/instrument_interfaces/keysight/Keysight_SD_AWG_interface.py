@@ -510,7 +510,7 @@ class SinePulseImplementation(PulseImplementation):
         sampling_rate = default_sampling_rate
         duration = self.pulse.duration
         # TODO: maybe make n_max an argument? Or even better: make max_samples a parameter?
-        waveform_multiple = 5  # the M3201A AWG needs the waveform length to be a multiple of 5
+        waveform_multiple = 5  # the Keysight SD AWG needs the waveform length to be a multiple of 5
         waveform_minimum = 15  # the minimum size of a waveform
 
 
@@ -653,6 +653,7 @@ class DCRampPulseImplementation(PulseImplementation):
 
         return [waveform]
 
+
 class FrequencyRampPulseImplementation(PulseImplementation):
     pulse_class = FrequencyRampPulse
 
@@ -667,8 +668,14 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         assert samples >= instrument.waveform_minimum, \
             f"pulse {self.pulse} too short"
 
+        assert samples <= 100e6, \
+            f"Pulse {self.pulse} longer than 1 second, consider reducing the " \
+            f"sampling rate to avoid generating excessively long waveforms."
+
         t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, samples)
 
+        # This interface forces channel amplitudes to 1.5 V.
+        # The underlying driver requires the waveform range from -1 to 1.
         waveform_data = self.pulse.get_voltage(t_list) / 1.5
 
         waveform = {'waveform': waveform_data,
