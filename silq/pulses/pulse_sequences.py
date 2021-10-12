@@ -1215,8 +1215,6 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
               should be an item in ``NMR`` whose value is a `Pulse`. Default is
               single element ``NMRPulseSequence.NMR['NMR_pulse']``.
 
-              NOTE THAT THE FIRST PULSE IN THIS STRING NEEDS TO BE  A PI/2 NMR PULSE,i.e
-              NMR['NMR_pulses'] = [['NMR_pi_half']+N*['NMR_pi']+['NMR_pi_half']]
 
             * ``pre_delay`` (float): Delay after start of ``stage`` pulse,
               until first NMR pulse.
@@ -1255,8 +1253,9 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
         super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings['NMR'] = self.NMR = {
             'stage_pulse': DCPulse('empty'),
-            'NMR_pulse': SinePulse('NMR'),
-            'NMR_pulses': ['NMR_pulse'],
+            'NMR_pi': SinePulse('NMR'),
+            'NMR_pi_half': SinePulse('NMR_pi_half'),
+            'NMR_pulses': ['NMR_pi_half', 'NMR_pi', 'NMR_pi_half'],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3,
