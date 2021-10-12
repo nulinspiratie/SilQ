@@ -12,7 +12,7 @@ from scipy.interpolate import interp1d
 from qcodes.instrument.parameter_node import parameter
 from qcodes import ParameterNode, Parameter
 from qcodes.utils import validators as vals
-from qcodes.utils import scale_engineering_units
+from qcodes.utils import get_engineering_scale
 from qcodes.instrument.parameter_node import __deepcopy__ as _deepcopy_parameterNode
 
 from silq.pulses.pulse_types import SinePulse, DCPulse, DCRampPulse, FrequencyRampPulse
@@ -1626,17 +1626,19 @@ class PulseSequence(ParameterNode):
 
                 if pulse_labels:
                     if isinstance(pulse, SinePulse):
-                        f, prefix = scale_engineering_units(pulse.frequency)
+                        scale, unit = get_engineering_scale(pulse.frequency, unit='Hz')
                         ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
-                                r'$f =$' + f'{f:.{decimal_digits}f} {prefix}Hz',
+                                r'$f =$' + f'{pulse.frequency*scale:.{decimal_digits}f} {unit}',
                                 ha='center', va='top', fontsize=8, rotation=15)
                     elif isinstance(pulse, FrequencyRampPulse):
-                        f0, prefix = scale_engineering_units(pulse.frequency)
-                        fdev, prefix_dev = scale_engineering_units(
-                            pulse.frequency_deviation)
+                        scale, f0_unit = get_engineering_scale(pulse.frequency, unit='Hz')
+                        f0 = pulse.frequency * scale
+
+                        scale, fdev_unit = get_engineering_scale(pulse.frequency_deviation, unit='Hz')
+                        fdev = pulse.frequency_deviation * scale
                         ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
-                                r'$f_0 =$' + f'{f0:.{decimal_digits}f} {prefix}Hz' + '\n' + \
-                                r' $\Delta f =$' + f'{fdev:.{decimal_digits}f} {prefix_dev}Hz',
+                                r'$f_0 =$' + f'{f0:.{decimal_digits}f} {f0_unit}' + '\n' + \
+                                r' $\Delta f =$' + f'{fdev:.{decimal_digits}f} {fdev_unit}',
                                 ha='center', va='top', fontsize=8, rotation=15)
 
         for spine_label, spine in ax.spines.items():
