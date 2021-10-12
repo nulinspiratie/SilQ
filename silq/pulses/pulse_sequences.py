@@ -588,7 +588,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contast, and to measure dark counts and hence ESR contrast.
+            contrast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             * ``enabled`` (bool): Enable EPR sequence.
@@ -830,7 +830,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contast, and to measure dark counts and hence ESR contrast.
+            contrast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             :enabled: (bool): Enable EPR sequence.
@@ -1001,7 +1001,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contast, and to measure dark counts and hence ESR contrast.
+            contrast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             * ``enabled`` (bool): Enable EPR sequence.
@@ -1175,6 +1175,9 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
     y axis. The main difference between this pulse sequence and a normal
     NMRPulseSequence sequence is that this pulse sequence accounts for the difference in
     interdelays between the first pi/2-pi pulses and the refocusing pulses.
+    The reason for the difference in timing is to have an identical total free-precession
+    time tau for both CP and CPMG sequences, allowing you to directly compare the resulting T2.
+
 
     The pulse sequence is generated from its pulse settings attributes.
 
@@ -1196,7 +1199,7 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
 
     3. Perform ESR sequence
 
-        Refer to NMRPulse to learn about what this sequence does.
+        Nuclear readout pulse sequence.Refer to NMRPulseSequence for more details on this sequence.
 
     Parameters:
         NMR (dict): Pulse settings for the NMR part of the pulse sequence.
@@ -1222,12 +1225,12 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
               pulse end.
 
         ESR (dict): Pulse settings for the ESR part of the pulse sequence.
-            Refer to NMRPulse to learn about the items it contains:
+            Refer to NMRPulseSequence to learn about the items it contains.
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
             contrast, and to measure dark counts and hence ESR contrast.
-            Refer to NMRPulse to learn about the items it contains:
+            Refer to NMRPulseSequence to learn about the items it contains.
 
 
         pre_pulses (List[Pulse]): Pulses before main pulse sequence.

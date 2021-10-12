@@ -2663,22 +2663,16 @@ class ESRRamseyDetuningParameter(AcquisitionParameter):
         return results
 
 class NMRCPMGParameter(NMRParameter):
-    """ Parameter for most measurements involving an NMR pulse.
+    """ Parameter for most measurements involving a CPMG pulse.
 
     This parameter can apply several NMR pulses, and also measure several ESR
-    frequencies. It uses the `NMRPulseSequence`, which will generate a pulse
-    sequence from settings (see parameters below).
+    frequencies. It uses the `NMRCPMGPulseSequence`, which will generate a pulse
+    sequence for a CPMG experiment.
 
-    Refer to NMRCPMGPulse sequence to learn about the pulse sequence performed
+    Refer to NMRCPMGPulseSequence to learn about the pulse sequence performed
     by this parameter
 
-    The acquisition for this parameter is repeated ``NMRCPMGParameter.samples`` times. If the nucleus
-    is in one of the states for which an ESR frequency is on resonance, a high
-    ``up_proportion`` is measured, while for the other frequencies a low
-    ``up_proportion`` is measured. By looking over successive samples and
-    measuring how often the ``up_proportions`` switch between above/below
-    ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
-    (see `NMRParameter.analyse` and `analyse_flips_old`).
+    Refer to the NMRParameter to learn about the acquisition of this parameter.
 
     Args:
         name: Parameter name
