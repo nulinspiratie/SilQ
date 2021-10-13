@@ -1441,6 +1441,7 @@ class PulseSequence(ParameterNode):
                        connection_spacing: float = 1.75,
                        label_pad: float = -0.25,
                        pulse_labels: bool = True,
+                       label_rotation: float = 15,
                        connection_labels: bool = True,
                        show_acquire: bool = False,
                        decimal_digits = 3,
@@ -1462,6 +1463,8 @@ class PulseSequence(ParameterNode):
             connection_spacing: The amount of space between each connection row.
             label_pad: The x coordinate to right-align connection labels to.
             pulse_labels: Enables pulse properties being added to the plot.
+            label_rotation: Rotation of pulse labels, useful when they are
+                            tightly spaced.
             connection_labels: Enables connection labels being added to the plot.
             show_acquire: Enables the pulses with acquire=True from being
                           highlighted by a green fill.
@@ -1629,7 +1632,7 @@ class PulseSequence(ParameterNode):
                         scale, unit = get_engineering_scale(pulse.frequency, unit='Hz')
                         ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
                                 r'$f =$' + f'{pulse.frequency*scale:.{decimal_digits}f} {unit}',
-                                ha='center', va='top', fontsize=8, rotation=15)
+                                ha='center', va='top', fontsize=8, rotation=label_rotation)
                     elif isinstance(pulse, FrequencyRampPulse):
                         scale, f0_unit = get_engineering_scale(pulse.frequency, unit='Hz')
                         f0 = pulse.frequency * scale
@@ -1639,7 +1642,7 @@ class PulseSequence(ParameterNode):
                         ax.text(np.mean(times[c][kk]), k * connection_spacing - 0.1,
                                 r'$f_0 =$' + f'{f0:.{decimal_digits}f} {f0_unit}' + '\n' + \
                                 r' $\Delta f =$' + f'{fdev:.{decimal_digits}f} {fdev_unit}',
-                                ha='center', va='top', fontsize=8, rotation=15)
+                                ha='center', va='top', fontsize=8, rotation=label_rotation)
 
         for spine_label, spine in ax.spines.items():
             spine.set_visible(False)
