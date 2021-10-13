@@ -1658,7 +1658,7 @@ class Layout(Instrument):
         # Create new hdf5 file
         filepath = os.path.join(folder, f'{name}.hdf5')
         assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
-        file = h5py.File(filepath, 'w')
+        file = h5py.File(filepath, 'w', libver='latest')
 
         # Save metadata to traces file
         file.attrs['sample_rate'] = self.sample_rate()
