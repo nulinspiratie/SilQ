@@ -86,7 +86,7 @@ class SweepDependentValues(SweepValues):
 
         if self.num is None:
             step = self.determine_step(self.parameter)
-            num = int(round(window / step))
+            num = int(round(window / step)) + 1
         else:
             num = self.num
 
