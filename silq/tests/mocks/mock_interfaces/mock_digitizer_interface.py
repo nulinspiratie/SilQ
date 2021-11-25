@@ -18,7 +18,7 @@ class MockDigitizerInterface(MockInterface):
         self._acquisition_channels = {
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k, input=True)
-            for k in [1,2]
+            for k in range(1,11)
         }
         self._channels = {
             **self._acquisition_channels,
@@ -41,10 +41,23 @@ class MockDigitizerInterface(MockInterface):
 
         self.add_parameter(name='sample_rate',
                            set_cmd=None,
-                           initial_value=1,
-                           docstring='Number of times to acquire the pulse '
-                                     'sequence.')
+                           initial_value=int(50e3),
+                           docstring='Number of samples captured per second.')
 
+        self.add_parameter('points_per_trace',
+                           get_cmd=lambda: int(self.sample_rate() * self.pulse_sequence.duration),
+                           docstring='Number of points in a single trace.')
+
+        self.add_parameter('capture_full_trace',
+                           initial_value=False,
+                           vals=vals.Bool(),
+                           set_cmd=None,
+                           docstring='Capture from t=0 to end of pulse '
+                                     'sequence. False by default, in which '
+                                     'case start and stop times correspond to '
+                                     'min(t_start) and max(t_stop) of all '
+                                     'pulses with the flag acquire=True, '
+                                     'respectively.')
         # Noise factor used when generating traces
         self.noise_factor = 0.6
 
@@ -56,6 +69,12 @@ class MockDigitizerInterface(MockInterface):
 
         self.pulse_traces = {}
 
+        # dict of raw unsegmented traces {ch_name: ch_traces}
+        self.traces = {}
+        # Segmented traces per pulse, {pulse_name: {channel_name: {
+        # ch_pulse_traces}}
+        self.pulse_traces = {}
+
     def setup(self, samples, **kwargs):
         self.samples(samples)
 
@@ -64,17 +83,18 @@ class MockDigitizerInterface(MockInterface):
 
         This data is usually acquired from the actual acquisition instrument
         """
-        total_points = int(self.sample_rate() * self.pulse_sequence.duration)
+        total_points = self.points_per_trace()
         traces = np.random.rand(len(self.acquisition_channels()),
                                 self.samples(),
                                 total_points) - 0.5
         traces *= self.noise_factor
 
         for pulse in self.pulse_sequence:
-            idx_start = int(pulse.t_start * self.sample_rate())
-            idx_stop = int(pulse.t_stop * self.sample_rate())
-            traces[:,:,idx_start:idx_stop] += max(-pulse.amplitude, 0)
-
+            idx_start = int(round(pulse.t_start * self.sample_rate()))
+            idx_stop = int(round(pulse.t_stop * self.sample_rate()))
+            traces[:, :, idx_start:idx_stop] += pulse.get_voltage(
+                np.linspace(pulse.t_start, pulse.t_stop, idx_stop-idx_start))
+            # print(idx_stop - idx_start)
             # Add fake blips to read pulse
             for trace in traces[0]:
                 if pulse.name.startswith('read'):
@@ -95,20 +115,45 @@ class MockDigitizerInterface(MockInterface):
         pulse_traces = {}
         for pulse in self.pulse_sequence:
             pulse_traces[pulse.full_name] = {}
-            for channel, channel_traces in zip(self.acquisition_channels(),
-                                               traces):
-                idx_start = int(pulse.t_start * self.sample_rate())
-                idx_stop = int(pulse.t_stop * self.sample_rate())
+            for ch, channel_traces in zip(self.acquisition_channels(), traces):
+                idx_start = int(round(pulse.t_start * self.sample_rate()))
+                idx_stop = int(round(pulse.t_stop * self.sample_rate()))
                 pulse_trace = channel_traces[:,idx_start:idx_stop]
+
+                pts = int(round(pulse.duration * self.sample_rate()))
 
                 # Perform averaging if defined in pulse.average
                 if pulse.average == 'point':
-                    pulse_trace = np.mean(pulse_trace)
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace)
                 elif pulse.average == 'trace':
-                    pulse_trace = np.mean(pulse_trace, axis=0)
+                    pulse_traces[pulse.full_name][ch] = np.mean(pulse_trace, 0)
+                elif 'point_segment' in pulse.average:
+                    # import pdb; pdb.set_trace()
+                    # Extract number of segments to split trace into
+                    segments = int(pulse.average.split(':')[1])
 
-                pulse_traces[pulse.full_name][channel] = pulse_trace
+                    # average over number of samples, returns 1D trace
+                    mean_arr = np.mean(pulse_trace, axis=0)
 
+                    # Split 1D trace into segments
+                    segmented_array = np.array_split(mean_arr, segments)
+                    pulse_traces[pulse.full_name][ch] = [np.mean(arr) for arr in
+                                                         segmented_array]
+                elif 'trace_segment' in pulse.average:
+                    segments = int(pulse.average.split(':')[1])
+
+                    segments_idx = [int(round(pts * idx / segments))
+                                    for idx in np.arange(segments + 1)]
+
+                    pulse_traces[pulse.full_name][ch] = np.zeros(segments)
+                    for k in range(segments):
+                        pulse_traces[pulse.full_name][ch][k] = \
+                            pulse_trace[:, segments_idx[k]:segments_idx[k + 1]]
+                elif pulse.average == 'none':
+                    pulse_traces[pulse.full_name][ch] = pulse_trace
+                else:
+                    raise SyntaxError(f'Unknown average mode {pulse.average}')
+                
         return pulse_traces
 
 
@@ -119,6 +164,8 @@ class MockDigitizerInterface(MockInterface):
 
         # Segment traces per pulse
         self.pulse_traces = self.segment_traces(self.traces)
+        self.traces = {ch: ch_traces for ch, ch_traces
+                  in zip(self.acquisition_channels(), self.traces)}
         return self.pulse_traces
 
     def start(self):

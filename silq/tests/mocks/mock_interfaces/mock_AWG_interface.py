@@ -1,6 +1,6 @@
 from .mock_interface import MockInterface
 from silq.instrument_interfaces import Channel
-from silq.pulses import DCPulse, SinePulse, PulseImplementation
+from silq.pulses import DCPulse, DCRampPulse, SinePulse, PulseImplementation
 
 
 class MockAWGInterface(MockInterface):
@@ -13,7 +13,7 @@ class MockAWGInterface(MockInterface):
         self._output_channels = {
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k, output=True)
-            for k in [1,2]
+            for k in range(1, 11)
         }
         self._channels = {
             **self._output_channels,
@@ -24,6 +24,10 @@ class MockAWGInterface(MockInterface):
         self.pulse_implementations = [
             DCPulseImplementation(pulse_requirements=[('amplitude', {'min': -1,
                                                                      'max': 1})]),
+            DCRampPulseImplementation(pulse_requirements=[
+                ('amplitude_start', {'min': -1, 'max': 1}),
+                ('amplitude_stop', {'min': -1, 'max': 1}),
+            ]),
             SinePulseImplementation(pulse_requirements=[('frequency', {'max': 500e6}),
                                                         ('amplitude', {'min': -1,
                                                                        'max': 1})])
@@ -42,6 +46,9 @@ class MockAWGInterface(MockInterface):
 
 class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
+
+class DCRampPulseImplementation(PulseImplementation):
+    pulse_class = DCRampPulse
 
 
 class SinePulseImplementation(PulseImplementation):
