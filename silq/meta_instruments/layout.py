@@ -244,10 +244,16 @@ class SingleConnection(Connection):
             targeted_pulse = pulse
         targeted_pulse.connection = self
         if apply_scale and self.scale is not None:
-            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop']:
+            for attr in ['amplitude', 'amplitude_start', 'amplitude_stop', 'offset']:
                 if hasattr(pulse, attr):
                     val = getattr(pulse, attr)
                     setattr(targeted_pulse, attr, val / self.scale)
+            if hasattr(pulse, 'amplitudes'):
+                vals = getattr(pulse, 'amplitudes')
+                # Ensure we use the original type for the scaled amplitudes for consistency
+                val_type = type(vals)
+                setattr(targeted_pulse, attr, val_type([val / self.scale for val in vals]))
+
         return targeted_pulse
 
     def satisfies_conditions(self,
