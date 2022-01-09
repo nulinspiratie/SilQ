@@ -362,10 +362,9 @@ class Keysight81180AInterface(InstrumentInterface):
                 amplitude=amplitude,
             )
         )
-        pulse_implementation = DCPulseImplementation().target_pulse(
-            DC_pulse, interface=None, connections=None
+        waveform = DCPulseImplementation.implement(
+            pulse=DC_pulse, sample_rate=sample_rate
         )
-        waveform = pulse_implementation.implement(sample_rate=sample_rate)
         sequence_steps = self.add_pulse_waveforms(
             channel_name,
             **waveform,
