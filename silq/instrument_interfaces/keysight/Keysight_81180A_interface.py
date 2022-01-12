@@ -10,6 +10,7 @@ from silq.pulses import (
     DCPulse,
     TriggerPulse,
     SinePulse,
+    MarkerPulse,
     FrequencyRampPulse,
     PulseImplementation,
     PulseSequence
@@ -65,9 +66,18 @@ class Keysight81180AInterface(InstrumentInterface):
             for k in [1, 2]
         }
 
-        # TODO add marker outputs
         self._channels = {
             **self._output_channels,
+            "marker_1" : Channel(
+                instrument_name=self.instrument_name(),
+                name="marker_1",
+                output_TTL=True,
+            ),
+            "marker_2": Channel(
+                instrument_name=self.instrument_name(),
+                name="marker_2",
+                output_TTL=True,
+            ),
             "trig_in": Channel(
                 instrument_name=self.instrument_name(),
                 name="trig_in",
@@ -105,6 +115,11 @@ class Keysight81180AInterface(InstrumentInterface):
                     ("duration", {"min": 100e-9}),
                 ]
             ),
+            MarkerPulseImplementation(
+                pulse_requirements=[
+                    ("duration", {"min": 100e-9})
+                ]
+            ),
         ]
 
         self.add_parameter(
@@ -125,6 +140,7 @@ class Keysight81180AInterface(InstrumentInterface):
         # to equal the last voltage of the final pulse (see docstring for details)
         self.waveforms_initial = {}
         self.sequences = {}  # List of sequence instructions for each channel
+        self.markers = {}  # List of marker states for each channel
         # offsets list of actual programmed sample points versus expected points
         self.point_offsets = {}
         self.max_point_offsets = {}  # Maximum absolute sample point offset
@@ -315,6 +331,7 @@ class Keysight81180AInterface(InstrumentInterface):
         """
         self.waveforms = {ch: [] for ch in self.active_channels()}
         self.sequences = {ch: [] for ch in self.active_channels()}
+        self.markers = {ch: [] for ch in self.active_channels()}
         self.point = {ch: 0 for ch in self.active_channels()}
         self.point_offsets = {ch: [] for ch in self.active_channels()}
 
@@ -330,17 +347,65 @@ class Keysight81180AInterface(InstrumentInterface):
             elements = self.get_channel_pulses_and_sequences(channel=ch)
 
             t = 0  # Set start time t=0
-            for element in elements:
-                if isinstance(element, Pulse):
-                    self.add_pulse(element, t=t, sample_rate=sample_rate, channel=ch)
-                    t = element.t_stop
-                else:
-                    # Element is a pulse sequence whose pulses we must
-                    # concatenate into a single waveform
-                    self.add_pulse_sequence(
-                        element, t=t, sample_rate=sample_rate, channel=ch
+
+
+
+
+            marker_1 = False
+            marker_2 = False
+            active_pulse = False
+
+            # Output channel pulses are all non-marker pulses, i.e.
+            # sine, chirp, DC pulses and pulse sequences.
+            channel_pulses = iter(set(elements) - set(markers))
+            pulse = next(channel_pulses)
+
+            markers = iter([el for el in elements if
+                            isinstance(el, MarkerPulse)])
+            marker = next(markers)
+            for t in self.pulse_sequence.t_list:
+                if t == marker.t_start:
+                    if marker.connection_label == 'marker_1':
+                        marker_1 = True
+                    else: # marker.connection_label == 'marker_2':
+                        marker_2 = True
+                if t == marker.t_stop:
+                    if active_pulse:
+                        raise NotImplementedError(
+                            "Unable to disable markers during another pulse on"
+                            " the output channels. This is not a hardware "
+                            "limitation it just has not been implemented yet.")
+                    # Only disable the relevant marker
+                    if marker.connection_label == 'marker_1':
+                        marker_1 = False
+                    else:  # marker.connection_label == 'marker_2':
+                        marker_2 = False
+
+                if t == pulse.t_start:
+                    active_pulse = True
+                    if isinstance(pulse, Pulse):
+                        self.add_pulse(pulse, t=t, sample_rate=sample_rate,
+                                       channel=ch, markers=(marker_1, marker_2))
+                    else:
+                        # Element is a pulse sequence whose pulses we must
+                        # concatenate into a single waveform
+                        self.add_pulse_sequence(
+                            pulse, t=t, sample_rate=sample_rate, channel=ch,
+                            markers=(marker_1, marker_2)
+                        )
+                elif t == pulse.t_stop:
+                    active_pulse = False
+                    pulse = next(channel_pulses)
+
+                if t == marker.t_start and not active_pulse:
+                    logger.warning(
+                        "Marker pulse was requested before the start of a"
+                        " waveform pulse. This is likely due to the use"
+                        " of envelope_padding in a microwave source interface."
+                        " The marker pulse will start with the next pulse "
+                        "on the output channels, as separate marker pulses "
+                        "has not been implemented."
                     )
-                    t = element.t_stop
 
             self.finalize_generate_waveforms_sequences(channel=ch, t=t)
 
@@ -486,7 +551,19 @@ class Keysight81180AInterface(InstrumentInterface):
 
         return sequence
 
-    def add_pulse(self, pulse, t, channel, sample_rate):
+    def add_pulse(self, pulse, t, channel, sample_rate, markers=(False, False)):
+        """Add a pulse waveform and sequence it for playback.
+
+        Args:
+            pulse: The pulse to be implemented and added to the waveform queue.
+            t: Essentially pulse t_start.
+            channel: Output channel
+            sample_rate: AWG sample rate.
+            markers: tuple(bool) Enables the marker outputs.
+
+        Returns:
+            None
+        """
         # A waveform must have at least 320 points
         min_waveform_duration = 320 / sample_rate
 
@@ -528,8 +605,23 @@ class Keysight81180AInterface(InstrumentInterface):
             pulse_name=pulse.name,
         )
         self.sequences[channel] += sequence_steps
+        self.markers[channel] += [markers for _ in sequence_steps]
 
-    def add_pulse_sequence(self, pulse_sequence, t, channel, sample_rate):
+    def add_pulse_sequence(self, pulse_sequence, t, channel, sample_rate,
+                           markers=(False, False)):
+        """Add a pulse waveform and sequence it for playback.
+
+        Args:
+            pulse_sequence: The pulse sequence to be implemented and added to
+            the waveform queue.
+            t: Essentially pulse t_start.
+            channel: Output channel
+            sample_rate: AWG sample rate.
+            markers: tuple(bool) Enables the marker outputs.
+
+        Returns:
+            None
+        """
         # A waveform must have at least 320 points
         min_waveform_duration = 320 / sample_rate
 
@@ -603,7 +695,7 @@ class Keysight81180AInterface(InstrumentInterface):
             waveform_array[start_idx:start_idx+len(voltages)] = voltages
 
         # Add waveform, skip uploading if it already exists
-        self.sequences[channel] += self.add_pulse_waveforms(
+        sequence_steps = self.add_pulse_waveforms(
             channel_name=channel,
             waveform=waveform_array,
             loops=1,
@@ -614,6 +706,8 @@ class Keysight81180AInterface(InstrumentInterface):
             sample_rate=sample_rate,
             pulse_name=label
         )
+        self.sequences[channel] += sequence_steps
+        self.markers[channel] += [markers for _ in sequence_steps]
         t += points / sample_rate
 
         # Add final
@@ -669,6 +763,7 @@ class Keysight81180AInterface(InstrumentInterface):
             # Add extra blank segment which will automatically run to
             # the next segment (~ 70 ns offset)
             self.sequences[channel].append((waveform_idx, 1, 0, "final_filler_pulse"))
+            self.markers[channel].append(False)
 
         # Ensure total waveform points are less than memory limit
         total_waveform_points = sum(
@@ -683,7 +778,7 @@ class Keysight81180AInterface(InstrumentInterface):
         # Sequence all loaded waveforms
         # breakpoint()
         waveform_idx_mapping = instrument_channel.upload_waveforms(
-            self.waveforms[channel], allow_existing=True
+            self.waveforms[channel], self.markers[channel], allow_existing=True
         )
         # breakpoint()
         # Update waveform indices since they may correspond to pre-existing waveforms
@@ -691,6 +786,7 @@ class Keysight81180AInterface(InstrumentInterface):
             (waveform_idx_mapping[idx], *instructions)
             for idx, *instructions in self.sequences[channel]
         ]
+
         instrument_channel.set_sequence(self.sequences[channel])
 
         # Check that the sample point offsets do not exceed limit
@@ -886,7 +982,7 @@ class SinePulseImplementation(PulseImplementation):
                 t_stop=self.pulse.t_stop,
                 amplitude=self.pulse.get_voltage(self.pulse.t_start),
             )
-            
+
             pulse_implementation = DCPulseImplementation().target_pulse(
                 DC_pulse, interface=None, connections=None
             )
@@ -1053,3 +1149,14 @@ class FrequencyRampPulseImplementation(PulseImplementation):
             "waveform_initial": None,
             "waveform_tail": None,
         }
+
+# This is a dummy pulse implementation, the implementation of markers piggy-backs
+# off of actual waveform output data.
+class MarkerPulseImplementation(PulseImplementation):
+    pulse_class = MarkerPulse
+
+    @staticmethod
+    def implement(pulse: MarkerPulse, sample_rate: float) -> dict:
+        return {}
+
+
