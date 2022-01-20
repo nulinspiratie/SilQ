@@ -837,9 +837,7 @@ class DCSweepPlot(ScanningPlot):
             initialize: Method called during initialization.
         """
         for k, name in enumerate(self.parameter.names):
-            if self.buffer_length > 1:
-                assert self.parameter.trace_pulse.enabled is False, \
-                    'Trace pulse must be turned off for running average.'
+            if self.buffer_length > 1 and name == 'DC_voltage':
                 self.buffers[self.buf_idx] = self.parameter.results[name]
                 self.buf_idx = (self.buf_idx + 1) % self.buffer_length
                 result = np.mean([buf for buf in self.buffers if buf is not None], axis=0)
