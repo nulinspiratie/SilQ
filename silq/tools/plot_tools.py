@@ -9,7 +9,6 @@ from time import time
 import numpy as np
 import logging
 
-
 import qcodes as qc
 from qcodes.plots.qcmatplotlib import MatPlot
 from qcodes.instrument.parameter import _BaseParameter
@@ -146,7 +145,7 @@ class MeasureSingle(PlotAction):
         self.txt = f"{self.plot.x_label}({event.xdata:.5f}\n" \
                    f"{self.plot.y_label}({event.ydata:.5g})\n" \
                    f"{self.plot.measure_parameter}_parameter.single_settings" \
-                   f"(samples={self.plot.samples_measure}, silent=False)\n"\
+                   f"(samples={self.plot.samples_measure}, silent=False)\n" \
                    f"qc.Measure({param}_parameter).run" \
                    f"(name='{self.plot.measure_parameter}_measure', quiet=True)"
         self.handle_code(self.txt, copy=True, execute=False)
@@ -168,7 +167,7 @@ class MoveGates(PlotAction):
         delta (float): Step size.
     """
     enable_key = 'alt+m'
-    delta = 0.001 # step to move when pressing a key
+    delta = 0.001  # step to move when pressing a key
 
     def key_press(self, event):
         super().key_press(event)
@@ -176,7 +175,7 @@ class MoveGates(PlotAction):
         if event.key == self.key:
             if self.plot.point is None:
                 self.plot.point = self.plot[0].plot(self.plot.x_gate(),
-                                               self.plot.y_gate(), 'ob', )[0]
+                                                    self.plot.y_gate(), 'ob', )[0]
             else:
                 self.plot.point.set_xdata(self.plot.x_gate())
                 self.plot.point.set_ydata(self.plot.y_gate())
@@ -229,7 +228,7 @@ class TuneCompensation(PlotAction):
         super().__init__(*args, **kwargs)
         self.default_empty_depth = 10e-3
         self.default_plunge_depth = -10e-3
-        self.default_theta = -45 # degrees
+        self.default_theta = -45  # degrees
         self.default_y_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[0])
         self.default_x_read = np.nanmean(self.plot.data_set.DC_voltage.set_arrays[1][0])
         self.plot_feats = []
@@ -331,6 +330,7 @@ class SwitchPlotIdx(PlotAction):
             ``enable_key`` differs from the actual key/button actions.
         enable_key: String to enable plot action.
         enabled (bool): Plot action is enabled."""
+
     def key_press(self, event):
         super().key_press(event)
 
@@ -367,6 +367,7 @@ class InteractivePlot(MatPlot):
         timeout: Timeout for any action to be disabled.
         **kwargs: kwargs passed to ``MatPlot``.
     """
+
     def __init__(self,
                  *args,
                  actions: List[PlotAction] = (),
@@ -474,6 +475,7 @@ class SliderPlot(InteractivePlot):
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
 
     """
+
     def __init__(self, data_array, ndim=2, **kwargs):
         self.ndim = ndim
         self.data_array = data_array
@@ -490,7 +492,7 @@ class SliderPlot(InteractivePlot):
         self.add(self.data_array[self.plot_idx], **self.plot_kwargs)
 
         # Add sliders
-        self.slideraxes = [self.fig.add_axes([0.13, 0.02 + 0.04*k, 0.6, 0.05],
+        self.slideraxes = [self.fig.add_axes([0.13, 0.02 + 0.04 * k, 0.6, 0.05],
                                              facecolor='yellow')
                            for k in range(self.num_sliders)]
 
@@ -519,7 +521,7 @@ class SliderPlot(InteractivePlot):
                     'xlabel': self.set_arrays[-1].label,
                     'ylabel': self.data_array.label,
                     'xunit': self.set_arrays[-1].unit,
-                    'yunit': self.data_array.unit,}
+                    'yunit': self.data_array.unit, }
         elif self.ndim == 2:
             return {'x': self.set_arrays[-1][self.plot_idx][0],
                     'y': self.set_arrays[-2][self.plot_idx],
@@ -593,7 +595,8 @@ class DCPlot(InteractivePlot):
         data_set: 2D DC scan ``DataSet``.
         **kwargs: Additional kwargs for `InteractivePlot` and ``MatPlot``.
     """
-    def __init__(self, data_set: DataSet,  **kwargs):
+
+    def __init__(self, data_set: DataSet, **kwargs):
         self.data_set = data_set
         super().__init__(data_set.DC_voltage, **kwargs)
 
@@ -614,6 +617,7 @@ class ScanningPlot(InteractivePlot):
             be started by calling `ScanningPlot.start`.
         **kwargs: Additional kwargs to `InteractivePlot` and ``Matplot``.
     """
+
     # AcquisitionParameter type
     def __init__(self,
                  parameter: _BaseParameter,
@@ -719,6 +723,7 @@ class TracePlot(ScanningPlot):
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
 
     """
+
     # TraceParameter type
     def __init__(self, parameter: _BaseParameter, **kwargs):
         subplots = kwargs.pop('subplots', 1)
@@ -767,10 +772,10 @@ class TracePlot(ScanningPlot):
                     print(f'adding plot for {name}')
                     # import pdb; pdb.set_trace()
                     self.add(result[0], x=setpoints[0],
-                                xlabel=setpoint_names[0],
-                                ylabel=name,
-                                xunit=setpoint_units[0],
-                                yunit=unit)
+                             xlabel=setpoint_names[0],
+                             ylabel=name,
+                             xunit=setpoint_units[0],
+                             yunit=unit)
 
             else:
                 result_config = self.traces[k]['config']
@@ -787,14 +792,20 @@ class DCSweepPlot(ScanningPlot):
     Args:
         parameter: `DCSweepParameter` for fast 2D DC scanning.
         gate_mapping: Mapping of gate names, for plot labels.
+        averages: The number of frames to average the displayed scan over.
+                 During acquisition, a buffer fills with frames of 2D data,
+                 up to an amount `averages`. The plot shows the averaged data
+                 from this buffer.
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
     """
     gate_mapping = {}
     point_color = 'r'
+
     # DCSweepParameter type
     def __init__(self,
                  parameter: _BaseParameter,
                  gate_mapping: Dict[str, str] = None,
+                 averages: int = 1,
                  **kwargs):
         if gate_mapping is not None:
             self.gate_mapping = gate_mapping
@@ -807,6 +818,11 @@ class DCSweepPlot(ScanningPlot):
             subplots = 1
 
         self.point = None
+
+        self.buffer_length = averages
+        self.buffers = [None, ] * self.buffer_length
+        self.buf_idx = 0
+
         super().__init__(parameter, subplots=subplots, **kwargs)
 
         if parameter.trace_pulse.enabled:
@@ -821,7 +837,13 @@ class DCSweepPlot(ScanningPlot):
             initialize: Method called during initialization.
         """
         for k, name in enumerate(self.parameter.names):
-            result = self.parameter.results[name]
+            if self.buffer_length > 1 and name == 'DC_voltage':
+                self.buffers[self.buf_idx] = self.parameter.results[name]
+                self.buf_idx = (self.buf_idx + 1) % self.buffer_length
+                result = np.mean([buf for buf in self.buffers if buf is not None], axis=0)
+            else:
+                result = self.parameter.results[name]
+
             if initialize:
                 setpoints = self.parameter.setpoints[k]
                 setpoint_names = self.parameter.setpoint_names[k]
@@ -848,7 +870,7 @@ class DCSweepPlot(ScanningPlot):
 
                         self.point = self[k].plot(self.x_gate.get_latest(),
                                                   self.y_gate.get_latest(),
-                                                  'o'+self.point_color, ms=5)[0]
+                                                  'o' + self.point_color, ms=5)[0]
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
@@ -872,11 +894,11 @@ class DCSweepPlot(ScanningPlot):
 
 
 def plot_nuclear_up_proportions(
-    data=None,
-    up_proportions=None,
-    threshold_up_proportion=None,
-    shots_per_frequency=None,
-    slice=None
+        data=None,
+        up_proportions=None,
+        threshold_up_proportion=None,
+        shots_per_frequency=None,
+        slice=None
 ):
     if up_proportions is None:
         if data is None:
