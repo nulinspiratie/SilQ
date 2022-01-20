@@ -1037,7 +1037,7 @@ class SingleWaveformPulse(Pulse):
                         t_end = sum(self.durations[:idx + 1])
                         peak_t = (t_start + t_end) / 2
                         waveform[idx_list] += amplitude * np.exp(
-                            -8 * (t[idx_list] - peak_t) ** 2 / (duration ** 2)) * np.sin(
+                            -0.5 * (t[idx_list] - peak_t) ** 2 / (duration ** 2)) * np.sin(
                             2 * np.pi * (frequency * t[idx_list] + phase / 360))
 
                 elif self.pulse_type == 'multi_sine':
@@ -1070,7 +1070,7 @@ class SingleWaveformPulse(Pulse):
                             t_end = sum(self.durations[:idx + 1])
                             peak_t = (t_start + t_end) / 2
                             waveform += amplitude * np.exp(
-                                -8 * (t - peak_t) ** 2 / (duration ** 2)) * np.sin(
+                                -0.5 * (t - peak_t) ** 2 / (duration ** 2)) * np.sin(
                                 2 * np.pi * (frequency * t + phase / 360))
 
                     elif self.pulse_type == 'multi_sine':
