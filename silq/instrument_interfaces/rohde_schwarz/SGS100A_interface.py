@@ -183,6 +183,7 @@ class SGS100AInterface(InstrumentInterface):
 
         # Determine minimum and maximum frequency
         min_frequency = max_frequency = None
+        phases = []
         for pulse in self.pulse_sequence:
             pulse_min_frequency = pulse_max_frequency = pulse.frequency
             if getattr(pulse, "frequency_deviation", None) is not None:
@@ -193,14 +194,17 @@ class SGS100AInterface(InstrumentInterface):
                 min_frequency = pulse_min_frequency
             if max_frequency is None or pulse_max_frequency > max_frequency:
                 max_frequency = pulse_max_frequency
+            phases.append(int(round(pulse.phase)))
         min_frequency = int(round(min_frequency))
         max_frequency = int(round(max_frequency))
+
 
         # Check whether to use IQ modulation
         if (
             min_frequency != max_frequency
             or self.fix_frequency()
             or self.force_IQ_modulation()
+            or len(set(phases)) > 1
         ):
             # Set protected IQ_modulation parameter
             settings["IQ_modulation"] = True

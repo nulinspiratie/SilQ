@@ -15,3 +15,5 @@ experiments_folder.txt
 _modules
 */make.bat
 Qcodes
+
+venv/
