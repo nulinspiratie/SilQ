@@ -792,6 +792,10 @@ class DCSweepPlot(ScanningPlot):
     Args:
         parameter: `DCSweepParameter` for fast 2D DC scanning.
         gate_mapping: Mapping of gate names, for plot labels.
+        averages: The number of frames to average the displayed scan over.
+                 During acquisition, a buffer fills with frames of 2D data,
+                 up to an amount `averages`. The plot shows the averaged data
+                 from this buffer.
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
     """
     gate_mapping = {}
@@ -801,7 +805,7 @@ class DCSweepPlot(ScanningPlot):
     def __init__(self,
                  parameter: _BaseParameter,
                  gate_mapping: Dict[str, str] = None,
-                 buffer_length: int = 1,
+                 averages: int = 1,
                  **kwargs):
         if gate_mapping is not None:
             self.gate_mapping = gate_mapping
@@ -815,7 +819,7 @@ class DCSweepPlot(ScanningPlot):
 
         self.point = None
 
-        self.buffer_length = buffer_length
+        self.buffer_length = averages
         self.buffers = [None, ] * self.buffer_length
         self.buf_idx = 0
 
