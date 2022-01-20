@@ -11,9 +11,9 @@ from qcodes.instrument.parameter import Parameter
 from qcodes.utils import validators as vals
 
 __all__ = ['Pulse', 'DummyPulse', 'SteeredInitialization', 'SinePulse', 'MultiSinePulse',
-           'FrequencyRampPulse', 'DCPulse', 'DCRampPulse', 'TriggerPulse',
-           'MarkerPulse', 'TriggerWaitPulse', 'MeasurementPulse',
-           'CombinationPulse', 'AWGPulse', 'pulse_conditions']
+           'SingleWaveformPulse', 'FrequencyRampPulse', 'DCPulse',
+           'DCRampPulse', 'TriggerPulse', 'MarkerPulse', 'TriggerWaitPulse',
+           'MeasurementPulse', 'CombinationPulse', 'AWGPulse', 'pulse_conditions']
 
 # Set of valid connection conditions for satisfies_conditions. These are
 # useful when multiple objects have distinct satisfies_conditions kwargs
@@ -546,7 +546,6 @@ class DummyPulse(Pulse):
     """Pulse that will be ignored by the layout"""
     pass
 
-
 class SteeredInitialization(Pulse):
     """Initialization pulse to ensure a spin-down electron is loaded.
 
@@ -845,6 +844,249 @@ class MultiSinePulse(Pulse):
             waveform += amp * np.sin(2 * np.pi * (freq * t + phase / 360))
         waveform += self.offset
 
+        return waveform
+
+
+class SingleWaveformPulse(Pulse):
+    """SingleWaveformPulse - contains several sine or chirp (ramp) pulses of different frequencies,
+    durations and phases within a single waveform without requiring additional triggers. This allows
+    to avoid jitter errors during triggering.
+
+    Parameters:
+        name: Pulse name
+        pulse_type: 'sine' - single-frequency sinusoidal pulse;
+                    'multi_sine' - multi-frequency sinusoidal pulse (consists of different tones);
+                    'ramp_lin' - linear frequency ramp pulse;
+                    'ramp_expsat' - exponential-saturation frequency ramp pulse
+        AM_type: type of pulse's amplitude modulation, can be 'square' (by default) or 'gauss'
+        amplitudes: list or 2D list (if 'multi_sine') of Pulse amplitudes (set to 1 by default)
+        frequencies: list/2D list of Pulse frequencies if pulse_type is 'sine'/'multi_sine' or
+                     list of Pulse start frequencies if pulse_type is 'ramp'
+        start_frequencies: list of start frequencies of the 'ramp' pulse, not used if 'sine' pulse.
+        frequency_rate: Frequency ramp rate of the 'ramp' pulse, not used if 'sine' pulse.
+        phases: list or 2D list (if 'multi_sine') of Pulse phases
+        power: Pulse power
+        final_delay: For possible correction of waveform cut-off in the end due to triggering.
+        offset: DC offset (e.g. plunge pulse) of SingleWaveform pulse
+        frequency_sideband: Mixer sideband frequency (off by default).
+        sideband_mode: Sideband frequency to apply. This feature must
+            be existent in interface. Not used if not set.
+        phase_reference: What point in the the phase is with respect to. In this pulse must be:
+            - 'relative': phase is with respect to `Pulse.t_start`.
+
+        **kwargs: Additional parameters of `Pulse`.
+    """
+
+    def __init__(self,
+                 name: str = None,
+                 pulse_type: str = None,
+                 AM_type: str = None,
+                 amplitudes: List[float] = None,
+                 frequencies: List[float] = None,
+                 start_frequencies: List[float] = None,
+                 frequency_rate: float = None,
+                 decay: float = None,
+                 phases: List[float] = None,
+                 power: float = None,
+                 durations: List[float] = None,
+                 offset: float = None,
+                 frequency_sideband: float = None,
+                 sideband_mode: float = None,
+                 phase_reference: str = None,
+                 final_delay: float = None,
+                 **kwargs):
+
+        super().__init__(name=name, **kwargs)
+
+        self.pulse_type = Parameter(initial_value=pulse_type, set_cmd=None,
+                                    vals=vals.Enum('sine', 'multi_sine', 'ramp_lin', 'ramp_expsat'))
+        self.AM_type = Parameter(initial_value=AM_type, set_cmd=None,
+                                 vals=vals.Enum('square', 'gauss'))
+        self.power = Parameter(initial_value=power, unit='dBm', set_cmd=None,
+                               vals=vals.Numbers())
+        self.amplitudes = Parameter(initial_value=amplitudes, unit='V',
+                                    set_cmd=None, vals=vals.Lists())
+        self.frequencies = Parameter(initial_value=frequencies, unit='Hz',
+                                     set_cmd=None, vals=vals.Lists())
+        self.start_frequencies = Parameter(initial_value=start_frequencies, unit='Hz',
+                                           set_cmd=None, vals=vals.Lists())
+        self.frequency_rate = Parameter(initial_value=frequency_rate, unit='Hz/s',
+                                        set_cmd=None, vals=vals.Numbers())
+        self.decay = Parameter(initial_value=decay, unit='s',
+                               set_cmd=None, vals=vals.Numbers())
+        self.phases = Parameter(initial_value=phases, unit='deg', set_cmd=None,
+                                vals=vals.Lists())
+        self.durations = Parameter(initial_value=durations, unit='s', set_cmd=None,
+                                   vals=vals.Lists())
+        self.frequency_sideband = Parameter(initial_value=frequency_sideband,
+                                            unit='Hz', set_cmd=None,
+                                            vals=vals.Numbers())
+        self.sideband_mode = Parameter(initial_value=sideband_mode, set_cmd=None,
+                                       vals=vals.Enum('IQ', 'double'))
+        self.phase_reference = Parameter(initial_value=phase_reference,
+                                         set_cmd=None, vals=vals.Enum('relative',
+                                                                      'absolute'))
+        self.final_delay = Parameter(initial_value=final_delay, unit='s',
+                                     set_cmd=None, vals=vals.Numbers())
+        self.offset = Parameter(initial_value=offset, unit='V',
+                                set_cmd=None, vals=vals.Numbers())
+
+        self._connect_parameters_to_config(
+            ['pulse_type', 'AM_type', 'power', 'amplitudes', 'frequencies',
+             'start_frequencies', 'frequency_rate', 'decay', 'phases', 'durations',
+             'frequency_sideband', 'sideband_mode', 'phase_reference', 'final_delay', 'offset'])
+
+        if self.pulse_type is None:
+            self.pulse_type = 'sine'
+        if self.AM_type is None:
+            self.AM_type = 'square'
+        if self.sideband_mode is None:
+            self.sideband_mode = 'IQ'
+        if self.phase_reference is None:
+            self.phase_reference = 'relative'
+        if self.final_delay is None:
+            self.final_delay = 2e-6
+        if self.offset is None:
+            self.offset = 0
+        if self.pulse_type == 'ramp_lin' or self.pulse_type == 'ramp_expsat':
+            self.frequencies = self.start_frequencies
+
+        self.duration = sum(self.durations) + self.final_delay
+
+    def __repr__(self):
+        properties_str = ''
+        try:
+            if self.pulse_type == 'multi_sine':
+                properties_str = f'MultiSinePulse ({self.AM_type})'
+                freq_repr = list(np.array(self.frequencies) - self.frequencies[0, 0])
+                properties_str += f', f={freq_to_str(self.frequencies[0, 0])}'
+                properties_str += f' + {freq_repr} Hz'
+            else:
+                freq_repr = list(np.array(self.frequencies) - self.frequencies[0])
+                if self.pulse_type == 'sine':
+                    properties_str = f'SinePulse ({self.AM_type})'
+                    properties_str += f', f={freq_to_str(self.frequencies[0])}'
+                    properties_str += f' + {freq_repr} Hz'
+                else:
+                    if self.pulse_type == 'ramp_lin':
+                        properties_str = f'LinearRampPulse (square)'
+                    elif self.pulse_type == 'ramp_expsat':
+                        properties_str = f'ExpSatRampPulse (square)'
+                        properties_str += f', decay={self.decay} s'
+                    properties_str += f', f_start={freq_to_str(self.frequencies[0])}'
+                    properties_str += f' + {freq_repr} Hz'
+                    properties_str += f', f_rate={freq_to_str(self.frequency_rate)}/s'
+            properties_str += f', amplitudes={self.amplitudes} V'
+            properties_str += f', power={self.power} dBm'
+            properties_str += f', phases={self.phases} deg'
+            properties_str += '(rel)' if self.phase_reference == 'relative' else '(abs)'
+            properties_str += f', durations={self.durations}'
+            if self.frequency_sideband is not None:
+                properties_str += f'f_sb={freq_to_str(self.frequency_sideband)} ' \
+                                  f'{self.sideband_mode}'
+            properties_str += f', t_start={self.t_start}'
+            properties_str += f', full_duration={self.duration}'
+            properties_str += f', offset={self.offset} V'
+        except:
+            pass
+
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and
+                `Pulse`.t_stop
+        """
+        assert is_between(t, self.t_start, self.t_stop), \
+            f"voltage at {t} s is not in the time range " \
+            f"{self.t_start} s - {self.t_stop} s of pulse {self}"
+
+        assert self.phase_reference == 'relative', f'Phase_reference must be relative, ' \
+                                                   f'since we define the whole waveform ' \
+                                                   f'in the {self.name}.'
+        t = t - self.t_start
+
+        assert self.amplitudes is not None, f'Pulse {self.name} does not have ' \
+                                            f'specified amplitudes.'
+        assert self.frequencies is not None, f'Pulse {self.name} does not have ' \
+                                             f'specified frequencies.'
+        assert self.durations is not None, f'Pulse {self.name} does not have ' \
+                                           f'specified durations.'
+        assert self.phases is not None, f'Pulse {self.name} does not have ' \
+                                        f'specified phases.'
+        assert len(self.amplitudes) == len(self.frequencies) == len(self.durations) == \
+               len(self.phases), f'Pulse {self.name} does not have equal number of amplitudes,' \
+                                 f' frequencies, durations and phases.'
+
+        if isinstance(t, collections.Iterable):
+            waveform = np.zeros(len(t)) + self.offset
+            for idx, (amplitude, frequency, duration, phase) in enumerate(
+                    zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
+                idx_list = [sum(self.durations[:idx]) <= t_id <= sum(self.durations[:idx + 1])
+                            for t_id in t]
+
+                if self.pulse_type == 'sine':
+                    if self.AM_type == 'square':
+                        waveform[idx_list] += amplitude * np.sin(
+                            2 * np.pi * (frequency * t[idx_list] +
+                                         phase / 360))
+                    elif self.AM_type == 'gauss':
+                        t_start = sum(self.durations[:idx])
+                        t_end = sum(self.durations[:idx + 1])
+                        peak_t = (t_start + t_end) / 2
+                        waveform[idx_list] += amplitude * np.exp(
+                            -0.5 * (t[idx_list] - peak_t) ** 2 / (duration ** 2)) * np.sin(
+                            2 * np.pi * (frequency * t[idx_list] + phase / 360))
+
+                elif self.pulse_type == 'multi_sine':
+                    for amp, freq, phi in zip(amplitude, frequency, phase):
+                        waveform[idx_list] += amp * np.sin(2 * np.pi * (freq * t[idx_list] +
+                                                                        phi / 360))
+
+                elif self.pulse_type == 'ramp_lin':
+                    waveform[idx_list] += amplitude * np.sin(2 * np.pi * (
+                            frequency * t[idx_list] + self.frequency_rate * np.power(
+                        t[idx_list], 2) / 2 + phase / 360))
+
+                elif self.pulse_type == 'ramp_expsat':
+                    waveform[idx_list] += amplitude * np.sin(2 * np.pi * (
+                            frequency * t[idx_list] + self.frequency_rate * np.exp(
+                        -t[idx_list] / self.decay) + phase / 360))
+                else:
+                    raise ValueError('Pulse type is not set or not available.')
+        else:
+            waveform = self.offset
+            for idx, (amplitude, frequency, duration, phase) in enumerate(
+                    zip(self.amplitudes, self.frequencies, self.durations, self.phases)):
+                if sum(self.durations[:idx]) <= t <= sum(self.durations[:idx + 1]):
+
+                    if self.pulse_type == 'sine':
+                        if self.AM_type == 'square':
+                            waveform += amplitude * np.sin(2 * np.pi * (frequency * t + phase / 360))
+                        elif self.AM_type == 'gauss':
+                            t_start = sum(self.durations[:idx])
+                            t_end = sum(self.durations[:idx + 1])
+                            peak_t = (t_start + t_end) / 2
+                            waveform += amplitude * np.exp(
+                                -0.5 * (t - peak_t) ** 2 / (duration ** 2)) * np.sin(
+                                2 * np.pi * (frequency * t + phase / 360))
+
+                    elif self.pulse_type == 'multi_sine':
+                        for amp, freq, phi in zip(amplitude, frequency, phase):
+                            waveform += amp * np.sin(2 * np.pi * (freq * t + phi / 360))
+
+                    elif self.pulse_type == 'ramp_lin':
+                        waveform += amplitude * np.sin(
+                            2 * np.pi * (frequency * t + self.frequency_rate * t / 2 + phase / 360))
+
+                    elif self.pulse_type == 'ramp_expsat':
+                        waveform += amplitude * np.sin(2 * np.pi * (
+                                frequency * t + self.frequency_rate * np.exp(-t / self.decay) +
+                                phase / 360))
+                    else:
+                        raise ValueError('Pulse type is not set or not available.')
         return waveform
 
 
