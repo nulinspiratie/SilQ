@@ -1730,3 +1730,86 @@ class AWGPulse(Pulse):
                 return self.array[1][mask]
             else:
                 raise IndexError('All requested t-values must be in wf_array since interpolation is disabled.')
+
+
+class AWGAdvancedPulse(Pulse):
+    """Arbitrary waveform pulse that can be used either to define a single pulse or
+    to transform a pulse sequence into a single waveform pulse that is triggered only once.
+
+    To define it we can use 3 approaches:
+        - provide a callable function that converts a time-array into array of waveform points
+        - provide an arbitrary array of waveform points
+        - provide a pulse sequence
+
+    The resulting AWGPulse can be sampled at different sample rates,
+    interpolating between waveform points if necessary.
+
+    Parameters:
+        name: Pulse name.
+        function: The function used for calculating waveform points based on time-array.
+        waveform: Numpy array of (float) with time-stamps and waveform points.
+        interpolate: Use interpolation of the waveform array.
+
+    """
+
+    def __init__(self,
+                 name: str = None,
+                 function: Callable = None,
+                 waveform: np.ndarray = None,
+                 interpolate: bool = True,
+                 **kwargs):
+        super().__init__(name=name, **kwargs)
+
+        if function:
+            if not callable(function):
+                raise TypeError('The argument "function" must be a callable function.')
+            self.function = function
+        elif waveform is not None:
+            if not type(waveform) == np.ndarray:
+                raise TypeError('The argument `array` must be of type `np.ndarray`.')
+            if not len(waveform) == 2:
+                raise TypeError('The argument `array` must be of length 2.')
+            if not len(waveform[0]) == len(waveform[1]):
+                raise TypeError('The argument `array` must have equal time-stamps and waveform points')
+            assert np.all(np.diff(waveform[0]) > 0), 'the time-stamps must be increasing'
+            self.t_start = waveform[0][0]
+            self.t_stop = waveform[0][-1]
+            self.array = waveform
+            self.interpolate = interpolate
+        else:
+            raise TypeError('Provide either a function or an array.')
+
+    def __repr__(self):
+        properties_str = ''
+        try:
+            if self.function is not None:
+                properties_str = f'function:{self.function}'
+            else:
+                properties_str = f'array:{self.array.shape}'
+            properties_str += ', t_start={self.t_start}'
+            properties_str += ', duration={self.duration}'
+        except:
+            pass
+        return super()._get_repr(properties_str)
+
+    def get_voltage(self, t: Union[float, Sequence]) -> Union[float, np.ndarray]:
+        """Get voltage(s) at time(s) t.
+
+        Raises:
+            AssertionError: not all ``t`` between `Pulse`.t_start and
+                `Pulse`.t_stop
+        """
+        assert is_between(t, self.t_start, self.t_stop), \
+            "voltage at {} s is not in the time range {} s - {} s of " \
+            "pulse {}".format(t, self.t_start, self.t_stop, self)
+
+        if self.from_function:
+            return self.function(t)
+        else:
+            if self.interpolate:
+                return np.interp(t, self.array[0], self.array[1])
+            elif np.in1d(t, self.array[0]).all():
+                mask = np.in1d(self.array[0], t)
+                return self.array[1][mask]
+            else:
+                raise IndexError('All requested t-values must be in wf_array since interpolation is disabled.')
