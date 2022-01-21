@@ -18,18 +18,18 @@ def convert_circuit(circuit, target_type: Type = str):
         >>> convert_circuit('GxGi', target_type=list)
         ['Gx', 'Gi']
     """
-    from pygsti.objects.circuit import Circuit
+    from pygsti.circuits.circuit import Circuit
     
     # First convert all types to string
     if isinstance(circuit, Circuit):
         expanded_circuit = []
-        for gate in circuit.get_labels():
-            if gate.issimple():
-                expanded_circuit.append(gate.name)
-            elif str(gate) == '[]':
-                gate.append('Gi')
+        for label in circuit:
+            if label.is_simple():
+                expanded_circuit.append(label.name)
+            elif str(label) == '[]':
+                expanded_circuit.append('Gi')
             else:
-                raise RuntimeError(f'Cannot understand gate {gate}')
+                raise RuntimeError(f'Cannot understand label {label}')
 
     elif isinstance(circuit, str):
         # Replace [] by identity gate
