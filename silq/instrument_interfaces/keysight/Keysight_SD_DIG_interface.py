@@ -22,7 +22,7 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
         self._acquisition_channels  = {
             f'ch{k}': Channel(instrument_name=self.instrument_name(),
                               name=f'ch{k}', id=k, input=True)
-            for k in range(self.instrument.n_channels)}
+            for k in self.instrument.channel_idxs}
 
         self._pxi_channels = {
             f'pxi{k}': Channel(instrument_name=self.instrument_name(),
@@ -202,6 +202,12 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             return [TriggerPulse(t_start=t_start, duration=self.trigger_in_duration(),
                                  connection_requirements=connection_requirements)]
 
+    def requires_setup(self, **kwargs) -> bool:
+        requires_setup = super().requires_setup(**kwargs)
+        if kwargs['samples'] != self.samples():
+            requires_setup = True
+        return requires_setup
+
     def setup(self, samples=1, input_connections=(), **kwargs):
         self.samples(samples)
 
@@ -250,6 +256,10 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
             raise RuntimeError('No setup configured for acquisition controller '
                                f'{self.acquisition_controller()}')
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def setup_trigger(self, t_start, input_connections):
         # Setup triggering
         trigger_pulse = self.input_pulse_sequence.get_pulse(trigger=True)
@@ -281,6 +291,6 @@ class Keysight_SD_DIG_Interface(InstrumentInterface):
 
     def stop(self):
         # Stop all DAQs
-        self.instrument.stop_channels(range(8))
+        self.instrument.stop_channels(self.instrument.channel_idxs)
 
 

@@ -80,6 +80,7 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # Request one trigger at the start if not primary
         if not self.is_primary():
             return [TriggerPulse(t_start=0,
+                                 amplitude=0,  # Inverted trigger (below threshold)
                                  connection_requirements={
                                      'input_instrument': self.instrument_name(),
                                      'trigger': True})]
@@ -213,6 +214,10 @@ class PulseBlasterDDSInterface(InstrumentInterface):
         # Note that this command does not actually send anything to the DDS,
         # this is done when DDS.start is called
         self.instrument.instruction_sequence(inst_list)
+
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
         if not self.is_primary():
             # Return flag to ensure this instrument is started after its

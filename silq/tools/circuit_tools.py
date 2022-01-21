@@ -4,10 +4,22 @@ import numpy as np
 import regex as re
 pi = np.pi
 
-from pygsti.objects.circuit import Circuit
-
 
 def convert_circuit(circuit, target_type: Type = str):
+    """Convert a circuit to a target type (e.g. list, str)
+    
+    Args:
+        circuit: Circuit that should be converted
+            Can be a str, list, or pygsti Circuit
+        target_type: Target circuit type
+            can be str, list, pygsti Circuit
+            
+    Examples:
+        >>> convert_circuit('GxGi', target_type=list)
+        ['Gx', 'Gi']
+    """
+    from pygsti.objects.circuit import Circuit
+    
     # First convert all types to string
     if isinstance(circuit, Circuit):
         expanded_circuit = []
@@ -27,7 +39,13 @@ def convert_circuit(circuit, target_type: Type = str):
         expand_subcircuit = lambda match: match.group(0).replace(
             match.group(0), match.group(1) * int(match.group(2))
         )
-        expanded_circuit = re.sub(r'\(([A-Za-z]+)\)\^([0-9])', expand_subcircuit, expanded_circuit)
+        expanded_circuit = re.sub(r'\(([A-Za-z]+)\)\^([0-9]+)', expand_subcircuit, expanded_circuit)
+
+        # Expand any expressions {gate}^exponent (notice missing parentheses
+        expand_subcircuit = lambda match: match.group(0).replace(
+            match.group(0), ('G'+match.group(1)) * int(match.group(2))
+        )
+        expanded_circuit = re.sub(r'G([a-z0-9:]+)\^([0-9]+)', expand_subcircuit, expanded_circuit)
 
         # Remove all single parentheses without exponent
         expanded_circuit = re.sub(r"\(|\)", "", expanded_circuit)
@@ -57,6 +75,7 @@ def convert_circuit(circuit, target_type: Type = str):
 
 
 def save_circuits(circuits, filepath):
+    """Save list of circuits to a .txt file"""
     filepath = Path(filepath)
     if not filepath.suffix:
         filepath = filepath.with_suffix('.txt')
@@ -78,7 +97,7 @@ def load_circuits(
 
     # Check if line already contains data
     if lines[0].startswith('##'):
-        # Remove two headers
+        # Remove header line
         lines = lines[1:]
 
     # Remove any existing results
@@ -91,8 +110,10 @@ def load_circuits(
     ]
 
     if load_probabilities:
+        # Ignore when there is more than one space
+        lines = [' '.join(line.split()) for line in lines]
         state_events = np.array([
-            [int(elem) for elem in line.replace('   ', ' ').split(' ')[1:]]
+            [int(elem) for elem in line.split(' ')[1:]]
             for line in lines
         ])
         state_probabilities = state_events / state_events.sum(axis=1)[:, None]

@@ -53,7 +53,7 @@ def load_traces(dataset: qc.DataSet, name: str = None, mode: str = "r"):
         trace_filename = filtered_trace_filenames[0]
 
     trace_filepath = os.path.join(traces_path, trace_filename)
-    trace_file = h5py.File(trace_filepath, mode)
+    trace_file = h5py.File(trace_filepath, mode, swmr=True)
     return trace_file
 
 

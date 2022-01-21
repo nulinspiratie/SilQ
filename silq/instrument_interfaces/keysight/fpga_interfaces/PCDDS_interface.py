@@ -124,6 +124,10 @@ class PCDDSInterface(InstrumentInterface):
                     pulse_implementation['next_pulse'] = 1
                 channel.write_instr(pulse_implementation)
 
+        # targeted_pulse_sequence is the pulse sequence that is currently setup
+        self.targeted_pulse_sequence = self.pulse_sequence
+        self.targeted_input_pulse_sequence = self.input_pulse_sequence
+
     def start(self):
         self.active_instrument_channels.set_next_pulse(pulse=0, update=True)
         self.active_instrument_channels.output_enable(True)
@@ -152,11 +156,8 @@ class SinePulseImplementation(PulseImplementation):
     pulse_class = SinePulse
 
     def implement(self, *args, **kwargs):
-        if self.pulse.phase_reference == 'absolute':
-            phase = 360 * ((self.pulse.frequency * self.pulse.t_start) % 1)
-            phase += self.pulse.phase
-        else:
-            phase = self.pulse.phase
+        # TODO distinguish between abolute / relative phase
+        phase = self.pulse.phase
 
         return {'instr': 'sine',
                 'freq': self.pulse.frequency,

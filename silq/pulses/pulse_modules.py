@@ -316,6 +316,14 @@ class PulseSequence(ParameterNode):
             docstring="All pulses, including those from nested pulse sequences"
         )
 
+        self.flags = Parameter(
+            initial_value=dict(),
+            set_cmd=None,
+            docstring="Optional flags to be passed onto instrument interfaces." \
+                      "key must be the interface name, and value a dict."
+        )
+        self.modifiers = []
+
         # Remember last pulse of pulse sequence, to ensure t_stop of pulse sequence
         # is kept up to date via signalling
         self._last_pulse = None
@@ -371,7 +379,7 @@ class PulseSequence(ParameterNode):
 
     @parameter
     def t_stop_get(self, parameter):
-        return self.t_start + self.duration
+        return np.round(self.t_start + self.duration, 11)
 
     @parameter
     def t_start_list_get(self, parameter):
@@ -447,6 +455,15 @@ class PulseSequence(ParameterNode):
             return f'{self.parent.full_name}.{self.name}'
         else:
             return self.name
+
+    @property
+    def parents(self):
+        parents = []
+        layer = self
+        while isinstance(layer.parent, PulseSequence):
+            parents.append(layer.parent)
+            layer = layer.parent
+        return parents
 
     def __getitem__(self, index):
         if isinstance(index, int):
@@ -550,9 +567,9 @@ class PulseSequence(ParameterNode):
             # Clear stored values of pulses
             for key in backup:
                 if key.startswith('my_'):
-                    self.parameters[key]._latest = {'value': [], 'raw_value': []}
+                    self.parameters[key]._latest = {'value': [], 'raw_value': [], 'ts': None}
                 else:
-                    self.parameters[key]._latest = {'value': (), 'raw_value': ()}
+                    self.parameters[key]._latest = {'value': (), 'raw_value': (), 'ts': None}
 
             self_copy = super().__copy__()
         finally:
@@ -599,6 +616,9 @@ class PulseSequence(ParameterNode):
             # Ensure all stop times match
             self._link_pulse_sequences()
 
+        for modifier in self.modifiers:
+            modifier(self)
+
     def snapshot_base(self, update: bool=False,
                       params_to_skip_update: Sequence[str]=[]):
         """
@@ -641,7 +661,8 @@ class PulseSequence(ParameterNode):
             reset_duration: bool = True,
             copy: bool = True,
             nest: bool = False,
-            connect: bool = True
+            connect: bool = True,
+            set_parent:bool = None
             ):
         """Adds pulse(s) to the PulseSequence.
 
@@ -670,11 +691,15 @@ class PulseSequence(ParameterNode):
             original pulse remains unmodified.
             For an speed-optimized version, see `PulseSequence.quick_add`
         """
+        # If set_parent is None, the parent is only set if the pulse is copied
+        if set_parent is None:
+            set_parent = copy
+
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
             raise ValueError(
                 'Please specify pulse duration in silq.config.pulses for the '
-                'following pulses: ' ', '.join(p.name for p in pulses_no_duration)
+                'following pulses: ' + ', '.join(p.name for p in pulses_no_duration)
             )
 
         if copy:
@@ -686,7 +711,6 @@ class PulseSequence(ParameterNode):
                 # t_start of the pulse sequence
                 pulse_copy = copy_alias(pulse)
                 pulse_copy.id = None  # Remove any pre-existing pulse id
-                pulse_copy.parent = self
                 pulse_copies.append(pulse_copy)
         else:
             pulse_copies = pulses
@@ -704,9 +728,14 @@ class PulseSequence(ParameterNode):
                     )
                 else:
                     # Add to nested pulse sequence. Note that we already copied pulse
-                    added_pulse, = nested_sequence.quick_add(pulse_copy, copy=False)
+                    added_pulse, = nested_sequence.quick_add(
+                        pulse_copy, copy=False, set_parent=set_parent
+                    )
                     added_pulses.append(added_pulse)
                     continue
+
+            if set_parent:
+                pulse_copy.parent = self
 
             # Perform checks to see if pulse can be added
             if (not self.allow_pulse_overlap
@@ -778,7 +807,8 @@ class PulseSequence(ParameterNode):
                   copy: bool = True,
                   connect: bool = True,
                   reset_duration: bool = True,
-                  nest=False):
+                  nest=False,
+                  set_parent: bool = None):
         """"Quickly add pulses to a sequence skipping steps and checks.
 
         This method is used in the during the `Layout` targeting of a pulse
@@ -805,6 +835,10 @@ class PulseSequence(ParameterNode):
                 be copied to the same nested pulse sequence.
                 This requires that this pulse sequence also contains a nested
                 pulse sequence with the same name
+            set_parent: Whether to set the pulse parent, either to the current
+                or the nested pulse sequence if applicable.
+                If set to None, the pulse parent is only set if the pulse is
+                copied.
 
         Returns:
             Added pulses. If copy is False, the original pulses are returned.
@@ -814,6 +848,10 @@ class PulseSequence(ParameterNode):
             `PulseSequence.quick_add`.
 
         """
+        # If set_parent is None, the parent is only set if the pulse is copied
+        if set_parent is None:
+            set_parent = copy
+
         pulses_no_duration = [pulse for pulse in pulses if pulse.duration is None]
         if pulses_no_duration:
             raise SyntaxError('Please specify pulse duration in silq.config.pulses'
@@ -835,7 +873,8 @@ class PulseSequence(ParameterNode):
                         pulse,
                         copy=copy,
                         connect=connect,
-                        reset_duration=reset_duration
+                        reset_duration=reset_duration,
+                        set_parent=set_parent
                     )
                     added_pulses.append(added_pulse)
                     continue
@@ -848,7 +887,8 @@ class PulseSequence(ParameterNode):
             if copy:
                 pulse = copy_alias(pulse)
 
-            pulse.parent = self
+            if set_parent:
+                pulse.parent = self
 
             # TODO set t_start if not set
             # If pulse does not have t_start defined, it will be attached to
@@ -883,7 +923,7 @@ class PulseSequence(ParameterNode):
 
         return added_pulses
 
-    def finish_quick_add(self):
+    def finish_quick_add(self, connect=True):
         """Finish adding pulses via `PulseSequence.quick_add`
 
         Steps performed:
@@ -922,15 +962,34 @@ class PulseSequence(ParameterNode):
                     for k, pulse in enumerate(same_name_pulses):
                         pulse.id = k
 
-            self._update_last_pulse()
+            if connect:
+                self._update_last_pulse()
 
             for pulse_sequence in self.pulse_sequences:
-                pulse_sequence.finish_quick_add()
+                pulse_sequence.finish_quick_add(connect=connect)
         except AssertionError:  # Likely error is that pulses overlap
             self.clear()
             raise
 
     def add_pulse_sequences(self, *pulse_sequences):
+        """Add pulse sequence(s) as nested pulse sequences
+
+        Args:
+            *pulse_sequences: pulse sequences to sequentially append.
+
+        Notes:
+            - Successive pulse sequences are connected to each other such
+              that if a previous pulse sequence duration changes, the subsequent
+              pulse sequences are also shifted.
+            - Pulse sequences are not copied. This means that if you want to
+              nest a pulse sequence to multiple parent pulse sequences, you must
+              manually copy the pulse sequence.
+            - For each nested pulse sequence, pulse_sequence.parent is set to
+             this pulse sequence.
+
+        Raises:
+             RuntimeError if current pulse sequence already contains pulses
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -944,6 +1003,12 @@ class PulseSequence(ParameterNode):
         self._link_pulse_sequences()
 
     def insert_pulse_sequence(self, index, pulse_sequence):
+        """Insert a nested pulse sequence at a specific pulse sequence index
+
+        Args:
+            index: Index at which to insert pulse sequence
+            pulse_sequence: Pulse sequence to insert
+        """
         if self.my_pulses:
             raise RuntimeError(
                'Cannot add nested pulse sequence when also containing pulses'
@@ -994,7 +1059,7 @@ class PulseSequence(ParameterNode):
         for pulse_sequence in self.pulse_sequences:
             if getattr(pulse_sequence['t_stop'], 'signal', None) is not None:
                 pulse_sequence['t_stop'].signal.receivers.clear()
-                
+
                 # Remove any pre-existing connection to pulse_sequence.enabled
                 # This may link to another parent pulse sequence
                 enabled_receivers = pulse_sequence['enabled'].signal.receivers
@@ -1059,7 +1124,7 @@ class PulseSequence(ParameterNode):
         self.my_enabled_pulses.clear()
         self.my_disabled_pulses.clear()
         if clear_pulse_sequences:
-            self['pulse_sequences']._latest = {'value': (), 'raw_value': ()}
+            self['pulse_sequences']._latest = {'value': (), 'raw_value': (), 'ts': None}
 
         self.duration = None  # Reset duration to t_stop of last pulse
 
@@ -1311,28 +1376,64 @@ class PulseSequence(ParameterNode):
 
         return shapes
 
+    def get_trace_slices(
+            self,
+            sample_rate: Union[int, float],
+            capture_full_traces: bool,
+            filter_acquire: bool = True,
+            return_slice: bool = True) -> Dict[str, Union[slice, tuple]]:
+        """Get the trace slices for each pulse that should be acquired
+
+        This method is used primarily for storing metadata when saving traces.
+
+        Args:
+            sample_rate: Acquisition sample rate
+            capture_full_traces: Whether the digitizer acquires traces from the
+                start of the pulse_sequence (t=0) or from the first pulse with
+                acquire=True.
+            filter_acquire: Whether to only return the slices of pulses with
+                acquire=True
+            return_slice: Whether to return slice objects,
+                or a tuple with (start_idx, stop_idx)
+
+        Returns:
+            A dict whose keys are pulse full names.
+            Values are either a slice or tuple corresponding to
+            the pulse start and stop index in an digitized trace.
+        """
+        pulse_slices = {}
+        for k, pulse in enumerate(self.pulses):
+            if not pulse.acquire and filter_acquire:  # Pulse was not acquired
+                continue
+
+            start_idx = int(pulse.t_start * sample_rate)
+            stop_idx = int(pulse.t_stop * sample_rate)
+
+            pulse_slices[pulse.full_name] = slice(start_idx, stop_idx)
+
+        # If capture_full_traces == False, acquisition was started from first
+        # pulse with acquire == True onwards.
+        if not capture_full_traces:
+            # Find  start time of measurement
+            min_pts = min(pulse_slice.start for pulse_slice in pulse_slices.values())
+
+            # Subtract start of acquisition from each slice
+            for pulse, pulse_slice in pulse_slices.items():
+                pulse_slices[pulse] = slice(
+                    pulse_slice.start - min_pts, pulse_slice.stop - min_pts
+                )
+
+        if not return_slice:
+            pulse_slices = {k: (v.start, v.stop) for k, v in pulse_slices.items()}
+
+        return pulse_slices
+
     def plot(self, t_range=None, points=2001, subplots=False, scale_ylim=True,
              figsize=None, legend=True,
              **connection_kwargs):
-        pulses = self.get_pulses(**connection_kwargs)
 
-        connection_pulse_list = {}
-        for pulse in pulses:
-            if pulse.connection_label is not None:
-                connection_label = pulse.connection_label
-            elif pulse.connection is not None:
-                if pulse.connection.label is not None:
-                    connection_label = pulse.connection.label
-                else:
-                    connection_label = pulse.connection.output['str']
-            else:
-                connection_label = 'Other'
-
-            if connection_label not in connection_pulse_list:
-                connection_pulse_list[connection_label] = [pulse]
-            else:
-                connection_pulse_list[connection_label].append(pulse)
-
+        t_list, voltages, connection_pulse_list = self.get_waveform(t_range, points,
+                                                                    **connection_kwargs)
         if subplots:
             figsize = figsize or 10, 1.5 * len(connection_pulse_list)
             fig, axes = plt.subplots(len(connection_pulse_list), 1, sharex=True,
@@ -1342,33 +1443,12 @@ class PulseSequence(ParameterNode):
             fig, ax = plt.subplots(1, figsize=figsize)
             axes = [ax]
 
-        # Generate t_list
-        if t_range is None:
-            t_range = (0, self.duration)
-        sample_rate = (t_range[1] - t_range[0]) / points
-        t_list = np.linspace(*t_range, points)
-
-        voltages = {}
         for k, (connection_label, connection_pulses) in enumerate(
                 connection_pulse_list.items()):
-
-            connection_voltages = np.nan * np.ones(len(t_list))
-            for pulse in connection_pulses:
-                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop,
-                                         sample_rate)
-                start_idx = np.argmax(t_list >= pulse.t_start)
-                # Determine max_pts because sometimes there is a rounding error
-                max_pts = len(connection_voltages[
-                              start_idx:start_idx + len(pulse_t_list)])
-                connection_voltages[
-                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
-                    pulse_t_list[:max_pts])
-            voltages[connection_label] = connection_voltages
-
             if subplots:
                 ax = axes[k]
 
-            ax.plot(t_list, connection_voltages, label=connection_label)
+            ax.plot(t_list, voltages[connection_label], label=connection_label)
             if not subplots:
                 ax.set_xlabel('Time (s)')
             ax.set_ylabel('Amplitude (V)')
@@ -1390,6 +1470,56 @@ class PulseSequence(ParameterNode):
             fig.subplots_adjust(hspace=0)
         return t_list, voltages, fig, axes
 
+    def get_waveform(self, t_range=None, points=2001, sample_rate=None,
+                     **connection_kwargs):
+        pulses = self.get_pulses(**connection_kwargs)
+
+        connection_pulse_list = {}
+        for pulse in pulses:
+            if pulse.connection_label is not None:
+                connection_label = pulse.connection_label
+            elif pulse.connection is not None:
+                if pulse.connection.label is not None:
+                    connection_label = pulse.connection.label
+                else:
+                    connection_label = pulse.connection.output['str']
+            else:
+                connection_label = 'Other'
+
+            if connection_label not in connection_pulse_list:
+                connection_pulse_list[connection_label] = [pulse]
+            else:
+                connection_pulse_list[connection_label].append(pulse)
+
+        # Generate t_list
+        if t_range is None:
+            t_range = (0, self.duration)
+        if sample_rate is None:
+            sample_rate = (t_range[1] - t_range[0]) / points
+        else:
+            points = (t_range[1] - t_range[0]) / sample_rate
+
+        t_list = np.linspace(*t_range, points)
+
+        voltages = {}
+        for k, (connection_label, connection_pulses) in enumerate(
+                connection_pulse_list.items()):
+
+            connection_voltages = np.nan * np.ones(len(t_list))
+            for pulse in connection_pulses:
+                pulse_t_list = np.arange(pulse.t_start, pulse.t_stop,
+                                         sample_rate)
+                start_idx = np.argmax(t_list >= pulse.t_start)
+                # Determine max_pts because sometimes there is a rounding error
+                max_pts = len(connection_voltages[
+                              start_idx:start_idx + len(pulse_t_list)])
+                connection_voltages[
+                start_idx:start_idx + len(pulse_t_list)] = pulse.get_voltage(
+                    pulse_t_list[:max_pts])
+            voltages[connection_label] = connection_voltages
+
+        return t_list, voltages, connection_pulse_list
+
     def up_to_date(self) -> bool:
         """Checks if a pulse sequence is up to date or needs to be generated.
 
@@ -1401,10 +1531,20 @@ class PulseSequence(ParameterNode):
         return all(pulse_sequence.up_to_date() for pulse_sequence in self.pulse_sequences)
 
     def _update_enabled_disabled_pulses(self, *args):
+        """Separate pulses into enabled and disabled pulses"""
         self.my_enabled_pulses = [pulse for pulse in self.my_pulses if pulse.enabled]
         self.my_disabled_pulses = [pulse for pulse in self.my_pulses if not pulse.enabled]
 
     def _update_last_pulse(self):
+        """Attaches pulse_sequence.t_stop to t_stop of last pulse
+
+        Called whenever pulses are added
+        Notes:
+            - If the t_stop of a pulse that is not the last pulse is increased
+              such that it becomes the last t_stop, this will cause issues since
+              it is not connected to pulse_sequence.t_stop.
+
+        """
         if not self.my_pulses:
             return
 
@@ -1424,6 +1564,11 @@ class PulseSequence(ParameterNode):
             self._last_pulse['t_stop'].connect(self['t_stop'])
 
     def clone_skeleton(self, pulse_sequence):
+        """Clone the structure of a pulse sequence into this one
+
+        This skeleton copy includes copies of all nested pulse sequences,
+        but does not include copies of the pulses
+        """
         self.clear()
         for subsequence in pulse_sequence.pulse_sequences:
             clone_subsequence = PulseSequence()
@@ -1434,6 +1579,7 @@ class PulseSequence(ParameterNode):
         self.duration = pulse_sequence.duration
         self.final_delay = pulse_sequence.final_delay
         self.enabled = pulse_sequence.enabled
+        self.flags = copy_alias(pulse_sequence.flags)
 
 
 class PulseImplementation:
@@ -1588,3 +1734,28 @@ class PulseImplementation:
         """
         raise NotImplementedError('PulseImplementation.implement should be '
                                   'implemented in a subclass')
+
+def find_matching_pulse_sequence(pulse, pulse_sequence):
+    """Find matching (nested) pulse sequence where a pulse should be placed in
+
+    Args:
+        pulse: pulse for which pulse sequence should be found
+        pulse_sequence: Primary pulse sequence. The nested pulse sequences are
+            recursively traversed until a bottom-level pulse sequence is found
+            that has a t_start and t_stop encompassing the pulse
+
+    Returns:
+        Pulse sequence, either nested or the original pulse sequence that has
+            been passed as an arg.
+    """
+    # assert pulse.t_start + 1e-12 >= pulse_sequence.t_start
+    # assert pulse.t_stop - 1e-12 <= pulse_sequence.t_stop
+
+    for subpulse_sequence in pulse_sequence.pulse_sequences:
+        if not subpulse_sequence.enabled:
+            continue
+        elif pulse.t_start >= subpulse_sequence.t_start - 1e-12 \
+                and pulse.t_stop <= subpulse_sequence.t_stop + 1e-12:
+            return find_matching_pulse_sequence(pulse, subpulse_sequence)
+    else:
+        return pulse_sequence

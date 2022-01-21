@@ -1,10 +1,10 @@
 import os
 import numpy as np
-from collections import OrderedDict as od, Iterable
+from collections import Iterable
 import logging
 from copy import copy
 import traceback
-import pickle, dill
+import dill
 import time
 from typing import Union, List, Sequence, Dict, Any
 import h5py
@@ -12,14 +12,15 @@ from pathlib import Path
 
 import silq
 from silq.instrument_interfaces.interface import InstrumentInterface, Channel
-from silq.pulses.pulse_modules import PulseSequence
-from silq.pulses.pulse_types import Pulse, MeasurementPulse
+from silq.pulses.pulse_modules import PulseSequence, find_matching_pulse_sequence
+from silq.pulses.pulse_types import Pulse, MeasurementPulse, DummyPulse
 
 import qcodes as qc
+from qcodes.instrument.parameter_node import parameter
 from qcodes.instrument.parameter import Parameter
 from qcodes import Instrument, FormatLocation, MatPlot
-from qcodes.loops import ActiveLoop
 from qcodes.utils import validators as vals
+from qcodes.data.data_array import DataArray
 from qcodes.data.io import DiskIO
 from qcodes.data.hdf5_format import HDF5Format
 from qcodes.utils import PerformanceTimer
@@ -506,68 +507,88 @@ class Layout(Instrument):
     # Targeted pulse sequence whose duration exceeds this will raise an error
     maximum_pulse_sequence_duration = 25
 
-    def __init__(self, name: str = 'layout',
-                 instrument_interfaces: List[InstrumentInterface] = [],
-                 store_pulse_sequences_folder: Union[bool, None] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        name: str = "layout",
+        instrument_interfaces: List[InstrumentInterface] = [],
+        store_pulse_sequences_folder: Union[bool, None] = None,
+        **kwargs
+    ):
         super().__init__(name, **kwargs)
 
         # Add interfaces for each instrument to self.instruments
-        self._interfaces = {interface.instrument_name(): interface
-                            for interface in instrument_interfaces}
+        self._interfaces = {
+            interface.instrument_name(): interface
+            for interface in instrument_interfaces
+        }
 
         self.connections = []
 
-        self.add_parameter('instruments',
-                           get_cmd=lambda: list(self._interfaces.keys()),
-                           docstring='List of instrument names. Can only be '
-                                     'retrieved. To set, update layout._interfaces')
-        self.add_parameter('primary_instrument',
-                           get_cmd=None,
-                           set_cmd=self._set_primary_instrument,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of primary instrument, usually the '
-                                     'instrument that performs triggering')
+        self.instruments = Parameter(
+            get_cmd=lambda: list(self._interfaces.keys()),
+            docstring="List of instrument names. Can only be retrieved. "
+            "To set, update layout._interfaces",
+        )
+        self.primary_instrument = Parameter(
+            get_cmd=None,
+            set_cmd=self._set_primary_instrument,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of primary instrument, usually the instrument that "
+            "performs triggering",
+        )
+        self.acquisition_instrument = Parameter(
+            set_cmd=None,
+            initial_value=None,
+            vals=vals.Enum(*self._interfaces.keys()),
+            docstring="Name of instrument that acquires data",
+        )
+        self.acquisition_channels = Parameter(
+            set_cmd=None,
+            vals=vals.Lists(),
+            docstring="List of acquisition channels to acquire. "
+            "Each element in the list should be a tuple (ch_name, ch_label), "
+            "where ch_name is a channel of the acquisition interface, "
+            "and ch_label is a given label for that channel (e.g. 'output')."
+        )
+        self.samples = Parameter(
+            set_cmd=None,
+            initial_value=1,
+            docstring="Number of times to acquire the pulse sequence",
+        )
 
-        self.add_parameter('acquisition_instrument',
-                           set_cmd=None,
-                           initial_value=None,
-                           vals=vals.Enum(*self._interfaces.keys()),
-                           docstring='Name of instrument that acquires data')
-        self.add_parameter('acquisition_channels',
-                           set_cmd=None,
-                           vals=vals.Lists(),
-                           docstring='List of acquisition channels to acquire. '
-                                     'Each element in the list should be a '
-                                     'tuple (ch_name, ch_label), where ch_name '
-                                     'is a channel of the acquisition interface, '
-                                     'and ch_label is a given label for that '
-                                     'channel (e.g. "output").')
+        self.active = Parameter(
+            set_cmd=None,
+            initial_value=False,
+            vals=vals.Bool(),
+            docstring="Whether the pulse sequence is being executed. "
+            "Can be started/stopped via layout.start/layout.stop",
+        )
 
-        self.add_parameter(name='samples',
-                           set_cmd=None,
-                           initial_value=1,
-                           docstring='Number of times to acquire the pulse sequence')
+        self.force_setup = Parameter(
+            set_cmd=None,
+            initial_value=True,
+            vals=vals.Bool(),
+            docstring="Setup all instruments if the pulse sequence has changed. "
+            "If False, only the instruments are setup if their "
+            "respective pulses have changed",
+        )
 
-        self.add_parameter(name='active',
-                           set_cmd=None,
-                           initial_value=False,
-                           vals=vals.Bool(),
-                           docstring='Whether the pulse sequence is being executed. '
-                                     'Can be started/stopped via layout.start/layout.stop')
-
-        self.add_parameter('save_trace_channels',
-                           set_cmd=None,
-                           initial_value=['output'],
-                           vals=vals.Lists(vals.Strings()),
-                           docstring='List of channel labels to acquire. '
-                                     'Channel labels are defined in '
-                                     'layout.acquisition_channels')
+        self.save_trace_channels = Parameter(
+            set_cmd=None,
+            initial_value=["output"],
+            vals=vals.Lists(vals.Strings()),
+            docstring="List of channel labels to acquire. "
+            "Channel labels are defined in layout.acquisition_channels",
+        )
         self.is_acquiring = Parameter(
             set_cmd=None,
             initial_value=False,
             docstring="Whether or not the Layout is performing an acquisition. "
-                      "Ensures no two acquisitions are run simultaneously.")
+                      "Ensures no two acquisitions are run simultaneously."
+        )
+        self.sample_rate = Parameter(
+            docstring='Acquisition sample rate'
+        )
 
         # Untargeted pulse_sequence, can be set via layout.pulse_sequence
         self._pulse_sequence = None
@@ -579,9 +600,10 @@ class Layout(Instrument):
         # Handle saving of pulse sequence
         if store_pulse_sequences_folder is not None:
             self.store_pulse_sequences_folder = store_pulse_sequences_folder
-        elif silq.config.properties.get('store_pulse_sequences_folder') is not None:
-            self.store_pulse_sequences_folder = \
+        elif silq.config.properties.get("store_pulse_sequences_folder") is not None:
+            self.store_pulse_sequences_folder = (
                 silq.config.properties.store_pulse_sequences_folder
+            )
         else:
             self.store_pulse_sequences_folder = None
         self._pulse_sequences_folder_io = DiskIO(store_pulse_sequences_folder)
@@ -594,6 +616,9 @@ class Layout(Instrument):
 
         # Dictionary for storing all performance timings
         self.timings = PerformanceTimer()
+
+        # Optional oscilloscope object to direct traces towards
+        self.oscilloscope = None
 
     @property
     def pulse_sequence(self):
@@ -634,17 +659,29 @@ class Layout(Instrument):
         else:
             return None
 
-    @property
-    def sample_rate(self):
+    @parameter
+    def sample_rate_get(self, parameter):
         """Union[float, None]: Acquisition sample rate
 
         If `Layout.acquisition_interface` is not setup, return None
 
         """
         if self.acquisition_interface is not None:
-            return self.acquisition_interface.sample_rate()
+            return self.acquisition_interface.sample_rate.get_latest()
         else:
             return None
+
+    @parameter
+    def sample_rate_set(self, parameter, sample_rate: float):
+        """Acquisition sample rate
+
+        If `Layout.acquisition_interface` is not setup, return None
+
+        """
+        if self.acquisition_interface is None:
+            raise RuntimeError('layout.acquisition_interface not defined')
+
+        self.acquisition_interface.sample_rate(sample_rate)
 
     def add_connection(self,
                        output_arg: str,
@@ -919,8 +956,12 @@ class Layout(Instrument):
                 return next(connection for connection in self.connections
                             if connection.label == connection_label)
             except StopIteration:
+                allowed_labels = [
+                    connection.label for connection in self.connections
+                    if connection_label is not None
+                ]
                 raise StopIteration(f'Cannot find connection with label {connection_label}. '
-                                    f'Allowed labels: {[connection.label for connection in self.connections]}')
+                                    f'Allowed labels: {allowed_labels}')
         else:
             # Extract from conditions other than connection_label
             conditions = dict(output_arg=output_arg,
@@ -950,7 +991,8 @@ class Layout(Instrument):
             interface.is_primary(instrument_name == primary_instrument)
 
     def _get_interfaces_hierarchical(
-            self, sorted_interfaces: List[InstrumentInterface] = []):
+            self, sorted_interfaces: List[InstrumentInterface] = []
+    ) -> List[InstrumentInterface]:
         """Sort interfaces by triggering order, from bottom to top.
 
         This sorting ensures that earlier instruments never trigger later ones.
@@ -1094,6 +1136,10 @@ class Layout(Instrument):
               pulse is modified.
 
         """
+        if isinstance(pulse, DummyPulse):
+            # Ignore pulse
+            return
+
         # Add pulse to acquisition instrument if it must be acquired
         if pulse.acquire:
             self.acquisition_interface.pulse_sequence.quick_add(
@@ -1131,6 +1177,16 @@ class Layout(Instrument):
                 f"Interface {interface} could not target pulse {pulse} using " \
                 f"connection {connection}."
 
+            # Set parent of targeted pulse to interface.pulse_sequence
+            t_start = targeted_pulse.t_start
+            # We find the matching pulse sequence because it could be nested
+            targeted_pulse.parent = find_matching_pulse_sequence(
+                pulse, interface.pulse_sequence
+            )
+            # Reset t_start because it will shift if the pulse_sequence does not
+            # start at t=0
+            targeted_pulse.t_start = t_start
+
             # Do not copy pulse
             self.targeted_pulse_sequence.quick_add(
                 targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
@@ -1138,14 +1194,16 @@ class Layout(Instrument):
 
             # Do not copy pulse
             interface.pulse_sequence.quick_add(
-                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
             )
 
             # Also add pulse to input interface pulse sequence
             input_interface = self._interfaces[pulse.connection.input['instrument']]
             # Do not copy pulse
             input_interface.input_pulse_sequence.quick_add(
-                targeted_pulse, connect=False, reset_duration=False, copy=False, nest=True
+                targeted_pulse, connect=False, reset_duration=False, copy=False,
+                nest=True
             )
 
     def _target_pulse_sequence(
@@ -1168,7 +1226,7 @@ class Layout(Instrument):
             * If a measurement is running, all instruments are stopped
             * The original pulse sequence and pulses remain unmodified
         """
-        logger.info(f'Targeting {pulse_sequence}')
+        logger.info(f'Targeting pulse sequence {pulse_sequence}')
 
         if pulse_sequence.duration > self.maximum_pulse_sequence_duration:
             raise RuntimeError(
@@ -1176,9 +1234,6 @@ class Layout(Instrument):
                 f'maximum duration {self.maximum_pulse_sequence_duration}. '
                 f'Please change layout.maximum_pulse_sequence_duration'
             )
-
-        if self.active():
-            self.stop()
 
         # Create a copy of the pulse sequence
         try:
@@ -1212,7 +1267,11 @@ class Layout(Instrument):
             # Clone the structure of the target pulse sequence. This includes
             # fixing the duration of pulse sequence and any nested pulse sequences
             interface.pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
             interface.input_pulse_sequence.clone_skeleton(pulse_sequence)
+            interface.pulse_sequence.untargeted_pulses = False
+            interface.pulse_sequence.allow_pulse_overlap = False
 
         # Add pulses in pulse_sequence to pulse_sequences of instruments
         for pulse in self.pulse_sequence:
@@ -1231,14 +1290,15 @@ class Layout(Instrument):
                     # generated during targeting
                     self._target_pulse(pulse, copy_pulse=False)
 
-
         # Finish setting up the pulse sequences
-        self.targeted_pulse_sequence.finish_quick_add()
+        # kwarg connect=False is added because else the pulse sequence duration
+        # might be changed to that of the last pulse, while it should be fixed
+        self.targeted_pulse_sequence.finish_quick_add(connect=False)
         for interface in self._interfaces.values():
             # Finish adding pulses, which performs final steps such as sorting
             # and checking for overlaps
-            interface.pulse_sequence.finish_quick_add()
-            interface.input_pulse_sequence.finish_quick_add()
+            interface.pulse_sequence.finish_quick_add(connect=False)
+            interface.input_pulse_sequence.finish_quick_add(connect=False)
 
         # Store pulse sequence
         if self.store_pulse_sequences_folder:
@@ -1256,8 +1316,8 @@ class Layout(Instrument):
                 logger.debug(f'Storing pulse sequence to {filepath}')
                 with open(filepath, 'wb') as f:
                     dill.dump(self._pulse_sequence, f)
-            except:
-                logger.exception(f'Could not save pulse sequence.')
+            except Exception:
+                logger.exception(f'Could not save pulse sequence.\n {traceback.format_exc}')
 
     def update_flags(self,
                      new_flags: Dict[str, Dict[str, Any]]):
@@ -1361,9 +1421,9 @@ class Layout(Instrument):
             self.acquisition_interface.acquisition_channels(
                 [ch_name for ch_name, _ in self.acquisition_channels()])
 
-
         for interface in self._get_interfaces_hierarchical():
             if interface.pulse_sequence and interface.instrument_name() not in ignore:
+
                 # Get existing setup flags (if any)
                 setup_flags = self.flags['setup'].get(interface.instrument_name(), {})
                 if setup_flags:
@@ -1372,13 +1432,24 @@ class Layout(Instrument):
                 input_connections = self.get_connections(input_interface=interface)
                 output_connections = self.get_connections(output_interface=interface)
 
+                if not self.force_setup() and not interface.requires_setup(
+                    samples=self.samples(),
+                    input_connections=input_connections,
+                    output_connections=output_connections,
+                    repeat=repeat,
+                    **setup_flags,
+                    **kwargs
+                ):
+                    logger.debug(f'Skipping setup interface {interface.name}')
+                    continue
+
                 with self.timings.record(f'setup.{interface.name}'):
+                    logger.debug(f'Setup interface {interface.name}')
                     flags = interface.setup(samples=self.samples(),
                                             input_connections=input_connections,
                                             output_connections=output_connections,
                                             repeat=repeat,
                                             **setup_flags, **kwargs)
-
                 if flags:
                     logger.debug(f'Received flags {flags} from interface {interface}')
                     self.update_flags(flags)
@@ -1390,7 +1461,7 @@ class Layout(Instrument):
 
         # Create acquisition shapes
         trace_shapes = self.pulse_sequence.get_trace_shapes(
-            sample_rate=self.sample_rate, samples=self.samples())
+            sample_rate=self.sample_rate(), samples=self.samples())
         self.acquisition_shapes = {}
         output_labels = [output[1] for output in self.acquisition_channels()]
         for pulse_name, shape in trace_shapes.items():
@@ -1506,8 +1577,7 @@ class Layout(Instrument):
         self.is_acquiring = True
 
         try:
-            logger.info(f'Performing acquisition, '
-                        f'{"stop" if stop else "continue"} when finished')
+            logger.info(f'Performing acquisition, {"stop" if stop else "continue"} when finished')
             if not self.active():
                 self.start()
 
@@ -1534,6 +1604,12 @@ class Layout(Instrument):
 
             if save_traces:
                 self.save_traces()
+
+            if self.oscilloscope is not None:
+                with self.timings.record('update_oscilloscope'):
+                    traces = self.acquisition_interface.traces
+                    self.oscilloscope.update_array_2D(traces)
+
         except:
             # If any error occurs, stop all instruments
             self.stop()
@@ -1582,17 +1658,34 @@ class Layout(Instrument):
         # Create new hdf5 file
         filepath = os.path.join(folder, f'{name}.hdf5')
         assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
-        file = h5py.File(filepath, 'w')
+        file = h5py.File(filepath, 'w', libver='latest')
 
         # Save metadata to traces file
-        file.attrs['sample_rate'] = self.sample_rate
+        file.attrs['sample_rate'] = self.sample_rate()
         file.attrs['samples'] = self.samples()
         file.attrs['capture_full_trace'] = self.acquisition_interface.capture_full_trace()
         HDF5Format.write_dict_to_hdf5(
             {'pulse_sequence': self.pulse_sequence.snapshot()}, file)
         HDF5Format.write_dict_to_hdf5(
             {'pulse_shapes': self.pulse_sequence.get_trace_shapes(
-                sample_rate=self.sample_rate, samples=self.samples())}, file)
+                sample_rate=self.sample_rate(), samples=self.samples())}, file)
+
+        # Add index ranges (slices) of all pulses with acquire=True
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                return_slice=False
+            )}, file)
+
+        # Add index ranges (slices) of all pulses
+        HDF5Format.write_dict_to_hdf5(
+            {'pulse_slices_full': self.pulse_sequence.get_trace_slices(
+                sample_rate=self.sample_rate(),
+                capture_full_traces=self.acquisition_interface.capture_full_trace(),
+                filter_acquire=False,
+                return_slice=False
+            )}, file)
 
         # Create traces group and initialize arrays
         file.create_group('traces')
@@ -1609,6 +1702,7 @@ class Layout(Instrument):
                                           chunks=True, compression='gzip',
                                           compression_opts=compression)
         file.flush()
+        file.swmr_mode = True  # Enable multiple readers to access this process
         return file
 
     def save_traces(self,
@@ -1662,15 +1756,27 @@ class Layout(Instrument):
 
         return trace_file
 
-    def plot_traces(self, channel_filter=None, **plot_kwargs):
+    def plot_traces(self, channel_filter: str = None, **plot_kwargs):
+        """Plot acquisition traces for acquisition channels
+
+        Args:
+            channel_filter: Optional filter for channel names.
+                If passed, only channels containing this string are plotted
+            **plot_kwargs: Optional kwargs passed when adding traces
+
+        Returns:
+            MatPlot object
+        """
+        assert channel_filter is None or isinstance(channel_filter, str)
+
         traces_channels = self.acquisition_interface.traces
         # TODO add check if no traces have been acquired
 
         # Map traces to the channel labels
         channel_mappings = dict(self.acquisition_channels())
-        traces = {channel_mappings[ch]: trace_arr
-                  for ch, trace_arr in traces_channels.items()
-                 }
+        traces = {
+            channel_mappings[ch]: trace_arr for ch, trace_arr in traces_channels.items()
+        }
         trace_shape = next(iter(traces.values())).shape
 
         # Optionally filter outputs
@@ -1683,20 +1789,22 @@ class Layout(Instrument):
         t_list = np.arange(trace_shape[1]) / self.sample_rate()
         if not self.acquisition_interface.capture_full_trace():
             t_list += min(self.acquisition_interface.pulse_sequence.t_start_list)
-        t_list *= 1e3  # Convert to ms
-        sample_list = np.arange(trace_shape[0], dtype=float)
+        t_arr = DataArray(name='Time', unit='s', preset_data=t_list, is_setpoint=True)
+        sample_arr = DataArray(name='Repetition', preset_data=np.arange(trace_shape[0], dtype=float), is_setpoint=True)
 
-        plot = MatPlot(subplots=len(traces), **plot_kwargs)
-        for k, (ax, (channel, traces_arr)) in enumerate(zip(plot, traces.items())):
-                if traces_arr.shape[0] == 1:
-                    ax.add(traces_arr[0], x=t_list)
-                    ax.set_ylabel('Amplitude (V)')
-                else:
-                    ax.add(traces_arr, x=t_list, y=sample_list)
-                ax.set_ylabel('Sample number')
-                ax.set_xlabel('Time (ms)')
-                ax.set_title(channel)
+        plot = MatPlot(subplots=len(traces))
+        for k, (ax, (channel, traces)) in enumerate(zip(plot, traces.items())):
+            if traces.shape[0] == 1:
+                traces = traces[0]
+                set_arrays = (t_arr, )
+            else:
+                set_arrays = (sample_arr, t_arr)
 
+            traces_arr = DataArray(name='Amplitude', unit='V', preset_data=traces, set_arrays=set_arrays)
+            ax.add(traces_arr, **plot_kwargs)
+            ax.set_title(channel)
+
+        plot.rescale_axis()
         plot.tight_layout()
 
         return plot

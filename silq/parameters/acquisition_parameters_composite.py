@@ -10,7 +10,7 @@ from silq.pulses.pulse_sequences import (
     NMRPulseSequenceComposite,
 )
 from silq.pulses.pulse_types import Pulse
-from silq.pulses.pulse_sequences import NMRCircuitPulseSequence
+from silq.pulses.pulse_sequences import CircuitPulseSequence, ElectronReadoutPulseSequence
 from silq.tools import property_ignore_setter
 from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
 
@@ -74,93 +74,30 @@ class AcquisitionParameterComposite(AcquisitionParameter):
 class ESRParameterComposite(AcquisitionParameterComposite):
     """Parameter for most pulse sequences involving electron spin resonance.
 
-    This parameter can handle many of the simple pulse sequences involving ESR.
-    It uses the `ESRPulseSequence`, which will generate a pulse sequence from
-    settings (see parameters below).
+    The main attributes of this parameter are
 
-    In general the pulse sequence is as follows:
-
-    1. Perform any pre_pulses defined in ``ESRParameter.pre_pulses``.
-    2. Perform stage pulse ``ESRParameter.ESR['stage_pulse']``.
-       By default, this is the ``plunge`` pulse.
-    3. Perform ESR pulse within plunge pulse, the delay from start of plunge
-       pulse is defined in ``ESRParameter.ESR['pulse_delay']``.
-    4. Perform read pulse ``ESRParameter.ESR['read_pulse']``.
-    5. Repeat steps 2 and 3 for each ESR pulse in
-       ``ESRParameter.ESR['ESR_pulses']``, which by default contains single
-       pulse ``ESRParameter.ESR['ESR_pulse']``.
-    6. Perform empty-plunge-read sequence (EPR), but only if
-       ``ESRParameter.EPR['enabled']`` is True.
-       EPR pulses are defined in ``ESRParameter.EPR['pulses']``.
-    7. Perform any post_pulses defined in ``ESRParameter.post_pulses``.
-
-    A shorthand for using the default ESR pulse for multiple frequencies is by
-    setting `ESRParameter.ESR_frequencies`. Settings this will create a copy
-    of ESRParameter.ESR['ESR_pulse'] with the respective frequency.
-
-    Examples:
-        The following code measures two ESR frequencies and performs an EPR
-        from which the contrast can be determined for each ESR frequency:
-
-        >>> ESR_parameter = ESRParameter()
-        >>> ESR_parameter.ESR['pulse_delay'] = 5e-3
-        >>> ESR_parameter.ESR['stage_pulse'] = DCPulse['plunge']
-        >>> ESR_parameter.ESR['ESR_pulse'] = FrequencyRampPulse('ESR_adiabatic')
-        >>> ESR_parameter.ESR_frequencies = [39e9, 39.1e9]
-        >>> ESR_parameter.EPR['enabled'] = True
-        >>> ESR_parameter.pulse_sequence.generate()
-
-        The total pulse sequence is plunge-read-plunge-read-empty-plunge-read
-        with an ESR pulse in the first two plunge pulses, 5 ms after the start
-        of the plunge pulse. The ESR pulses have different frequencies.
+    - ``pulse_sequence``, which contains two pulse sequences ``ESR`` and ``EPR``.
+    - ``analyses``, which has an analysis for ESR and EPR.
 
     Args:
         name: Name of acquisition parameter
         **kwargs: Additional kwargs passed to `AcquisitionParameter`.
 
     Parameters:
-        ESR (dict): `ESRPulseSequence` generator settings for ESR. Settings are:
-            ``stage_pulse``, ``ESR_pulse``, ``ESR_pulses``, ``pulse_delay``,
-            ``read_pulse``.
-        EPR (dict): `ESRPulseSequence` generator settings for EPR.
-            This is optional and can be toggled in ``EPR['enabled']``.
-            If disabled, contrast is not calculated.
-            Settings are: ``enabled``, ``pulses``.
-        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
-        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
-        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+        ESR (ElectronReadoutPulseSequence): Performs ESR pulse sequence
+        EPR (PulseSequence): Empty - plunge - read pulse sequence
         samples (int): Number of acquisition samples
         results (dict): Results obtained after analysis of traces.
-        t_skip (float): initial part of read trace to ignore for measuring
-            blips. Useful if there is a voltage spike at the start, which could
-            otherwise be measured as a ``blip``. Retrieved from
-            ``silq.config.properties.t_skip``.
-        t_read (float): duration of read trace to include for measuring blips.
-            Useful if latter half of read pulse is used for initialization.
-            Retrieved from ``silq.config.properties.t_read``.
-        min_filter_proportion (float): Minimum number of read traces needed in
-            which the voltage starts low (loaded donor). Otherwise, most results
-            are set to zero. Retrieved from
-            ``silq.config.properties.min_filter_proportion``.
         traces (dict): Acquisition traces segmented by pulse and acquisition
             label
         silent (bool): Print results after acquisition
         continuous (bool): If True, instruments keep running after acquisition.
             Useful if stopping/starting instruments takes a considerable amount
             of time.
-        properties_attrs (List[str]): Attributes to match with
-            ``silq.config.properties``.
-            See notes below for more info.
         save_traces (bool): Save acquired traces to disk.
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        dataset (DataSet): Traces DataSet
-        base_folder (str): Base folder in which to save traces. If not specified,
-            and acquisition is part of a measurement, the base folder is the
-            folder of the measurement data set. Otherwise, the base folder is
-            the default data folder
-        subfolder (str): Subfolder within the base folder to save traces.
 
     Notes:
         - All pulse settings are copies of
@@ -244,100 +181,31 @@ class ESRParameterComposite(AcquisitionParameterComposite):
 class NMRParameterComposite(AcquisitionParameterComposite):
     """ Parameter for most measurements involving an NMR pulse.
 
-    This parameter can apply several NMR pulses, and also measure several ESR
-    frequencies. It uses the `NMRPulseSequence`, which will generate a pulse
-    sequence from settings (see parameters below).
-
-    In general, the pulse sequence is as follows:
-
-    1. Perform any pre_pulses defined in ``NMRParameter.pre_pulses``.
-    2. Perform NMR sequence
-
-       1. Perform stage pulse ``NMRParameter.NMR['stage_pulse']``.
-          Default is 'empty' `DCPulse`.
-       2. Perform NMR pulses within the stage pulse. The NMR pulses defined
-          in ``NMRParameter.NMR['NMR_pulses']`` are applied successively.
-          The delay after start of the stage pulse is
-          ``NMRParameter.NMR['pre_delay']``, delays between NMR pulses is
-          ``NMRParameter.NMR['inter_delay']``, and the delay after the final
-          NMR pulse is ``NMRParameter.NMR['post_delay']``.
-
-    3. Perform ESR sequence
-
-       1. Perform stage pulse ``NMRParameter.ESR['stage_pulse']``.
-          Default is 'plunge' `DCPulse`.
-       2. Perform ESR pulse within stage pulse for first pulse in
-          ``NMRParameter.ESR['ESR_pulses']``.
-       3. Perform ``NMRParameter.ESR['read_pulse']``, and acquire trace.
-       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
-          usually correspond to different ESR frequencies (see
-          `NMRParameter`.ESR_frequencies).
-       5. Repeat steps 1 - 4 for ``NMRParameter.ESR['shots_per_frequency']``
-          This effectively interleaves the ESR pulses, which counters effects of
-          the nucleus flipping within an acquisition.
-
-    This acquisition is repeated ``NMRParameter.samples`` times. If the nucleus
-    is in one of the states for which an ESR frequency is on resonance, a high
-    ``up_proportion`` is measured, while for the other frequencies a low
-    ``up_proportion`` is measured. By looking over successive samples and
-    measuring how often the ``up_proportions`` switch between above/below
-    ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
-    (see `NMRParameter.analyse` and `analyse_flips`).
-
     Args:
         name: Parameter name
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+            Default is `NMRPulseSequenceComposite`
         **kwargs: Additional kwargs passed to `AcquisitionParameter`
 
     Parameters:
-        NMR (dict): `NMRPulseSequence` pulse settings for NMR. Settings are:
-            ``stage_pulse``, ``NMR_pulse``, ``NMR_pulses``, ``pre_delay``,
-            ``inter_delay``, ``post_delay``.
-        ESR (dict): `NMRPulseSequence` pulse settings for ESR. Settings are:
-            ``ESR_pulse``, ``stage_pulse``, ``ESR_pulses``, ``read_pulse``,
-            ``pulse_delay``.
-        EPR (dict): `PulseSequenceGenerator` settings for EPR. This is optional
-            and can be toggled in ``EPR['enabled']``. If disabled, contrast is
-            not calculated.
-        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
-        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+        NMR (ElectronReadoutPulseSequence): Pulse sequence for NMR portion
+            of pulse sequence
+        ESR (ElectronReadoutPulseSequence): pulse sequence to read out nuclear
+            state via electron. Generally the setting ``shots_per_frequency``
+            should be larger than 1
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
-        ESR_frequencies (List[float]): List of ESR frequencies to use. When set,
-            a copy of ``NMRParameter.ESR['ESR_pulse']`` is created for each
-            frequency, and added to ``NMRParameter.ESR['ESR_pulses']``.
         samples (int): Number of acquisition samples
         results (dict): Results obtained after analysis of traces.
-        t_skip (float): initial part of read trace to ignore for measuring
-            blips. Useful if there is a voltage spike at the start, which could
-            otherwise be measured as a ``blip``. Retrieved from
-            ``silq.config.properties.t_skip``.
-        t_read (float): duration of read trace to include for measuring blips.
-            Useful if latter half of read pulse is used for initialization.
-            Retrieved from ``silq.config.properties.t_read``.
-        threshold_up_proportion (Union[float, Tuple[float, float]): threshold
-            for up proportions needed to determine ESR pulse to be on-resonance.
-            If tuple, first element is threshold below which ESR pulse is
-            off-resonant, and second element is threshold above which ESR pulse
-            is on-resonant. Useful for filtering of up proportions at boundary.
-            Retrieved from
-            ``silq.config.properties.threshold_up_proportion``.
         traces (dict): Acquisition traces segmented by pulse and acquisition
             label
         silent (bool): Print results after acquisition
         continuous (bool): If True, instruments keep running after acquisition.
             Useful if stopping/starting instruments takes a considerable amount
             of time.
-        properties_attrs (List[str]): Attributes to match with
-            ``silq.config.properties`` See notes below for more info.
         save_traces (bool): Save acquired traces to disk.
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        dataset (DataSet): Traces DataSet
-        base_folder (str): Base folder in which to save traces. If not specified,
-            and acquisition is part of a measurement, the base folder is the
-            folder of the measurement data set. Otherwise, the base folder is
-            the default data folder
-        subfolder (str): Subfolder within the base folder to save traces.
 
     Note:
         - The `NMRPulseSequence` does not have an empty-plunge-read (EPR)
@@ -356,9 +224,19 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         self.analyses = ParameterNode()
         self.analyses.ESR = AnalyseElectronReadout('ESR')
+        self.analyses.NMR_electron_readout = AnalyseElectronReadout('NMR_electron_readout')
         self.analyses.NMR = AnalyseMultiStateReadout('NMR')
 
+        # Turn off NMR_electron_readout analysis
+        self.analyses.NMR_electron_readout.enabled = False
+
+        self._connect_analyses()
+
+        super().__init__(name=name, **kwargs)
+
+    def _connect_analyses(self):
         self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
+        self.layout.sample_rate.connect(self.analyses.NMR_electron_readout.settings["sample_rate"])
         self.analyses.ESR.settings['labels'].connect(
             self.analyses.NMR.settings['labels']
         )
@@ -369,8 +247,14 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         self.analyses.ESR.settings["shots_per_frequency"].define_get(
             partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
         )
+        self.analyses.NMR_electron_readout.settings["shots_per_frequency"].define_get(
+            partial(self.NMR.settings.__getitem__, 'shots_per_frequency')
+        )
         self.analyses.ESR.settings["num_frequencies"].define_get(
             lambda: len(self.ESR.frequencies)
+        )
+        self.analyses.NMR_electron_readout.settings["num_frequencies"].define_get(
+            lambda: len(self.NMR.frequencies)
         )
         self.analyses.NMR.settings["num_frequencies"].define_get(
             lambda: len(self.ESR.frequencies)
@@ -378,8 +262,9 @@ class NMRParameterComposite(AcquisitionParameterComposite):
         self.analyses.ESR.settings["samples"].define_get(
             lambda: self.samples
         )
-
-        super().__init__(name=name, **kwargs)
+        self.analyses.NMR_electron_readout.settings["samples"].define_get(
+            lambda: self.samples
+        )
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None, plot: bool = False):
         """Analyse flipping events between nuclear states
@@ -444,20 +329,25 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         up_proportions_arrs = np.array([
             val for key, val in self.results['ESR'].items()
-            if key.startswith('up_proportion')
+            if key.startswith('up_proportion') and 'idxs' not in key
         ])
-
-        self.results["NMR"] = self.analyses.NMR.analyse(
-            up_proportions_arrs=up_proportions_arrs,
-            filtered_shots=filtered_shots
-        )
+        if self.analyses.NMR.enabled:
+            self.results["NMR"] = self.analyses.NMR.analyse(
+                up_proportions_arrs=up_proportions_arrs,
+                filtered_shots=filtered_shots
+            )
+        if self.analyses.NMR_electron_readout.enabled:
+            self.results["NMR_electron_readout"] = self.analyses.NMR_electron_readout.analyse(
+                traces=traces.NMR, filtered_shots=filtered_shots, plot=plot,
+                threshold_voltage=self.results['ESR']['threshold_voltage']
+            )
 
         return self.results
 
     def plot_flips(self , figsize=(8, 3)):
         up_proportion_arrays = [
             val for key, val in self.results.ESR.items()
-            if key.startswith('up_proportion')
+            if key.startswith('up_proportion') and 'idxs' not in key
         ]
         assert len(up_proportion_arrays) >= 2
 
@@ -495,106 +385,45 @@ class NMRParameterComposite(AcquisitionParameterComposite):
             ax.plot([k, k], sorted(up_proportion_tuple)[-2:], color=color, zorder=-1)
 
         plot.tight_layout()
+
+        # print contrast
+        sorted_up_proportions = np.sort(np.array(up_proportion_arrays), axis=0)
+        up_proportion = np.mean(sorted_up_proportions[-1])
+        dark_counts = np.mean(sorted_up_proportions[:-1])
+        contrast = up_proportion - dark_counts
+        print(f'Contrast = {up_proportion:.2f} - {dark_counts:.2f} = {contrast:.2f}')
         return plot
 
 
 class NMRCircuitParameter(NMRParameterComposite):
-    """ Parameter for most measurements involving an NMR pulse.
-
-    This parameter can apply several NMR pulses, and also measure several ESR
-    frequencies. It uses the `NMRPulseSequence`, which will generate a pulse
-    sequence from settings (see parameters below).
-
-    In general, the pulse sequence is as follows:
-
-    1. Perform any pre_pulses defined in ``NMRParameter.pre_pulses``.
-    2. Perform NMR sequence
-
-       1. Perform stage pulse ``NMRParameter.NMR['stage_pulse']``.
-          Default is 'empty' `DCPulse`.
-       2. Perform NMR pulses within the stage pulse. The NMR pulses defined
-          in ``NMRParameter.NMR['NMR_pulses']`` are applied successively.
-          The delay after start of the stage pulse is
-          ``NMRParameter.NMR['pre_delay']``, delays between NMR pulses is
-          ``NMRParameter.NMR['inter_delay']``, and the delay after the final
-          NMR pulse is ``NMRParameter.NMR['post_delay']``.
-
-    3. Perform ESR sequence
-
-       1. Perform stage pulse ``NMRParameter.ESR['stage_pulse']``.
-          Default is 'plunge' `DCPulse`.
-       2. Perform ESR pulse within stage pulse for first pulse in
-          ``NMRParameter.ESR['ESR_pulses']``.
-       3. Perform ``NMRParameter.ESR['read_pulse']``, and acquire trace.
-       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
-          usually correspond to different ESR frequencies (see
-          `NMRParameter`.ESR_frequencies).
-       5. Repeat steps 1 - 4 for ``NMRParameter.ESR['shots_per_frequency']``
-          This effectively interleaves the ESR pulses, which counters effects of
-          the nucleus flipping within an acquisition.
-
-    This acquisition is repeated ``NMRParameter.samples`` times. If the nucleus
-    is in one of the states for which an ESR frequency is on resonance, a high
-    ``up_proportion`` is measured, while for the other frequencies a low
-    ``up_proportion`` is measured. By looking over successive samples and
-    measuring how often the ``up_proportions`` switch between above/below
-    ``NMRParameter.threshold_up_proportion``, nuclear flips can be measured
-    (see `NMRParameter.analyse` and `analyse_flips`).
+    """ Parameter for most measurements involving NMR pulses in a circuit.
 
     Args:
         name: Parameter name
+        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
+            Default is `NMRPulseSequenceComposite` where the nested NMR
+            pulse sequence is a `CircuitPulseSequence`
         **kwargs: Additional kwargs passed to `AcquisitionParameter`
 
     Parameters:
-        NMR (dict): `NMRPulseSequence` pulse settings for NMR. Settings are:
-            ``stage_pulse``, ``NMR_pulse``, ``NMR_pulses``, ``pre_delay``,
-            ``inter_delay``, ``post_delay``.
-        ESR (dict): `NMRPulseSequence` pulse settings for ESR. Settings are:
-            ``ESR_pulse``, ``stage_pulse``, ``ESR_pulses``, ``read_pulse``,
-            ``pulse_delay``.
-        EPR (dict): `PulseSequenceGenerator` settings for EPR. This is optional
-            and can be toggled in ``EPR['enabled']``. If disabled, contrast is
-            not calculated.
-        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
-        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
+        NMR (CircuitPulseSequence): Pulse sequence for NMR portion
+            of pulse sequence
+        ESR (ElectronReadoutPulseSequence): pulse sequence to read out nuclear
+            state via electron. Generally the setting ``shots_per_frequency``
+            should be larger than 1
         pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
-        ESR_frequencies (List[float]): List of ESR frequencies to use. When set,
-            a copy of ``NMRParameter.ESR['ESR_pulse']`` is created for each
-            frequency, and added to ``NMRParameter.ESR['ESR_pulses']``.
         samples (int): Number of acquisition samples
         results (dict): Results obtained after analysis of traces.
-        t_skip (float): initial part of read trace to ignore for measuring
-            blips. Useful if there is a voltage spike at the start, which could
-            otherwise be measured as a ``blip``. Retrieved from
-            ``silq.config.properties.t_skip``.
-        t_read (float): duration of read trace to include for measuring blips.
-            Useful if latter half of read pulse is used for initialization.
-            Retrieved from ``silq.config.properties.t_read``.
-        threshold_up_proportion (Union[float, Tuple[float, float]): threshold
-            for up proportions needed to determine ESR pulse to be on-resonance.
-            If tuple, first element is threshold below which ESR pulse is
-            off-resonant, and second element is threshold above which ESR pulse
-            is on-resonant. Useful for filtering of up proportions at boundary.
-            Retrieved from
-            ``silq.config.properties.threshold_up_proportion``.
         traces (dict): Acquisition traces segmented by pulse and acquisition
             label
         silent (bool): Print results after acquisition
         continuous (bool): If True, instruments keep running after acquisition.
             Useful if stopping/starting instruments takes a considerable amount
             of time.
-        properties_attrs (List[str]): Attributes to match with
-            ``silq.config.properties`` See notes below for more info.
         save_traces (bool): Save acquired traces to disk.
             If the acquisition has been part of a measurement, the traces are
             stored in a subfolder of the corresponding data set.
             Otherwise, a new dataset is created.
-        dataset (DataSet): Traces DataSet
-        base_folder (str): Base folder in which to save traces. If not specified,
-            and acquisition is part of a measurement, the base folder is the
-            folder of the measurement data set. Otherwise, the base folder is
-            the default data folder
-        subfolder (str): Subfolder within the base folder to save traces.
 
     Note:
         - The `NMRPulseSequence` does not have an empty-plunge-read (EPR)
@@ -603,10 +432,16 @@ class NMRCircuitParameter(NMRParameterComposite):
 
     """
 
-    def __init__(self, name: str = "NMR_circuit", **kwargs):
-        pulse_sequence = NMRCircuitPulseSequence('NMR_circuit')
+    def __init__(self, name: str = "NMR_circuit", pulse_sequence=None, **kwargs):
+        if pulse_sequence is None:
+            pulse_sequence = NMRPulseSequenceComposite(
+                pulse_sequences=[
+                    CircuitPulseSequence('NMR'),
+                    ElectronReadoutPulseSequence(name='ESR')
+                ]
+            )
         super().__init__(name=name, pulse_sequence=pulse_sequence, **kwargs)
 
-        self.circuit = self.pulse_sequence['circuit']
-        self.circuit_index = self.pulse_sequence['circuit_index']
-        self.circuits = self.pulse_sequence['circuits']
+        self.circuit = self.NMR['circuit']
+        self.circuit_index = self.NMR['circuit_index']
+        self.circuits = self.NMR['circuits']
