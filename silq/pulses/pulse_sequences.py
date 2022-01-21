@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
-# from silq.tools.circuit_tools import convert_circuit, load_circuits
+from silq.tools.circuit_tools import convert_circuit, load_circuits
 from qcodes import Parameter, Measurement, DataSet
 from qcodes.instrument.parameter_node import parameter
 from qcodes.utils import validators as vals
