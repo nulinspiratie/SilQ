@@ -725,7 +725,7 @@ class DCPulseImplementation(PulseImplementation):
 class DCRampPulseImplementation(PulseImplementation):
     pulse_class = DCRampPulse
 
-    def target_pulse(self, pulse, interface, **kwargs):
+    def target_pulse(self, pulse: DCRampPulse, interface, **kwargs):
         targeted_pulse = super().target_pulse(pulse, interface, **kwargs)
 
         # Set final delay from interface parameter
@@ -769,14 +769,24 @@ class DCRampPulseImplementation(PulseImplementation):
             # Waveform points subtract the final waveform delay
             waveform_points = int(round(total_points - final_points))
 
-            # All waveforms must have an even number of points
-            if waveform_points % 2:
-                waveform_points -= 1
+                t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, points)
+                voltages = self.pulse.get_voltage(t_list)
 
-            waveforms[ch] = [np.linspace(self.pulse.amplitude_start,
-                                         self.pulse.amplitude_stop,
-                                         waveform_points)]
-            sequences[ch] = np.zeros(1, dtype=int)
+                # Remove duplicate final points (due to DCRampPulse.t_post_ramp)
+                consecutive_duplicates = 0
+                for elem in voltages[::-1]:
+                    if elem != voltages[-1]:
+                        break
+                    else:
+                        consecutive_duplicates += 1
+                points -= max(consecutive_duplicates + 1, 0)
+                points -= points % 2
+                voltages = voltages[:points]
+
+                waveforms[ch] = [voltages]
+                sequences[ch] = np.zeros(1, dtype=int)
+        finally:
+            self.pulse.duration += self.final_delay
 
         return waveforms, sequences
 
