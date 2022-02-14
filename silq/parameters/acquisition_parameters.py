@@ -1081,11 +1081,12 @@ class DCSweepParameter(AcquisitionParameter):
             raise NotImplementedError(
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
 
+        self.pulse_sequence = PulseSequence(pulses=pulses)
         if self.trace_pulse.enabled:
             # Also obtain a time trace at the end
-            pulses.append(self.trace_pulse)
+            trace_pulse, = self.pulse_sequence.add(self.trace_pulse)
+            trace_pulse.t_start = max(pulse.t_stop for pulse in self.pulse_sequence)
 
-        self.pulse_sequence = PulseSequence(pulses=pulses)
         self.pulse_sequence.final_delay = self.final_delay
 
     def analyse(self,

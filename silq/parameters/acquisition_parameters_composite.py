@@ -1,6 +1,5 @@
-from typing import List
 import numpy as np
-from typing import Dict, Iterable
+from typing import Dict, Sequence
 from functools import partial
 import logging
 
@@ -9,10 +8,9 @@ from silq.pulses.pulse_sequences import (
     ESRPulseSequenceComposite,
     NMRPulseSequenceComposite,
 )
-from silq.pulses.pulse_types import Pulse
 from silq.pulses.pulse_sequences import CircuitPulseSequence, ElectronReadoutPulseSequence
 from silq.tools import property_ignore_setter
-from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout
+from silq.analysis.analysis import AnalyseElectronReadout, AnalyseEPR, AnalyseMultiStateReadout, AnalyseJointReadout
 
 from qcodes.instrument.parameter_node import ParameterNode
 from qcodes.config.config import DotDict
@@ -69,6 +67,15 @@ class AcquisitionParameterComposite(AcquisitionParameter):
 
             units += analysis.units
         return units
+
+    def snapshot_base(self, update: bool=False,
+                      params_to_skip_update: Sequence[str]=None,
+                      simplify: bool = False):
+        snapshot = super().snapshot_base(update=update,
+                                         params_to_skip_update=params_to_skip_update,
+                                         simplify=simplify)
+        snapshot['analyses'] = {key: val.snapshot() for key, val in self.analyses.parameter_nodes.items()}
+        return snapshot
 
 
 class ESRParameterComposite(AcquisitionParameterComposite):
@@ -162,7 +169,9 @@ class ESRParameterComposite(AcquisitionParameterComposite):
             dark_counts = None
 
         for name, analysis in self.analyses.parameter_nodes.items():
-            if name == 'EPR':
+            if not analysis.enabled:
+                continue
+            elif name == 'EPR':
                 continue
             if isinstance(analysis, AnalyseElectronReadout):
                 results[name] = analysis.analyse(
@@ -171,6 +180,15 @@ class ESRParameterComposite(AcquisitionParameterComposite):
                     plot=plot,
                     plot_high_low=plot_high_low
                 )
+            elif isinstance(analysis, AnalyseMultiStateReadout):
+                up_proportions_arrs = np.array([
+                    results[label] for label in analysis.settings.readout_labels
+                ])
+                results[name] = analysis.analyse(
+                    up_proportions_arrs=up_proportions_arrs,
+                )
+            elif isinstance(analysis, AnalyseJointReadout):
+                results[name] = analysis.analyse(results=results)
             else:
                 raise SyntaxError(f'Cannot process analysis {name} {type(analysis)}')
 
@@ -234,37 +252,56 @@ class NMRParameterComposite(AcquisitionParameterComposite):
 
         super().__init__(name=name, **kwargs)
 
-    def _connect_analyses(self):
-        self.layout.sample_rate.connect(self.analyses.ESR.settings["sample_rate"])
-        self.layout.sample_rate.connect(self.analyses.NMR_electron_readout.settings["sample_rate"])
-        self.analyses.ESR.settings['labels'].connect(
-            self.analyses.NMR.settings['labels']
+    def _connect_analyses(
+            self,
+            ESR_pulse_sequence=None,
+            NMR_pulse_sequence=None,
+            ESR_analysis=None,
+            NMR_analysis=None,
+            NMR_electron_readout_analysis=None
+    ):
+        if ESR_pulse_sequence is None:
+            ESR_pulse_sequence = self.ESR
+        if NMR_pulse_sequence is None:
+            NMR_pulse_sequence = self.NMR
+        if ESR_analysis is None:
+            ESR_analysis = self.analyses.ESR
+        if NMR_analysis is None:
+            NMR_analysis = self.analyses.NMR
+        if NMR_electron_readout_analysis is None:
+            NMR_electron_readout_analysis = self.analyses.NMR_electron_readout
+
+        self.layout.sample_rate.connect(ESR_analysis.settings["sample_rate"])
+        ESR_analysis.settings['labels'].connect(
+            NMR_analysis.settings['labels']
         )
-        self.analyses.NMR.settings['labels'].connect(
-            self.analyses.ESR.settings['labels']
+        NMR_analysis.settings['labels'].connect(
+            ESR_analysis.settings['labels']
         )
 
-        self.analyses.ESR.settings["shots_per_frequency"].define_get(
-            partial(self.ESR.settings.__getitem__, 'shots_per_frequency')
+        ESR_analysis.settings["shots_per_frequency"].define_get(
+            partial(ESR_pulse_sequence.settings.__getitem__, 'shots_per_frequency')
         )
-        self.analyses.NMR_electron_readout.settings["shots_per_frequency"].define_get(
-            partial(self.NMR.settings.__getitem__, 'shots_per_frequency')
+        ESR_analysis.settings["num_frequencies"].define_get(
+            lambda: len(ESR_pulse_sequence.frequencies)
         )
-        self.analyses.ESR.settings["num_frequencies"].define_get(
-            lambda: len(self.ESR.frequencies)
+        NMR_analysis.settings["num_frequencies"].define_get(
+            lambda: len(ESR_pulse_sequence.frequencies)
         )
-        self.analyses.NMR_electron_readout.settings["num_frequencies"].define_get(
-            lambda: len(self.NMR.frequencies)
-        )
-        self.analyses.NMR.settings["num_frequencies"].define_get(
-            lambda: len(self.ESR.frequencies)
-        )
-        self.analyses.ESR.settings["samples"].define_get(
+        ESR_analysis.settings["samples"].define_get(
             lambda: self.samples
         )
-        self.analyses.NMR_electron_readout.settings["samples"].define_get(
-            lambda: self.samples
-        )
+        if NMR_electron_readout_analysis is not False:
+            self.layout.sample_rate.connect(NMR_electron_readout_analysis.settings["sample_rate"])
+            NMR_electron_readout_analysis.settings["shots_per_frequency"].define_get(
+                partial(NMR_pulse_sequence.settings.__getitem__, 'shots_per_frequency')
+            )
+            NMR_electron_readout_analysis.settings["num_frequencies"].define_get(
+                lambda: len(NMR_pulse_sequence.frequencies)
+            )
+            NMR_electron_readout_analysis.settings["samples"].define_get(
+                lambda: self.samples
+            )
 
     def analyse(self, traces: Dict[str, Dict[str, np.ndarray]] = None, plot: bool = False):
         """Analyse flipping events between nuclear states

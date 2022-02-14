@@ -3,7 +3,7 @@ import numpy as np
 import logging
 from collections import Iterable, Sequence
 from pathlib import Path
-from copy import deepcopy
+from copy import deepcopy, copy
 
 from .pulse_modules import PulseSequence
 from .pulse_types import DCPulse, SinePulse, FrequencyRampPulse, Pulse
@@ -41,6 +41,60 @@ class PulseSequenceGenerator(PulseSequence):
 
     def generate(self):
         raise NotImplementedError('Needs to be implemented in subclass')
+
+    def _update_latest_pulse_settings(
+            self,
+            deepcopy_pulse=False,
+            deepcopy_pulse_sequence=False,
+            **kwargs
+    ):
+        element = kwargs.get('element', self.pulse_settings)
+
+        if isinstance(element, dict):
+            # print(f'copying dict {element}')
+            copied_element = {
+                key: self._update_latest_pulse_settings(
+                    element=val,
+                    deepcopy_pulse_sequence=deepcopy_pulse_sequence,
+                    deepcopy_pulse=deepcopy_pulse
+                ) for key, val in element.items()
+            }
+            if isinstance(element, DotDict):
+                copied_element = DotDict(copied_element)
+        elif isinstance(element, (list, tuple, set)):
+            # print('copying iterable')
+            copied_element = [
+                self._update_latest_pulse_settings(
+                    element=val,
+                    deepcopy_pulse_sequence=deepcopy_pulse_sequence,
+                    deepcopy_pulse=deepcopy_pulse
+                ) for val in element
+            ]
+            if isinstance(element, tuple):
+                copied_element = tuple(copied_element)
+            elif isinstance(element, set):
+                copied_element = set(copied_element)
+        elif isinstance(element, Pulse):
+            # print('copying pulse')
+            if deepcopy_pulse:
+                copied_element = deepcopy(element)
+            else:
+                copied_element = element.copy()
+        elif isinstance(element, PulseSequence):
+            # print('copying pulse sequence')
+            if deepcopy_pulse_sequence:
+                copied_element = deepcopy(element)
+            else:
+                copied_element = element.copy()
+        else:
+            # print('copying other')
+            copied_element = copy(element)
+
+        # Update latest pulse settings
+        if not kwargs:
+            self._latest_pulse_settings = copied_element
+
+        return copied_element
 
 
     def up_to_date(self):
@@ -133,7 +187,10 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.pulse_settings = deepcopy(ElectronReadoutPulseSequence.pulse_settings)
+        # Create a copy of pulse settings
+        self.pulse_settings = self._update_latest_pulse_settings(
+            element=ElectronReadoutPulseSequence.pulse_settings
+        )
 
         self.frequencies = Parameter()
 
@@ -376,7 +433,7 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         for modifier in self.modifiers:
             modifier(self)
 
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class ESRPulseSequenceComposite(PulseSequence):
@@ -534,11 +591,18 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
             self.settings['inter_delay'].append(inter_delay)
 
         # Replace all inter_delays by offresonant pulses
-        if self.settings['RF_inter_pulse'] is not None and self.settings['RF_inter_pulse'].enabled:
+        if self.settings['RF_inter_pulse'] is not None:
+            RF_inter_pulses =  self.settings['RF_inter_pulse']
+            RF_inter_pulses = [RF_inter_pulses] * (self.settings['num_refocusing'] + 1)
+
             RF_pulses = []
-            for RF_pulse, inter_delay in zip(self.settings['RF_pulses'][0], self.settings['inter_delay']):
+            for RF_pulse, RF_pulse_inter, inter_delay in zip(
+                    self.settings['RF_pulses'][0],
+                    RF_inter_pulses,
+                    self.settings['inter_delay']
+            ):
                 RF_pulses.append(RF_pulse)
-                RF_pulse_inter = self.settings['RF_inter_pulse'].copy()
+                RF_pulse_inter = RF_pulse_inter.copy()
                 RF_pulse_inter.duration = inter_delay
                 RF_pulses.append(RF_pulse_inter)
 
@@ -796,7 +860,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
         self._ESR_pulses = self.add(*self.post_pulses)
 
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class T2ElectronPulseSequence(PulseSequenceGenerator):
@@ -948,7 +1012,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class NMRPulseSequence(PulseSequenceGenerator):
@@ -1188,7 +1252,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class NMRCPMGPulseSequence(NMRPulseSequence):
@@ -1407,7 +1471,7 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
         self.add(*self.pulse_settings['post_pulses'])
 
         # Create copy of current pulse settings for comparison later
-        self._latest_pulse_settings = deepcopy(self.pulse_settings)
+        self._update_latest_pulse_settings()
 
 
 class FlipFlopPulseSequence(PulseSequenceGenerator):
@@ -1529,7 +1593,9 @@ class FlipFlopPulseSequence(PulseSequenceGenerator):
 class CircuitPulseSequence(ElectronReadoutPulseSequence):
     def __init__(self, name='circuit', circuits_file=None, **kwargs):
         super().__init__(name=name, **kwargs)
-        self.settings["pulses"] = {}
+        self.settings["pulses"] = {},
+        # Optionally add additional  RF pulses, each with its own readout
+        self.settings['additional_RF_pulses'] = []
 
         self.circuit_index = Parameter(vals=vals.Ints(), parent=False)
         self.circuit = Parameter(vals=vals.Strings())
@@ -1560,7 +1626,10 @@ class CircuitPulseSequence(ElectronReadoutPulseSequence):
                 f'CircuitPulseSequence.settings.pulses: {unknown_gates}'
             )
 
-        self.settings.RF_pulses = self.gates_to_RF_pulses(gates)
+        self.settings.RF_pulses = [
+            *self.gates_to_RF_pulses(gates),
+            *self.settings["additional_RF_pulses"]
+        ]
 
         self.generate()
 
