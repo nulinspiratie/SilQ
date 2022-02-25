@@ -247,8 +247,10 @@ def analyse_circuit_results(
 
     if outcomes_axis is None:
         # Find which axis hosts the distinct circuit outcomes
-        assert np.count_nonzero(np.array(outcomes_arr.shape) == n_outcomes) == 1,\
-        "Multiple axes were found with dimension that matches the number of " \
+        n_matching_axes = np.count_nonzero(
+            np.array(outcomes_arr.shape) == n_outcomes)
+        assert n_matching_axes == 1,\
+        f"{n_matching_axes} axes were found with dimension that matches the number of " \
         "expected outcomes. Please specify which axis distinguishes the circuit" \
         "outcomes."
 
@@ -257,8 +259,10 @@ def analyse_circuit_results(
 
     if circuits_axis is None:
         # Find which axis hosts the distinct circuit outcomes
-        assert np.count_nonzero(np.array(outcomes_arr.shape) == len(circuits)) == 1,\
-        "Multiple axes were found with dimension that matches the number of " \
+        n_matching_axes = np.count_nonzero(
+            np.array(outcomes_arr.shape) == len(circuits))
+        assert n_matching_axes == 1,\
+        f"{n_matching_axes} axes were found with dimension that matches the number of " \
         "circuits. Please specify which axis distinguishes the circuits."
 
         circuits_axis = np.argmin(np.array(outcomes_arr.shape), len(circuits))
