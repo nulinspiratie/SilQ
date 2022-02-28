@@ -831,6 +831,37 @@ class DCSweepPlot(ScanningPlot):
 
         self.actions = [MoveGates(self)]
 
+    def _update_point(self, ax=None):
+        # This implicitly assumes the trace_pulse has a connection_label and an
+        # amplitude. There should be no reason that the trace_pulse will not be
+        # correctly initialized.
+        new_x = self.x_gate.get_latest()
+        new_y = self.x_gate.get_latest()
+
+
+        connection = self.layout.get_connection(
+            self.parameter.trace_pulse.connection_label)
+
+        # Add scaled offset for "read point" in diagram.
+        # Since pulse is already scaled to device voltages, we
+        # only need to apply the combination scaling.
+        if isinstance(connection, CombinedConnection):
+            A = self.parameter.trace_pulse.amplitude
+            for con, scale in zip(connection.connections,
+                                  connection.scale):
+                if self.x_gate.name == con.label:
+                    new_x += A * scale
+                elif self.y_gate.name == con.label:
+                    new_y += A * scale
+
+        if self.point is None:
+            assert ax is not None, "For the initial point to be drawn, axes must" \
+                                   "be provided."
+            self.point = ax.plot(new_x, new_y, 'o' + self.point_color, ms=5)[0]
+        else:
+            self.point.set_xdata(new_x)
+            self.point.set_ydata(new_y)
+
     def update_plot(self, initialize=False):
         """Update plot with new 2D DC scan.
 
@@ -869,9 +900,7 @@ class DCSweepPlot(ScanningPlot):
                         self.x_gate = getattr(self.station, self.x_label)
                         self.y_gate = getattr(self.station, self.y_label)
 
-                        self.point = self[k].plot(self.x_gate.get_latest(),
-                                                  self.y_gate.get_latest(),
-                                                  'o' + self.point_color, ms=5)[0]
+                        self._update_point(ax=self[k])
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
@@ -885,26 +914,7 @@ class DCSweepPlot(ScanningPlot):
                     result_config['x'] = self.parameter.setpoints[k][1]
                     result_config['y'] = self.parameter.setpoints[k][0]
                     result_config['z'] = result
-                    if self.point is not None:
-                        new_x = self.x_gate.get_latest()
-                        new_y = self.x_gate.get_latest()
-                        A = self.parameter.trace_pulse.amplitude
-                        connection = self.layout.get_connection(
-                            self.parameter.trace_pulse.connection_label)
-
-                        # Add scaled offset for "read point" in diagram.
-                        # Since pulse is already scaled to device voltages, we
-                        # only need to apply the combination scaling.
-                        if isinstance(connection, CombinedConnection):
-                            for con, scale in zip(connection.connections,
-                                                  connection.scale):
-                                if self.x_gate.name == con.label:
-                                    new_x += A * scale
-                                elif self.y_gate.name == con.label:
-                                    new_y += A * scale
-
-                        self.point.set_xdata(new_x)
-                        self.point.set_ydata(new_y)
+                    self._update_point()
                 else:
                     result_config['y'] = result
 
