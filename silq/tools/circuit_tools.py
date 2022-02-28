@@ -7,7 +7,6 @@ from pygsti.protocols.gst import GateSetTomographyDesign
 from pygsti.protocols.rpe import RobustPhaseEstimationDesign
 from pygsti.circuits import Circuit
 
-from silq import config
 from qcodes import DataArray
 
 def convert_circuit(circuit, target_type: Union[str, List[str], Circuit] = str,
@@ -83,6 +82,10 @@ def _get_experiment_dir(filepath: Union[str, Path],
     Raises:
         FileNotFoundError
     """
+    # Defer importing of silq config as circuit_tools is typically imported
+    # before the config is created.
+    from silq import config
+
     assert config_entry in config, f'config.{config_entry} does not exist.'
     assert isinstance(config[config_entry], str), \
         f"Config entry for experiment designs path must be a string and not " \
