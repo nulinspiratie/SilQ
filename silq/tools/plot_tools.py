@@ -800,6 +800,7 @@ class DCSweepPlot(ScanningPlot):
         **kwargs: Additional kwargs to `InteractivePlot` and ``MatPlot``.
     """
     gate_mapping = {}
+    trace_ylim = (-0.1, 1.3)
     point_color = 'r'
 
     # DCSweepParameter type
@@ -827,7 +828,7 @@ class DCSweepPlot(ScanningPlot):
         super().__init__(parameter, subplots=subplots, **kwargs)
 
         if parameter.trace_pulse.enabled:
-            self[1].set_ylim(-0.1, 1.3)
+            self[1].set_ylim(*self.trace_ylim)
 
         self.actions = [MoveGates(self)]
 
