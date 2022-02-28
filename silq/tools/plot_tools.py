@@ -16,6 +16,7 @@ from qcodes.station import Station
 from qcodes.data.data_set import DataSet
 from qcodes.data.data_array import DataArray
 from qcodes.utils.helpers import PerformanceTimer
+from silq.meta_instruments.layout import Connection, CombinedConnection
 
 __all__ = ['PlotAction', 'SetGates', 'MeasureSingle', 'MoveGates',
            'SwitchPlotIdx', 'InteractivePlot', 'SliderPlot', 'CalibrationPlot',
@@ -885,8 +886,28 @@ class DCSweepPlot(ScanningPlot):
                     result_config['y'] = self.parameter.setpoints[k][0]
                     result_config['z'] = result
                     if self.point is not None:
-                        self.point.set_xdata(self.x_gate.get_latest())
-                        self.point.set_ydata(self.y_gate.get_latest())
+                        new_x = self.x_gate.get_latest()
+                        new_y = self.x_gate.get_latest()
+
+                        connection = self.layout.get_connection(
+                            self.parameter.trace_pulse.connection_label)
+
+                        if isinstance(connection, CombinedConnection):
+                            connections = connection.connections
+                            scales = {c.label: s for c, s in
+                                      zip(connections, connection.scale)}
+                        else:
+                            scales = {connection.label:connection.scale}
+        
+                        # Add scaled offset for "read point" in diagram.
+                        A = self.parameter.trace_pulse.amplitude
+                        if self.x_gate.name in scales:
+                            new_x += A * scales[self.x_gate.name]
+                        if self.y_gate.name in scales:
+                            new_y += A * scales[self.y_gate.name]
+
+                        self.point.set_xdata(new_x)
+                        self.point.set_ydata(new_y)
                 else:
                     result_config['y'] = result
 
