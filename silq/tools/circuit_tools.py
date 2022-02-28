@@ -173,9 +173,9 @@ def create_dataset(results, circuits:List[Circuit], path=None):
     """Create a pyGSTi DataSet from a results array.
 
     Args:
-        results: A dictionary of results with keys for each measurement outcome
-                ('0', '1' for 1Q, '00', '01' etc. for 2Q and so on).
-                The value of each entry will be an array of counts.
+        results: A nested dictionary of circuit results, with the summed counts
+                for each possible outcome. The dict value for each circuit is a
+                set of outcome_label-count pairs.
         circuits: An ordered list of the circuits, must be the same length as
                 the number of values in each dictionary entry.
         path: If set, write the resulting dataset to file at the specified path.
@@ -185,11 +185,6 @@ def create_dataset(results, circuits:List[Circuit], path=None):
     """
 
     dataset = pygsti.data.DataSet()
-
-    # Reconstruct results dictionary to use circuits as keys
-    # Each circuit has a number of outcomes (e.g. '0' or '1') with recorded counts
-    # results = {circuit: {outcome: results[outcome][circuit_idx] for outcome in results.keys()}
-    #                for circuit_idx, circuit in enumerate(circuits)}
 
     for k, circuit in enumerate(circuits):
         dataset.add_count_dict(circuit, results[circuit])
@@ -221,7 +216,10 @@ def analyse_circuit_results(
         circuits_axis: Specifies which axis distinguishes each circuit.
         outcomes_axis: Specifies which axis distinguishes each circuit outcome.
         outcomes_mapping: Optional, a mapping between each outcome and the index
-                    into the outcomes_arr on the outcomes_axis.
+                    into the outcomes_arr on the outcomes_axis. This is useful if
+                    the recorded results for each outcome aren't in binary order.
+                    Defualt mapping is from index i to its binary string
+                    representation, e.g. index 3 corresponds to outcome '11'.
 
     Returns:
         A dictionary of circuit results, with the summed counts for each
