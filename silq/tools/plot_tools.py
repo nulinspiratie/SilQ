@@ -918,6 +918,7 @@ class DCSweepPlot(ScanningPlot):
                     self._update_point()
                 else:
                     result_config['y'] = result
+                    result_config['x'] = self.parameter.setpoints[k][0]
 
         super().update_plot()
 
