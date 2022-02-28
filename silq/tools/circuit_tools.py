@@ -237,7 +237,9 @@ def analyse_circuit_results(
 
 
     target_model = exp_design.create_target_model()
-    outcome_labels = list(target_model.povms['Mdefault'].keys())
+    # Get unique set of outcome labels for this model (normally '0', '1', etc.)
+    outcome_labels = set(
+        [key for povm in target_model.povms.values() for key in povm.keys()])
     n_outcomes = len(outcome_labels)
 
     if outcomes_mapping is None:
