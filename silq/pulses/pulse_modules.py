@@ -1482,7 +1482,7 @@ class PulseSequence(ParameterNode):
         max_time = len(self.t_list)
 
         # Utility function to find nearest idx
-        get_idx = lambda val, l: np.where(abs(val - np.array(l)) < 1e-6)[0][0]
+        get_idx = lambda val, l: np.where(abs(val - np.array(l)) < 1e-9)[0][0]
 
         if connections is None:
             connections = set([pulse.connection_label for pulse in self])
@@ -1505,7 +1505,7 @@ class PulseSequence(ParameterNode):
                 max_frequency = np.max([pulse.frequency, max_frequency])
                 min_frequency = np.min([pulse.frequency, min_frequency])
 
-        f_norm = interp1d([min_frequency, max_frequency], [1, 2],
+        f_norm = interp1d([min_frequency*0.99, max_frequency*1.01], [1, 2],
                           bounds_error=False, fill_value='extrapolate')
 
         # Convert pulses into schematic signals
@@ -1529,7 +1529,7 @@ class PulseSequence(ParameterNode):
                         [pulse.amplitude_start, pulse.amplitude_stop,
                          min_amplitude])
                 elif hasattr(pulse, 'power'):
-                    amplitude = np.sqrt(np.power(10, pulse.power)*1e-3 * 50)
+                    amplitude = np.sqrt((10.0 ** pulse.power)*1e-3 * 50)
                     max_amplitude = np.max([amplitude, max_amplitude])
                     min_amplitude = np.min([amplitude, min_amplitude])
 
@@ -1553,7 +1553,7 @@ class PulseSequence(ParameterNode):
                 elif isinstance(pulse, SinePulse):
                     t = np.linspace(p_start, p_stop, points_per_pulse)
                     f = f_norm(pulse.frequency)
-                    y = np.sin(2 * np.pi * f * (t - t[0]))
+                    y = np.sin(2 * np.pi * f * (t - t[0]) + pulse.phase)
                 elif isinstance(pulse, FrequencyRampPulse):
                     t = np.linspace(p_start, p_stop, points_per_pulse)
                     f = f_norm(pulse.frequency_start)
@@ -1629,7 +1629,7 @@ class PulseSequence(ParameterNode):
                     ax.fill_between([times[c][kk][0], times[c][kk][-1]],
                                     k * connection_spacing,
                                     k * connection_spacing + 1,
-                                    color='g', lw=0, alpha=0.3, zorder=-10)
+                                    color='C2', lw=0, alpha=0.3, zorder=-10)
 
                 if pulse_labels:
                     if isinstance(pulse, SinePulse):
