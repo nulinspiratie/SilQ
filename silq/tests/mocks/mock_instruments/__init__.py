@@ -1,3 +1,4 @@
 from .mock_trigger_instrument import MockTriggerInstrument
 from .mock_awg_instrument import MockAWGInstrument
 from .mock_digitizer_instrument import MockDigitizerInstrument
+from .mock_microwave_instrument import MockMicrowaveInstrument
