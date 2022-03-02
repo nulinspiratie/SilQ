@@ -1519,7 +1519,7 @@ class PulseSequence(ParameterNode):
             max_amplitude = -np.inf
             min_amplitude = np.inf
             for pulse in pulses[c]:
-                if hasattr(pulse, 'amplitude'):
+                if hasattr(pulse, 'amplitude') and pulse.amplitude is not None:
                     max_amplitude = np.max([pulse.amplitude, max_amplitude])
                     min_amplitude = np.min([pulse.amplitude, min_amplitude])
                 elif hasattr(pulse, 'amplitude_start'):
@@ -1528,6 +1528,10 @@ class PulseSequence(ParameterNode):
                     min_amplitude = np.min(
                         [pulse.amplitude_start, pulse.amplitude_stop,
                          min_amplitude])
+                elif hasattr(pulse, 'power'):
+                    amplitude = np.sqrt(np.power(10, pulse.power)*1e-3 * 50)
+                    max_amplitude = np.max([amplitude, max_amplitude])
+                    min_amplitude = np.min([amplitude, min_amplitude])
 
             amp_map = interp1d([min_amplitude, max_amplitude], [-1, 1])
 
