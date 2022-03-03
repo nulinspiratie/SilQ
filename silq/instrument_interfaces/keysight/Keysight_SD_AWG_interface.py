@@ -241,12 +241,13 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                 inactive_voltage = 0
 
             default_sampling_rate = self.default_sampling_rates()[idx]
-            prescaler = 0 if default_sampling_rate == 500e6 else int(
-                100e6 / default_sampling_rate)
+            max_sample_rate = self.instrument._max_sample_rate
+            prescaler = int(max_sample_rate / default_sampling_rate / 5)
 
             # Handle delays between waveforms
             t = 0
             clock_rate = 100e6
+
             total_samples = 0  # counted at clock rate
             for pulse in self.pulse_sequence.get_pulses(
                     output_channel=channel.name):
@@ -291,8 +292,8 @@ class Keysight_SD_AWG_Interface(InstrumentInterface):
                     threshold=error_threshold)
 
                 for waveform in pulse_waveforms:
-                    sampling_rate = 500e6 if waveform['prescaler'] == 0 else \
-                        100e6 / waveform['prescaler']
+                    sampling_rate = max_sample_rate if waveform['prescaler'] == 0 else \
+                        max_sample_rate / waveform['prescaler'] / 5
                     start_samples = int(round(waveform['t_start'] * clock_rate))
 
                     waveform['delay'] = max((start_samples - total_samples) * sampling_rate / clock_rate, 0)
@@ -514,8 +515,7 @@ class SinePulseImplementation(PulseImplementation):
         waveform_minimum = 15  # the minimum size of a waveform
 
 
-        prescaler = 0 if sampling_rate == 500e6 else \
-            int(100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
         period_sample = 1 / sampling_rate
         assert self.pulse.frequency < sampling_rate/ 2, \
             f'Sine frequency {self.pulse.frequency} is too high for' \
@@ -629,7 +629,8 @@ class DCRampPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
+        # prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -661,7 +662,7 @@ class FrequencyRampPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -699,7 +700,7 @@ class AWGPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else (100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -730,7 +731,7 @@ class CombinationPulseImplementation(PulseImplementation):
         full_name = self.pulse.full_name or 'none'
 
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
 
         samples = int(self.pulse.duration * sampling_rate)
         samples -= samples % instrument.waveform_multiple
@@ -758,8 +759,6 @@ class TriggerPulseImplementation(PulseImplementation):
     pulse_class = TriggerPulse
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
-        # sampling_rate = default_sampling_rate
-        # prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
         logger.info('Trigger pulse implementation overrides default sampling rates and uses 100 MSa/s.')
         sampling_rate = 100e6
         prescaler = 1
@@ -788,7 +787,7 @@ class MarkerPulseImplementation(PulseImplementation):
 
     def implement(self, interface, instrument, default_sampling_rate, **kwargs):
         sampling_rate = default_sampling_rate
-        prescaler = 0 if sampling_rate == 500e6 else int(100e6 / sampling_rate)
+        prescaler = int(instrument._max_sample_rate / sampling_rate / 5)
         samples = int(self.pulse.duration * sampling_rate)
         assert samples >= instrument.waveform_minimum, \
             f"pulse {self.pulse} too short"
