@@ -15,7 +15,7 @@ from qcodes import Instrument, MatPlot
 from silq import config
 from silq.pulses import *
 from silq.pulses.pulse_sequences import ESRPulseSequence, NMRPulseSequence, \
-    T2ElectronPulseSequence, FlipFlopPulseSequence, ESRRamseyDetuningPulseSequence, NMRCPMGPulseSequence
+    T2ElectronPulseSequence, FlipFlopPulseSequence, ESRRamseyDetuningPulseSequence
 from silq.analysis import analysis
 from silq.tools.general_tools import SettingsClass, clear_single_settings, \
     attribute_from_config, UpdateDotDict, convert_setpoints, \
@@ -23,8 +23,8 @@ from silq.tools.general_tools import SettingsClass, clear_single_settings, \
 
 __all__ = ['AcquisitionParameter', 'DCParameter', 'TraceParameter',
            'DCSweepParameter', 'EPRParameter', 'ESRParameter',
-           'NMRParameter', 'EDSRParameter', 'VariableReadParameter', 'BlipsParameter', 'T2ElectronParameter',
-           'NMRCPMGParameter','FlipNucleusParameter', 'FlipFlopParameter', 'NeuralNetworkParameter',
+           'NMRParameter', 'EDSRParameter', 'VariableReadParameter', 'BlipsParameter',
+           'FlipNucleusParameter', 'FlipFlopParameter', 'NeuralNetworkParameter',
            'NeuralRetuneParameter','ESRRamseyDetuningParameter']
 
 logger = logging.getLogger(__name__)
@@ -141,6 +141,7 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         self.continuous = continuous
 
         self.samples = None
+        self.raw_traces = None
         self.traces = None
         self.dataset = None
         self.results = None
@@ -256,6 +257,20 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
         if select is None or key in select:
             setattr(self, key, val)
 
+    def preprocess_traces(self, traces):
+        """Optional routine to modify traces as soon as they are acquired.
+
+        One example for needing this function is if you have to reshuffle the
+        pulses, e.g. by doing soft averaging.
+
+        Args:
+            traces: Traces to preprocess
+
+        Returns:
+            Preprocessed traces
+        """
+        return traces
+
     def setup(self,
               start: bool = None,
               **kwargs):
@@ -319,8 +334,10 @@ class AcquisitionParameter(SettingsClass, MultiParameter):
             save_traces = False
 
         # Perform acquisition
-        self.traces = self.layout.acquisition(stop=stop,
+        self.raw_traces = self.layout.acquisition(stop=stop,
                                               save_traces=save_traces,**kwargs)
+        self.traces = self.preprocess_traces(self.raw_traces)
+
         return self.traces
 
     def analyse(self,
@@ -1949,7 +1966,6 @@ class NMRParameter(AcquisitionParameter):
         up_proportions = np.zeros((len(self.ESR_frequencies), self.samples))
         state_probability = np.zeros(len(self.ESR_frequencies))
         threshold_up_proportion = np.zeros(len(self.ESR_frequencies))
-
         for f_idx, ESR_frequency in enumerate(self.ESR_frequencies):
             for sample in range(self.samples):
                 # Create array containing all read traces
@@ -1969,7 +1985,6 @@ class NMRParameter(AcquisitionParameter):
                     threshold_voltage=threshold_voltage)
                 up_proportions[f_idx, sample] = read_result['up_proportion']
                 results['results_read'].append(read_result)
-
 
             if self.threshold_up_proportion is None:
                 threshold_up_proportion[f_idx] = analysis.determine_threshold_up_proportion_single_state(
@@ -2662,99 +2677,3 @@ class ESRRamseyDetuningParameter(AcquisitionParameter):
 
         self.results = results
         return results
-
-class NMRCPMGParameter(NMRParameter):
-    """ Parameter for most measurements involving a CPMG pulse.
-
-    This parameter can apply several NMR pulses, and also measure several ESR
-    frequencies. It uses the `NMRCPMGPulseSequence`, which will generate a pulse
-    sequence for a CPMG experiment.
-
-    Refer to NMRCPMGPulseSequence to learn about the pulse sequence performed
-    by this parameter
-
-    Refer to the NMRParameter to learn about the acquisition of this parameter.
-
-    Args:
-        name: Parameter name
-        **kwargs: Additional kwargs passed to `AcquisitionParameter`
-
-    Parameters:
-        NMR (dict): `NMRCPMGPulseSequence` pulse settings for NMR. Settings are:
-            ``stage_pulse``, ``NMR_pulse``, ``NMR_pulses``, ``pre_delay``,
-            ``inter_delay``, ``post_delay``.
-        ESR (dict): `NMRCPMGPulseSequence` pulse settings for ESR. Settings are:
-            ``ESR_pulse``, ``stage_pulse``, ``ESR_pulses``, ``read_pulse``,
-            ``pulse_delay``.
-        EPR (dict): `PulseSequenceGenerator` settings for EPR. This is optional
-            and can be toggled in ``EPR['enabled']``. If disabled, contrast is
-            not calculated.
-        pre_pulses (List[Pulse]): Pulses to place at the start of the sequence.
-        post_pulses (List[Pulse]): Pulses to place at the end of the sequence.
-        pulse_sequence (PulseSequence): Pulse sequence used for acquisition.
-        ESR_frequencies (List[float]): List of ESR frequencies to use. When set,
-            a copy of ``NMRCPMGPulseSequence.ESR['ESR_pulse']`` is created for each
-            frequency, and added to ``NMRCPMGPulseSequence.ESR['ESR_pulses']``.
-        samples (int): Number of acquisition samples
-        results (dict): Results obtained after analysis of traces.
-        t_skip (float): initial part of read trace to ignore for measuring
-            blips. Useful if there is a voltage spike at the start, which could
-            otherwise be measured as a ``blip``. Retrieved from
-            ``silq.config.properties.t_skip``.
-        t_read (float): duration of read trace to include for measuring blips.
-            Useful if latter half of read pulse is used for initialization.
-            Retrieved from ``silq.config.properties.t_read``.
-        threshold_up_proportion (Union[float, Tuple[float, float]): threshold
-            for up proportions needed to determine ESR pulse to be on-resonance.
-            If tuple, first element is threshold below which ESR pulse is
-            off-resonant, and second element is threshold above which ESR pulse
-            is on-resonant. Useful for filtering of up proportions at boundary.
-            Retrieved from
-            ``silq.config.properties.threshold_up_proportion``.
-        traces (dict): Acquisition traces segmented by pulse and acquisition
-            label
-        silent (bool): Print results after acquisition
-        continuous (bool): If True, instruments keep running after acquisition.
-            Useful if stopping/starting instruments takes a considerable amount
-            of time.
-        properties_attrs (List[str]): Attributes to match with
-            ``silq.config.properties`` See notes below for more info.
-        save_traces (bool): Save acquired traces to disk.
-            If the acquisition has been part of a measurement, the traces are
-            stored in a subfolder of the corresponding data set.
-            Otherwise, a new dataset is created.
-        dataset (DataSet): Traces DataSet
-        base_folder (str): Base folder in which to save traces. If not specified,
-            and acquisition is part of a measurement, the base folder is the
-            folder of the measurement data set. Otherwise, the base folder is
-            the default data folder
-        subfolder (str): Subfolder within the base folder to save traces.
-
-    Note:
-        - The `NMRCPMGPulseSequence` does not have an empty-plunge-read (EPR)
-          sequence, and therefore does not add a contrast or dark counts.
-          Verifying that the system is in tune is therefore a little bit tricky.
-
-    """
-    def __init__(self, name: str = 'NMR_CPMG',
-                 names: List[str] = ['flips', 'flip_probability',
-                                     'up_proportions', 'state_probability',
-                                     'threshold_up_proportion'],
-                 **kwargs):
-        """
-        Parameter used to do nuclear CPMG sequences
-        """
-
-        super().__init__(name=name,
-                         names=names,
-                         **kwargs)
-
-        self.pulse_sequence = NMRCPMGPulseSequence()
-        self.NMR = self.pulse_sequence.NMR
-        self.ESR = self.pulse_sequence.ESR
-        self.pre_pulses = self.pulse_sequence.pulse_settings['pre_pulses']
-        self.pre_ESR_pulses = self.pulse_sequence.pulse_settings['pre_ESR_pulses']
-        self.post_pulses = self.pulse_sequence.pulse_settings['post_pulses']
-
-
-   

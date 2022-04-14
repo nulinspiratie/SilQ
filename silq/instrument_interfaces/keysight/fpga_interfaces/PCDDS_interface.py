@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class PCDDSInterface(InstrumentInterface):
+    # Maximum pulse and instruction idx to be cleared.
+    # Only used in decoupled mode
+    pulse_max_idx = 200
+    instruction_max_idx = 500
+
     def __init__(self, instrument_name, **kwargs):
         super().__init__(instrument_name=instrument_name, **kwargs)
 
@@ -58,6 +63,25 @@ class PCDDSInterface(InstrumentInterface):
             docstring="Whether to only trigger once at the start or every pulse"
         )
 
+        self.initial_instruction_idxs = Parameter(
+            initial_value={'ch0': 0, 'ch1': 0, 'ch2': 0, 'ch3': 0},
+            docstring="First instruction index for each channel to start, usually zero"
+        )
+
+        self.instruction_idx_offsets = Parameter(
+            initial_value={'ch0': 0, 'ch1': 0, 'ch2': 0, 'ch3': 0},
+            docstring="First instruction index for each channel during programming, usually zero"
+        )
+        self.pulse_idx_offsets = Parameter(
+            initial_value={'ch0': 0, 'ch1': 0, 'ch2': 0, 'ch3': 0},
+            docstring="First pulse index for each channel during programming, usually zero"
+        )
+
+    @property
+    def decoupled_mode(self):
+        from qcodes.instrument_drivers.CQC2T.PCDDS import PCDDS
+        return not isinstance(self.instrument, PCDDS)
+
     @property
     def active_channel_ids(self):
         """Sorted list of active channel id's"""
@@ -93,13 +117,151 @@ class PCDDSInterface(InstrumentInterface):
                           for t in t_list if t != self.pulse_sequence.duration]
         return trigger_pulses
 
-    def setup(self, **kwargs):
+    def setup_decoupled(self):
+        assert self.auto_advance(), "decoupled setup has only been programmed with auto_advance enabled"
+
+        # Clear pulses and instruction up to a max idx
+        # Max idx is added in case you want to keep high-index pulses/instructions
+        for channel in self.instrument.channels:
+            if self.pulse_max_idx is not None:
+                pulses = [p for p in channel.pulses() if p['pulse_idx'] > self.pulse_max_idx]
+            else:
+                pulses = []
+            channel.pulses().clear()
+            channel.pulses().extend(pulses)
+
+            if self.instruction_max_idx is not None:
+                instructions = [
+                    instr for instr in channel.instruction_sequence()
+                    if instr['instruction_idx'] > self.instruction_max_idx
+                ]
+            else:
+                instructions = []
+            channel.instruction_sequence().clear()
+            channel.instruction_sequence().extend(instructions)
+
+        PCDDS_pulses = {channel.id: [] for channel in self.active_instrument_channels}
+        PCDDS_instructions = {channel.id: [] for channel in self.active_instrument_channels}
+        # Keep second pulse list without idxs for indexing
+        _PCDDS_pulses_no_idxs = {channel.id: [] for channel in self.active_instrument_channels}
+
+        def add_pulse_and_instruction(channel, pulse_implementation):
+            instruction_offset = self.instruction_idx_offsets()[channel.name]
+            pulse_offset = self.pulse_idx_offsets()[channel.name]
+            try:
+                pulse_idx = _PCDDS_pulses_no_idxs[channel.id].index(pulse_implementation)
+                pulse_idx += pulse_offset
+            except ValueError:
+                _PCDDS_pulses_no_idxs[channel.id].append(pulse_implementation.copy())
+                pulse_idx = len(PCDDS_pulses[channel.id])
+                pulse_idx += pulse_offset
+                pulse_implementation['pulse_idx'] = pulse_idx
+                PCDDS_pulses[channel.id].append(pulse_implementation)
+
+            # Add corresponding instruction
+            instruction_idx = len(PCDDS_instructions[channel.id])
+            PCDDS_instructions[channel.id].append({
+                'instruction_idx': instruction_idx + instruction_offset,
+                'pulse_idx': pulse_idx,
+                'next_instruction': instruction_idx + instruction_offset + 1
+            })
+
+            return pulse_idx, instruction_idx
+
+        # First pulses are 0V DC pulses
+        # Only trigger on first pulse
+        # t_start and duration must be set but are irrelevant
+        DC_0V_pulse = self.get_pulse_implementation(
+            DCPulse('initial_0V', t_start=0, duration=0, amplitude=0)
+        )
+
+        current_pulses = {channel.name: DC_0V_pulse
+                          for channel in self.active_instrument_channels}
+
+        for channel in self.active_instrument_channels:
+            current_pulse = current_pulses[channel.name]
+            pulse_implementation = current_pulse.implementation.implement()
+            add_pulse_and_instruction(channel, pulse_implementation)
+
+        # Use clock cycles for maximum accuracy
+        clk = self.instrument.ch1.clk
+        timing_offset = self.instrument.ch1.pulse_timing_offset
+
+        t_min = min(self.pulse_sequence.t_list)
+        cycles_min = int(round(t_min * clk))
+
+        for channel in self.active_instrument_channels:
+            cycles = cycles_min
+            channel_pulses = self.pulse_sequence.get_pulses(output_channel=channel.name)
+            for pulse in channel_pulses:
+                start_cycles = int(round(pulse.t_start * clk))
+                delta_cycles = start_cycles - cycles
+                if delta_cycles > timing_offset:
+                    # Add 0V pulse to bridge gap
+                    pulse_implementation = DC_0V_pulse.implementation.implement()
+                    pulse_implementation['duration'] = delta_cycles / clk
+                    add_pulse_and_instruction(channel, pulse_implementation)
+
+                    # Increment counters
+                    cycles += delta_cycles
+                elif delta_cycles > 1:
+                    logger.warning(
+                        f'Pulse {pulse} starts too early: {start_cycles} vs {cycles}. '
+                        'Could mean the pulse has insufficient delay. '
+                        'Next pulse will have a longer duration to bridge gap'
+                    )
+                elif delta_cycles < -1:
+                    logger.warning(
+                        f'Pulse {pulse} starts too early: {start_cycles} vs {cycles}. '
+                        'This error should not occur unless pulses overlap. '
+                        'Next pulse will have shorter duration to bridge gap'
+                    )
+
+                stop_cycles = int(round(pulse.t_stop * clk))
+                delta_cycles = stop_cycles - cycles
+                if delta_cycles <= timing_offset:
+                    logger.warning(f'Pulse {pulse} is too short. '
+                                   f'{stop_cycles} vs {cycles} cycles')
+                    delta_cycles = 15
+
+                # Implement pulse
+                pulse_implementation = pulse.implementation.implement()
+                pulse_implementation['duration'] = delta_cycles / clk
+                add_pulse_and_instruction(channel, pulse_implementation)
+
+                # Increment counters
+                cycles += delta_cycles
+
+            # Add a final DC pulse that requires triggering to restart
+            pulse_implementation = DC_0V_pulse.implementation.implement()
+            add_pulse_and_instruction(channel, pulse_implementation)
+
+            instruction_idx_offset = self.instruction_idx_offsets()[channel.name]
+            PCDDS_instructions[channel.id][-1]['next_instruction'] = instruction_idx_offset + 1
+            # TODO: Add check that final DC pulse is not added if last pulse
+            # ends at pulsesequence.duration, in which case the last pulse
+            # should be triggered
+
+            for pulse in PCDDS_pulses[channel.id]:
+                channel.write_instr(pulse)
+
+            for instruction in PCDDS_instructions[channel.id]:
+                channel.write_instruction(**instruction)
+
+            # Sort pulses and instructions on PCDDS channel
+            pulses = sorted(channel.pulses(), key=(lambda pulse: pulse['pulse_idx']))
+            channel.pulses().clear()
+            channel.pulses().extend(pulses)
+            instructions = sorted(
+                channel.instruction_sequence(),
+                key=(lambda instruction: instruction['instruction_idx'])
+            )
+            channel.instruction_sequence().clear()
+            channel.instruction_sequence().extend(instructions)
+
+    def setup_coupled(self):
         for channel in self.instrument.channels:
             channel.instruction_sequence().clear()
-        self.instrument.channels.output_enable(False)
-        self.instrument.channels.pcdds_enable(True)
-
-        assert self.use_trig_in(), "Interface not yet programmed for pxi triggering"
 
         # First pulses are 0V DC pulses
         # t_start and duration must be set but are irrelevant
@@ -207,12 +369,28 @@ class PCDDSInterface(InstrumentInterface):
                         pulse_implementation['next_pulse'] = 1
                     channel.write_instr(pulse_implementation)
 
+    def setup(self, **kwargs):
+        self.instrument.channels.output_enable(False)
+        self.instrument.channels.pcdds_enable(True)
+
+        self.initial_instruction_idxs().update(ch0=0, ch1=0, ch2=0, ch3=0)
+
+        assert self.use_trig_in(), "Interface not yet programmed for pxi triggering"
+
+        # Perform different setup routine if FPGA image has pulses and
+        # instructions separated
+        if self.decoupled_mode:
+            self.setup_decoupled()
+        else:
+            self.setup_coupled()
+
         # targeted_pulse_sequence is the pulse sequence that is currently setup
         self.targeted_pulse_sequence = self.pulse_sequence
         self.targeted_input_pulse_sequence = self.input_pulse_sequence
 
     def start(self):
-        self.active_instrument_channels.set_next_pulse(pulse=0, update=True)
+        for channel in self.active_instrument_channels:
+            channel.set_next_pulse(pulse=self.initial_instruction_idxs()[channel.name], update=True)
         self.active_instrument_channels.output_enable(True)
 
     def stop(self):
@@ -223,16 +401,22 @@ class DCPulseImplementation(PulseImplementation):
     pulse_class = DCPulse
 
     def implement(self, *args, **kwargs):
-        return {'instr': 'dc',
-                'amp': self.pulse.amplitude}
+        return {
+            'instr': 'dc',
+            'amp': self.pulse.amplitude,
+            'label': self.pulse.name
+        }
 
 
 class MarkerPulseImplementation(PulseImplementation):
     pulse_class = MarkerPulse
 
     def implement(self, *args, **kwargs):
-        return {'instr': 'dc',
-                'amp': self.pulse.amplitude}
+        return {
+            'instr': 'dc',
+            'amp': self.pulse.amplitude,
+            'label': self.pulse.name
+        }
 
 
 class SinePulseImplementation(PulseImplementation):
@@ -242,12 +426,14 @@ class SinePulseImplementation(PulseImplementation):
         # TODO distinguish between abolute / relative phase
         phase = self.pulse.phase
 
-        return {'instr': 'sine',
-                'freq': self.pulse.frequency,
-                'amp': self.pulse.amplitude,
-                'offset': self.pulse.offset,
-                'phase': phase
-                }
+        return {
+            'instr': 'sine',
+            'freq': self.pulse.frequency,
+            'amp': self.pulse.amplitude,
+            'offset': self.pulse.offset,
+            'phase': phase,
+            'label': self.pulse.name
+        }
 
 
 class FrequencyRampPulseImplementation(PulseImplementation):
@@ -256,10 +442,12 @@ class FrequencyRampPulseImplementation(PulseImplementation):
     def implement(self, *args, **kwargs):
         accumulation = (self.pulse.frequency_stop -
                         self.pulse.frequency_start) / self.pulse.duration
-        return {'instr': 'chirp',
-                'freq': self.pulse.frequency_start,
-                'amp': self.pulse.amplitude,
-                'offset': self.pulse.offset,
-                'phase': getattr(self.pulse, 'phase', 0),
-                'accum': accumulation
-                }
+        return {
+            'instr': 'chirp',
+            'freq': self.pulse.frequency_start,
+            'amp': self.pulse.amplitude,
+            'offset': self.pulse.offset,
+            'phase': getattr(self.pulse, 'phase', 0),
+            'accum': accumulation,
+            'label': self.pulse.name
+        }

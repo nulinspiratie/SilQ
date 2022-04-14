@@ -18,7 +18,7 @@ def convert_circuit(circuit, target_type: Type = str, qubit_labels=None):
         >>> convert_circuit('GxGi', target_type=list)
         ['Gx', 'Gi']
     """
-    from pygsti.objects.circuit import Circuit
+    from pygsti.circuits.circuit import Circuit
     if qubit_labels is None:
         idle_label = 'Gi'
         final_suffix = ''

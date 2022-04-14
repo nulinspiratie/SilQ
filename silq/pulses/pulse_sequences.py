@@ -11,7 +11,7 @@ from silq.tools.circuit_tools import convert_circuit, load_circuits
 from qcodes import Parameter, Measurement, DataSet
 from qcodes.instrument.parameter_node import parameter
 from qcodes.utils import validators as vals
-
+from silq.pulses.pulse_types import DummyPulse
 from qcodes.config.config import DotDict
 
 logger = logging.getLogger(__name__)
@@ -203,30 +203,18 @@ class ElectronReadoutPulseSequence(PulseSequenceGenerator):
         frequencies = []
         for pulse in self.pulse_settings['RF_pulses']:
             if isinstance(pulse, Pulse):
-                if getattr(pulse, 'frequency', None):
-                    frequencies.append(pulse.frequency)
-                elif getattr(pulse, 'frequencies', None):
-                    frequencies.extend(pulse.frequencies)
+                frequencies.append(getattr(pulse, 'frequency', None))
             elif isinstance(pulse, str):
-                if getattr(self.pulse_settings[pulse], 'frequency', None):
-                    frequencies.append(self.pulse_settings[pulse].frequency)
-                elif getattr(self.pulse_settings[pulse], 'frequencies', None):
-                    frequencies.extend(self.pulse_settings[pulse].frequencies)
+                frequencies.append(self.pulse_settings[pulse].frequency)
             elif isinstance(pulse, list):
                 # Pulse is a list containing other pulses
                 # These pulses will be joined in a single plunge
                 subfrequencies = []
                 for subpulse in pulse:
                     if isinstance(subpulse, Pulse):
-                        if getattr(subpulse, 'frequency', None):
-                            subfrequencies.append(subpulse.frequency)
-                        elif getattr(subpulse, 'frequencies', None):
-                            subfrequencies.extend(subpulse.frequencies)
+                        subfrequencies.append(getattr(subpulse, 'frequency', None))
                     elif isinstance(subpulse, str):
-                        if getattr(self.pulse_settings[subpulse], 'frequency', None):
-                            subfrequencies.append(self.pulse_settings[subpulse].frequency)
-                        elif getattr(self.pulse_settings[subpulse], 'frequencies', None):
-                            subfrequencies.extend(self.pulse_settings[subpulse].frequencies)
+                        subfrequencies.append(getattr(self.pulse_settings[subpulse], 'frequency', None))
                     elif isinstance(subpulse, PulseSequence):
                         subfrequencies.append(None)
                     else:
@@ -592,8 +580,9 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
 
         # Replace all inter_delays by offresonant pulses
         if self.settings['RF_inter_pulse'] is not None:
-            RF_inter_pulses =  self.settings['RF_inter_pulse']
-            RF_inter_pulses = [RF_inter_pulses] * (self.settings['num_refocusing'] + 1)
+            RF_inter_pulses = self.settings['RF_inter_pulse']
+            if not isinstance(RF_inter_pulses, (list, tuple)):
+                RF_inter_pulses = [RF_inter_pulses] * (self.settings['num_refocusing'] + 1)
 
             RF_pulses = []
             for RF_pulse, RF_pulse_inter, inter_delay in zip(
@@ -602,7 +591,12 @@ class T2PulseSequence(ElectronReadoutPulseSequence):
                     self.settings['inter_delay']
             ):
                 RF_pulses.append(RF_pulse)
-                RF_pulse_inter = RF_pulse_inter.copy()
+
+                # add inter pulse
+                if RF_pulse_inter is None:
+                    RF_pulse_inter = DummyPulse('inter_idle')
+                else:
+                    RF_pulse_inter = RF_pulse_inter.copy()
                 RF_pulse_inter.duration = inter_delay
                 RF_pulses.append(RF_pulse_inter)
 
@@ -664,7 +658,7 @@ class ESRPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contrast, and to measure dark counts and hence ESR contrast.
+            contast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             * ``enabled`` (bool): Enable EPR sequence.
@@ -730,30 +724,18 @@ class ESRPulseSequence(PulseSequenceGenerator):
         ESR_frequencies = []
         for pulse in self.ESR['ESR_pulses']:
             if isinstance(pulse, Pulse):
-                if getattr(pulse, 'frequency', None):
-                    ESR_frequencies.append(pulse.frequency)
-                elif getattr(pulse, 'frequencies', None):
-                    ESR_frequencies.extend(pulse.frequencies)
+                ESR_frequencies.append(pulse.frequency)
             elif isinstance(pulse, str):
-                if getattr(self.ESR[pulse], 'frequency', None):
-                    ESR_frequencies.append(self.ESR[pulse].frequency)
-                elif getattr(self.ESR[pulse], 'frequencies', None):
-                    ESR_frequencies.extend(self.ESR[pulse].frequencies)
+                ESR_frequencies.append(self.ESR[pulse].frequency)
             elif isinstance(pulse, list):
                 # Pulse is a list containing other pulses
                 # These pulses will be joined in a single plunge
                 ESR_subfrequencies = []
                 for subpulse in pulse:
                     if isinstance(subpulse, Pulse):
-                        if getattr(subpulse, 'frequency', None):
-                            ESR_subfrequencies.append(subpulse.frequency)
-                        elif getattr(subpulse, 'frequencies', None):
-                            ESR_subfrequencies.extend(subpulse.frequencies)
+                        ESR_subfrequencies.append(subpulse.frequency)
                     elif isinstance(subpulse, str):
-                        if getattr(self.ESR[subpulse], 'frequency', None):
-                            ESR_subfrequencies.append(self.ESR[subpulse].frequency)
-                        elif getattr(self.ESR[subpulse], 'frequencies', None):
-                            ESR_subfrequencies.extend(self.ESR[subpulse].frequencies)
+                        ESR_subfrequencies.append(self.ESR[subpulse].frequency)
                     else:
                         raise RuntimeError('ESR subpulse must be a pulse or'
                                            f'a string: {repr(subpulse)}')
@@ -918,7 +900,7 @@ class T2ElectronPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contrast, and to measure dark counts and hence ESR contrast.
+            contast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             :enabled: (bool): Enable EPR sequence.
@@ -1089,7 +1071,7 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contrast, and to measure dark counts and hence ESR contrast.
+            contast, and to measure dark counts and hence ESR contrast.
             Contains the following items:
 
             * ``enabled`` (bool): Enable EPR sequence.
@@ -1256,38 +1238,41 @@ class NMRPulseSequence(PulseSequenceGenerator):
 
 
 class NMRCPMGPulseSequence(NMRPulseSequence):
-    """`PulseSequenceGenerator` for nuclear magnetic resonance CP sequences.
+    """`PulseSequenceGenerator` for nuclear magnetic resonance (NMR).
 
-    This pulse sequence handles pulse sequences that involve CP experiments,
-    where a train of refocusing pulses is applied after preparing the spin state along the
-    y axis. The main difference between this pulse sequence and a normal
-    NMRPulseSequence sequence is that this pulse sequence accounts for the difference in
-    interdelays between the first pi/2-pi pulses and the refocusing pulses.
-    The reason for the difference in timing is to have an identical total free-precession
-    time tau for both CP and CPMG sequences, allowing you to directly compare the resulting T2.
-
-
-    The pulse sequence is generated from its pulse settings attributes.
+    This pulse sequence can handle many of the basic pulse sequences involving
+    NMR. The pulse sequence is generated from its pulse settings attributes.
 
     In general, the pulse sequence is as follows:
 
-    1. Perform any pre_pulses defined in ``NMRCPMGPulseSequence.pre_pulses``.
-    2. Perform CPMG NMR sequence
+    1. Perform any pre_pulses defined in ``NMRPulseSequence.pre_pulses``.
+    2. Perform NMR sequence
 
-       1. Perform stage pulse ``NMRCPMGPulseSequence.NMR['stage_pulse']``.
+       1. Perform stage pulse ``NMRPulseSequence.NMR['stage_pulse']``.
           Default is 'empty' `DCPulse`.
        2. Perform NMR pulses within the stage pulse. The NMR pulses defined
-          in ``NMRCPMGPulseSequence.NMR['NMR_pulses']`` are applied successively.
+          in ``NMRPulseSequence.NMR['NMR_pulses']`` are applied successively.
           The delay after start of the stage pulse is
-          ``NMRCPMGPulseSequence.NMR['pre_delay']``, delays between the first NMR pulses (typically pi/2) is
-          ``NMRCPMGPulseSequence.NMR['inter_delay']``, and the delay
-          between refocusing pulses (pi pulses) is 2*NMRCPMGPulseSequence.NMR['inter_delay'].
-          The delay after the final
-          NMR pulse is ``NMRCPMGPulseSequence.NMR['post_delay']``.
+          ``NMRPulseSequence.NMR['pre_delay']``, delays between NMR pulses is
+          ``NMRPulseSequence.NMR['inter_delay']``, and the delay after the final
+          NMR pulse is ``NMRPulseSequence.NMR['post_delay']``.
 
     3. Perform ESR sequence
 
-        Nuclear readout pulse sequence.Refer to NMRPulseSequence for more details on this sequence.
+       1. Perform stage pulse ``NMRPulseSequence.ESR['stage_pulse']``.
+          Default is 'plunge' `DCPulse`.
+       2. Perform ESR pulse within stage pulse for first pulse in
+          ``NMRPulseSequence.ESR['ESR_pulses']``.
+       3. Perform ``NMRPulseSequence.ESR['read_pulse']``, and acquire trace.
+       4. Repeat steps 1 - 3 for each ESR pulse. The different ESR pulses
+          usually correspond to different ESR frequencies (see
+          `NMRPulseSequence`.ESR_frequencies).
+       5. Repeat steps 1 - 4 for ``NMRPulseSequence.ESR['shots_per_frequency']``
+          This effectively interleaves the ESR pulses, which counters effects of
+          the nucleus flipping within an acquisition.
+
+    By measuring the average up proportion for each ESR frequency, a switching
+    between high and low up proportion indicates a flipping of the nucleus
 
     Parameters:
         NMR (dict): Pulse settings for the NMR part of the pulse sequence.
@@ -1302,8 +1287,6 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
               successively apply. Can be strings, in which case the string
               should be an item in ``NMR`` whose value is a `Pulse`. Default is
               single element ``NMRPulseSequence.NMR['NMR_pulse']``.
-
-
             * ``pre_delay`` (float): Delay after start of ``stage`` pulse,
               until first NMR pulse.
             * ``inter_delay`` (float): Delay between successive NMR pulses.
@@ -1311,13 +1294,29 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
               pulse end.
 
         ESR (dict): Pulse settings for the ESR part of the pulse sequence.
-            Refer to NMRPulseSequence to learn about the items it contains.
+            Contains the following items:
+
+            * ``stage_pulse`` (Pulse): Stage pulse in which to perform ESR
+              (e.g. plunge). Default is 'plunge `DCPulse`.
+            * ``ESR_pulse`` (Pulse): Default ESR pulse to use.
+              Default is 'ESR' ``SinePulse``.
+            * ``ESR_pulses`` (List[Union[str, Pulse]]): List of ESR pulses to
+              use. Can be strings, in which case the string should be an item in
+              ``ESR`` whose value is a `Pulse`.
+            * ``pulse_delay`` (float): ESR pulse delay after beginning of stage
+              pulse. Default is 5 ms.
+            * ``read_pulse`` (Pulse): Pulse after stage pulse for readout and
+              initialization of electron. Default is 'read_initialize`
+              `DCPulse`.
 
         EPR (dict): Pulse settings for the empty-plunge-read (EPR) part of the
             pulse sequence. This part is optional, and is used for non-ESR
-            contrast, and to measure dark counts and hence ESR contrast.
-            Refer to NMRPulseSequence to learn about the items it contains.
+            contast, and to measure dark counts and hence ESR contrast.
+            Contains the following items:
 
+            * ``enabled`` (bool): Enable EPR sequence.
+            * ``pulses`` (List[Pulse]): List of pulses for EPR sequence.
+              Default is ``empty``, ``plunge``, ``read_long`` `DCPulse`.
 
         pre_pulses (List[Pulse]): Pulses before main pulse sequence.
             Empty by default.
@@ -1334,16 +1333,13 @@ class NMRCPMGPulseSequence(NMRPulseSequence):
     Notes:
         For given pulse settings, `NMRPulseSequence.generate` will recreate the
         pulse sequence from settings.
-
-
     """
     def __init__(self, pulses=[], **kwargs):
         super().__init__(pulses=pulses, **kwargs)
         self.pulse_settings['NMR'] = self.NMR = {
             'stage_pulse': DCPulse('empty'),
-            'NMR_pi': SinePulse('NMR'),
-            'NMR_pi_half': SinePulse('NMR_pi_half'),
-            'NMR_pulses': ['NMR_pi_half', 'NMR_pi', 'NMR_pi_half'],
+            'NMR_pulse': SinePulse('NMR'),
+            'NMR_pulses': ['NMR_pulse'],
             'pre_delay': 5e-3,
             'inter_delay': 1e-3,
             'post_delay': 2e-3,

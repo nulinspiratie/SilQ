@@ -1253,6 +1253,8 @@ class Layout(Instrument):
                                                    _connected_to_config_list):
                 pulse._connected_to_config = _connected_to_config
 
+        self.pulse_sequence.name = pulse_sequence.name
+
         # Copy untargeted pulse sequence so none of its attributes are modified
         self.targeted_pulse_sequence = PulseSequence()
         # Adopt the same structure as the target pulse sequence, including any
@@ -1658,7 +1660,7 @@ class Layout(Instrument):
         # Create new hdf5 file
         filepath = os.path.join(folder, f'{name}.hdf5')
         assert not os.path.exists(filepath), f"Trace file already exists: {filepath}"
-        file = h5py.File(filepath, 'w', libver='latest')
+        file = h5py.File(filepath, 'w')
 
         # Save metadata to traces file
         file.attrs['sample_rate'] = self.sample_rate()
@@ -1702,7 +1704,6 @@ class Layout(Instrument):
                                           chunks=True, compression='gzip',
                                           compression_opts=compression)
         file.flush()
-        file.swmr_mode = True  # Enable multiple readers to access this process
         return file
 
     def save_traces(self,
