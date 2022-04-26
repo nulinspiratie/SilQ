@@ -10,7 +10,7 @@ import numpy as np
 import logging
 
 import qcodes as qc
-from qcodes.plots.qcmatplotlib import MatPlot
+from qcodes.plots.qcmatplotlib import MatPlot, align_x_axis
 from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
 from qcodes.data.data_set import DataSet
@@ -815,8 +815,8 @@ class DCSweepPlot(ScanningPlot):
                                        for trace_pulse in parameter.trace_pulses])
         if num_traces > 0:
                 subplots = (1 + num_traces, 1)
-                kwargs['gridspec_kw'] = {'height_ratios': [2] + [1]*num_traces}
-                kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
+                kwargs['gridspec_kw'] = {'height_ratios': [1.5] + [0.5]*num_traces}
+                kwargs['figsize'] = kwargs.get('figsize', (5, 4 + 1*num_traces))
         else:
             subplots = 1
 
@@ -827,10 +827,11 @@ class DCSweepPlot(ScanningPlot):
         self.buf_idx = 0
 
         super().__init__(parameter, subplots=subplots, **kwargs)
-
+        self.tight_layout()
         for k, trace_pulse in enumerate(parameter.trace_pulses, 1):
             if trace_pulse.enabled:
                 self[k].set_ylim(*self.trace_ylim)
+                align_x_axis(self[k], self[0])
 
         self.actions = [MoveGates(self)]
 
