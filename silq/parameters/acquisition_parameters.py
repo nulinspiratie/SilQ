@@ -861,7 +861,7 @@ class DCSweepParameter(AcquisitionParameter):
             sweep_voltages = sweep_dict.sweep_voltages
             if sweep_dict.offset_parameter is not None:
                 sweep_voltages = sweep_voltages + sweep_dict.offset_parameter.get_latest()
-            setpoints = (convert_setpoints(sweep_voltages),),
+            setpoints = (convert_setpoints(sweep_voltages)),
 
         elif len(self.sweep_parameters) == 2:
             inner_sweep_dict = next(iter_sweep_parameters)
