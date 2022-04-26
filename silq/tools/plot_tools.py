@@ -814,8 +814,8 @@ class DCSweepPlot(ScanningPlot):
         num_traces = np.count_nonzero([trace_pulse.enabled
                                        for trace_pulse in parameter.trace_pulses])
         if num_traces > 0:
-                subplots = (num_traces, 1)
-                kwargs['gridspec_kw'] = {'height_ratios': [2, 1]}
+                subplots = (1 + num_traces, 1)
+                kwargs['gridspec_kw'] = {'height_ratios': [2] + [1]*num_traces}
                 kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
         else:
             subplots = 1
@@ -828,7 +828,7 @@ class DCSweepPlot(ScanningPlot):
 
         super().__init__(parameter, subplots=subplots, **kwargs)
 
-        for k, trace_pulse in enumerate(parameter.trace_pulses):
+        for k, trace_pulse in enumerate(parameter.trace_pulses, 1):
             if trace_pulse.enabled:
                 self[k].set_ylim(*self.trace_ylim)
 
@@ -838,8 +838,8 @@ class DCSweepPlot(ScanningPlot):
         # This implicitly assumes the trace_pulse has a connection_label and an
         # amplitude. There should be no reason that the trace_pulse will not be
         # correctly initialized.
-        new_x = self.x_gate.get_latest()
-        new_y = self.x_gate.get_latest()
+        x_ref = self.x_gate.get_latest()
+        y_ref = self.y_gate.get_latest()
 
         for k, trace_pulse in enumerate(self.parameter.trace_pulses):
             if trace_pulse.enabled:
@@ -849,6 +849,9 @@ class DCSweepPlot(ScanningPlot):
                 # Add scaled offset for "read point" in diagram.
                 # Since pulse is already scaled to device voltages, we
                 # only need to apply the combination scaling.
+                new_x = x_ref
+                new_y = y_ref
+
                 if isinstance(connection, CombinedConnection):
                     A = trace_pulse.amplitude
                     for con, scale in zip(connection.connections,
@@ -858,15 +861,16 @@ class DCSweepPlot(ScanningPlot):
                         elif self.y_gate.name == con.label:
                             new_y += A * scale
 
-                if not self.points:
+                if trace_pulse.name not in self.points:
                     assert ax is not None, "For the initial point to be drawn, axes must" \
                                            "be provided."
-                    self.points[k] = ax.plot(new_x, new_y, marker='o',
+                    self.points[trace_pulse.name] = ax.plot(new_x, new_y,
+                                             marker='o', linestyle='',
                                              color=f'C{k}', ms=5,
                                              label=trace_pulse.name)[0]
                 else:
-                    self.points[k].set_xdata(new_x)
-                    self.points[k].set_ydata(new_y)
+                    self.points[trace_pulse.name].set_xdata(new_x)
+                    self.points[trace_pulse.name].set_ydata(new_y)
             else:
                 pass
 

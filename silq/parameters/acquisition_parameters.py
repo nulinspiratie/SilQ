@@ -890,7 +890,7 @@ class DCSweepParameter(AcquisitionParameter):
         names = ('DC_voltage', )
         for trace_pulse in self.trace_pulses:
             if trace_pulse.enabled:
-                names += ('trace_voltage')
+                names += (trace_pulse.name,)
         return names
 
     @property_ignore_setter
@@ -898,7 +898,7 @@ class DCSweepParameter(AcquisitionParameter):
         labels = ('DC voltage',)
         for trace_pulse in self.trace_pulses:
             if trace_pulse.enabled:
-                labels += ('Trace voltage')
+                labels += (trace_pulse.name,)
         return labels
 
     @property_ignore_setter
@@ -1093,9 +1093,12 @@ class DCSweepParameter(AcquisitionParameter):
             raise NotImplementedError(
                 f"Cannot handle {len(self.sweep_parameters)} parameters")
 
-        if self.trace_pulse.enabled:
-            # Also obtain a time trace at the end
-            pulses.append(self.trace_pulse)
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                # Explicitly add trace_pulses after each other at the end of
+                # the pulse sequence.
+                trace_pulse.t_start = pulses[-1].t_stop
+                pulses.append(trace_pulse)
 
         self.pulse_sequence = PulseSequence(pulses=pulses)
         self.pulse_sequence.final_delay = self.final_delay
@@ -1135,7 +1138,7 @@ class DCSweepParameter(AcquisitionParameter):
                 results = {'DC_voltage':
                     DC_voltages.reshape(self.shapes[0])}
 
-        for k, trace_pulse in enumerate(self.trace_pulses):
+        for k, trace_pulse in enumerate(self.trace_pulses, 1):
             if trace_pulse.enabled:
                 results[trace_pulse.name] = traces[trace_pulse.name][self.channel_label]
 
