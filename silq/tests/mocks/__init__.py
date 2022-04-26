@@ -38,4 +38,8 @@ def add_mock_interfaces():
         'module': 'silq.tests.mocks.mock_interfaces',
         'class': 'MockDigitizerInterface'
     }
+    instrument_interfaces['MockMicrowaveInstrument'] = {
+        'module': 'silq.tests.mocks.mock_interfaces',
+        'class': 'MockMicrowaveInterface'
+    }
 
