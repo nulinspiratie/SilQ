@@ -834,8 +834,8 @@ class DCSweepParameter(AcquisitionParameter):
 
         self.sweep_parameters = OrderedDict()
         # Pulse to acquire trace at the end, disabled by default
-        self.trace_pulse = DCPulse(name='trace', duration=100e-3, enabled=False,
-                                   acquire=True, average='trace', amplitude=0)
+        self.trace_pulses = [DCPulse(name='trace', duration=100e-3, enabled=False,
+                                   acquire=True, average='trace', amplitude=0)]
 
         self.pulse_duration = 1e-3
         self.final_delay = 120e-3
@@ -876,31 +876,38 @@ class DCSweepParameter(AcquisitionParameter):
             setpoints = (convert_setpoints(outer_sweep_voltages,
                                            inner_sweep_voltages)),
 
-        if self.trace_pulse.enabled:
-            # Also obtain a time trace at the end
-            points = round(self.trace_pulse.duration * self.sample_rate)
-            trace_setpoints = tuple(
-                np.linspace(0, self.trace_pulse.duration, points))
-            setpoints += (convert_setpoints(trace_setpoints),)
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                # Also obtain a time trace at the end
+                points = round(trace_pulse.duration * self.sample_rate)
+                trace_setpoints = tuple(
+                    np.linspace(0, trace_pulse.duration, points))
+                setpoints += (convert_setpoints(trace_setpoints),)
         return setpoints
 
     @property_ignore_setter
     def names(self):
-        if self.trace_pulse.enabled:
-            return ('DC_voltage', 'trace_voltage')
-        else:
-            return ('DC_voltage',)
+        names = ('DC_voltage', )
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                names += ('trace_voltage')
+        return names
 
     @property_ignore_setter
     def labels(self):
-        if self.trace_pulse.enabled:
-            return ('DC voltage', 'Trace voltage')
-        else:
-            return ('DC voltage',)
+        labels = ('DC voltage',)
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                labels += ('Trace voltage')
+        return labels
 
     @property_ignore_setter
     def units(self):
-        return ('V', 'V') if self.trace_pulse.enabled else ('V',)
+        units = ('V',)
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                units += ('V',)
+        return units
 
     @property_ignore_setter
     def shapes(self):
@@ -915,17 +922,20 @@ class DCSweepParameter(AcquisitionParameter):
             outer_sweep_voltages = next(iter_sweep_parameters).sweep_voltages
             shapes = (len(outer_sweep_voltages), len(inner_sweep_voltages)),
 
-        if self.trace_pulse.enabled:
-            shapes += (round(
-                self.trace_pulse.duration * self.sample_rate),),
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                shapes += (round(
+                    trace_pulse.duration * self.sample_rate),),
         return shapes
 
     @property_ignore_setter
     def setpoint_names(self):
         iter_sweep_parameters = reversed(self.sweep_parameters.keys())
         names = tuple(iter_sweep_parameters),
-        if self.trace_pulse.enabled:
-            names += (('time',), )
+
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                names += (('time',), )
         return names
 
     @property_ignore_setter
@@ -933,15 +943,17 @@ class DCSweepParameter(AcquisitionParameter):
         iter_sweep_parameters = reversed(
             [(p if p.isupper() else p.capitalize()) for p in self.sweep_parameters.keys()])
         labels = tuple(iter_sweep_parameters),
-        if self.trace_pulse.enabled:
-            labels += (('Time',),)
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                labels += (('Time',),)
         return labels
 
     @property_ignore_setter
     def setpoint_units(self):
         setpoint_units = (('V',) * len(self.sweep_parameters),)
-        if self.trace_pulse.enabled:
-            setpoint_units += (('s',), )
+        for trace_pulse in self.trace_pulses:
+            if trace_pulse.enabled:
+                setpoint_units += (('s',), )
         return setpoint_units
 
     def add_sweep(self,
@@ -1123,8 +1135,9 @@ class DCSweepParameter(AcquisitionParameter):
                 results = {'DC_voltage':
                     DC_voltages.reshape(self.shapes[0])}
 
-        if self.trace_pulse.enabled:
-            results['trace_voltage'] = traces['trace'][self.channel_label]
+        for k, trace_pulse in enumerate(self.trace_pulses):
+            if trace_pulse.enabled:
+                results[trace_pulse.name] = traces[trace_pulse.name][self.channel_label]
 
         return results
 
