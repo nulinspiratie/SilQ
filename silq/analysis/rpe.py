@@ -1,6 +1,10 @@
-import pygsti
-from quapack.pyRPE import RobustPhaseEstimation
-from quapack.pyRPE.quantum import Q
+try:
+    from quapack.pyRPE import RobustPhaseEstimation
+    from quapack.pyRPE.quantum import Q
+except ImportError:
+    raise ImportError('RPE tools need to be installed before use, '
+                      'see https://gitlab.com/quapack/pyrpe')
+
 import numpy as np
 from ..tools.general_tools import count_num_decimal_places
 from ..tools.circuit_tools import make_gate_sin_circ, make_gate_cos_circ
