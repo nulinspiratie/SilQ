@@ -18,7 +18,7 @@ __all__ = ['execfile', 'is_between', 'get_truth', 'get_memory_usage',
            'attribute_from_config', 'clear_single_settings', 'JSONEncoder',
            'JSONListEncoder', 'run_code', 'get_exponent', 'get_first_digit',
            'ParallelTimedRotatingFileHandler', 'convert_setpoints',
-           'Singleton', 'property_ignore_setter', 'freq_to_str']
+           'Singleton', 'property_ignore_setter', 'freq_to_str', 'count_num_decimal_places']
 
 code_labels = {}
 properties_config = config['user'].get('properties', {})
@@ -658,3 +658,9 @@ def slice_length(s, l):
         return int((stop - start) / step)
     else:
         return 1
+
+
+def count_num_decimal_places(num):
+    if num > 1:
+        return 0
+    return 1 + count_num_decimal_places(10 * num)

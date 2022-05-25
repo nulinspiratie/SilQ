@@ -9,6 +9,10 @@ from pygsti.circuits import Circuit
 
 from qcodes import DataArray
 
+__all__ = ['convert_circuit', 'load_experiment_design', 'load_GST_circuits',
+           'load_dataset', 'create_dataset', 'analyse_circuit_results',
+           'make_RPE_experiment']
+
 def convert_circuit(circuit, target_type: Union[str, List[str], Circuit] = str,
                     include_state_space_labels=True,
                     ):
@@ -280,6 +284,41 @@ def analyse_circuit_results(
     return {circuit: {outcome_label: outcomes_arr[circuit_idx][outcomes_mapping[outcome_label]]
                       for outcome_label in outcome_labels}
             for circuit_idx, circuit in enumerate(circuits)}
+
+# RPE
+def make_gate_cos_circ(k, gate_name, qubit_label=0,line_labels=[0]):
+    return pygsti.circuits.Circuit(k*[(gate_name, qubit_label)],
+                                   line_labels=line_labels)
+
+def make_gate_sin_circ(k, gate_name, qubit_label=0,line_labels=[0]):
+    return pygsti.circuits.Circuit((k + 1)*[(gate_name, qubit_label)],
+                                   line_labels=line_labels)
+
+def make_RPE_experiment(max_k, gate_name, qubit_label=0, line_labels=[0]):
+    """
+
+    Args:
+        max_k: The maximum length of circuit to run (must be a power of 2)
+        gate_name: A string representing the operation being measured.
+            e.g. 'Gxpi2' or 'Gypi2' for pi/2 rotations about the x or y axes,
+            respectively.
+        qubit_label:
+        line_labels:
+
+    Returns:
+
+    """
+    circuits = []
+    log2_k = int(np.log2(max_k))
+    assert np.abs(log2_k - np.log2(max_k)) < 1e-8, "Only gate powers of 2 supported at present"
+    k_list = [2**i for i in range(log2_k+1)]
+
+    for k in k_list:
+        circuits.append(make_gate_cos_circ(k, gate_name, qubit_label, line_labels))
+        circuits.append(make_gate_sin_circ(k, gate_name, qubit_label, line_labels))
+    circuits = pygsti.remove_duplicates(circuits)
+
+    return circuits
 
 # deprecated
 def analyse_circuit_results_old(
