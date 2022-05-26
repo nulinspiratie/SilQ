@@ -1262,6 +1262,56 @@ class AnalyseElectronReadout(Analysis):
         return self.results
 
 
+def analyse_electron_readout_ML(model, traces, threshold, dark_counts=None, trace_segment=None):
+    results = {}
+
+    if trace_segment is not None:
+        traces = traces[slice(*trace_segment)]
+
+    results['score'] = model.evaluate(traces)  # TODO fix model
+
+    results['up_proportion'] = (results['score'] > threshold) / len(traces)
+    if dark_counts is not None:
+        results['contrast'] = results['up_proportion'] - dark_counts
+
+    return results
+
+
+class AnalyseElectronReadoutML(Analysis):
+    def __init__(self, name, model_filepath, return_dark_counts=False):
+        from tensorflow import keras
+        self.model = keras.models.load_model(model_filepath)
+
+        super().__init__(name)
+
+        self.return_dark_counts = return_dark_counts
+
+        self.settings.threshold_voltage = Parameter(
+            initial_value=0.5,
+            set_cmd=None,
+        )
+        self.settings.trace_segment = Parameter(
+            initial_value=None,
+            set_cmd=None,
+        )
+
+        self.outputs.score = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.up_proportion = Parameter(initial_value=True, set_cmd=None)
+        self.outputs.contrast = Parameter(initial_value=False, set_cmd=None)
+
+    @functools.wraps(analyse_electron_readout_ML)
+    def analyse(self, **kwargs):
+        settings = self.settings.to_dict(get_latest=False)
+        settings.update(**kwargs)
+        settings['model'] = self.model
+        self.results = analyse_electron_readout_ML(**settings)
+
+        if self.return_dark_counts:
+            self.results['dark_counts'] = self.results['up_proportion']
+            
+        return self.results
+
+
 def determine_threshold_up_proportion_single_state(up_proportions_arr: np.ndarray,
                                                    shots_per_frequency: int):
     """ Determine threshold up-proportion for single nuclear state readout using
