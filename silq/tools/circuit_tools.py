@@ -9,6 +9,7 @@ from pygsti.circuits import Circuit
 
 from qcodes import DataArray
 
+
 def convert_circuit(circuit, target_type: Union[str, List[str], Circuit] = str,
                     include_state_space_labels=True,
                     ):
@@ -56,15 +57,16 @@ def convert_circuit(circuit, target_type: Union[str, List[str], Circuit] = str,
         # Convert to a Circuit first
         output_circuit = Circuit(circuit)
         output_circuit = convert_circuit(output_circuit, target_type,
-                                             include_state_space_labels)
+                                         include_state_space_labels)
 
     return output_circuit
 
 
 def _get_experiment_dir(filepath: Union[str, Path],
-                        config_entry: str='properties.circuits_folder'):
+                        config_entry: str = 'properties.circuits_folder'):
     """For relative paths, attempts to find the `filepath` in the nominated
-    circuits folder (default config.properties.circuits_folder) or in the current
+    circuits folder (default config.properties.circuits_folder) or in the
+    current
     working directory.
 
     Search priority: absolute path, if path is relative then config circuits
@@ -104,6 +106,7 @@ def _get_experiment_dir(filepath: Union[str, Path],
 
     return filepath.absolute()
 
+
 def load_experiment_design(
         filepath: Union[str, Path],
         **kwargs
@@ -123,24 +126,29 @@ def load_experiment_design(
     # If absolute file does not exist, error will be raised below.
     return pygsti.io.read_edesign_from_dir(filepath, **kwargs)
 
+
 def load_GST_circuits(
         exp_design: Union[str, GateSetTomographyDesign,
-                                  RobustPhaseEstimationDesign, Path],
-        circuit_list: str='all_circuits_needing_data',
+                          RobustPhaseEstimationDesign, Path],
+        circuit_list: str = 'all_circuits_needing_data',
         **kwargs
 ):
     """Loads a pyGSTi experiment design and converts the circuits to
         a simple format, a list of circuits which
 
     Args:
-        exp_design: An experiment design or the path to an experiment design folder.
+        exp_design: An experiment design or the path to an experiment design
+        folder.
 
-        circuit_list: The name of the circuit list to load from the experiment design.
+        circuit_list: The name of the circuit list to load from the
+        experiment design.
 
     Returns:
-        A list of circuits, where each circuit is a list of gates represented in string format.
+        A list of circuits, where each circuit is a list of gates represented
+        in string format.
     """
-    if isinstance(exp_design, (GateSetTomographyDesign, RobustPhaseEstimationDesign)):
+    if isinstance(exp_design,
+                  (GateSetTomographyDesign, RobustPhaseEstimationDesign)):
         pass
     else:
         exp_design = load_experiment_design(exp_design)
@@ -151,6 +159,7 @@ def load_GST_circuits(
     circuits = [convert_circuit(circuit, **kwargs) for circuit in circuits]
 
     return circuits
+
 
 def load_dataset(path: Union[str, Path], **kwargs):
     path = Path(path)
@@ -163,7 +172,7 @@ def load_dataset(path: Union[str, Path], **kwargs):
                           path.parents[0] / path.name
 
             if config_path.exists():
-               path = config_path
+                path = config_path
         except IndexError:
             # Occurs if relative path does not have two parent directories.
             pass
@@ -172,7 +181,8 @@ def load_dataset(path: Union[str, Path], **kwargs):
     # case the dataset will attempt to be loaded from the current directory.
     return pygsti.io.read_dataset(path, **kwargs)
 
-def create_dataset(results, circuits:List[Circuit], path=None):
+
+def create_dataset(results, circuits: List[Circuit], path=None):
     """Create a pyGSTi DataSet from a results array.
 
     Args:
@@ -200,13 +210,14 @@ def create_dataset(results, circuits:List[Circuit], path=None):
 
     return dataset
 
+
 def analyse_circuit_results(
-    exp_design,
-    outcomes_arr:DataArray,
-    circuits:List[Circuit]=None,
-    circuits_axis=None,
-    outcomes_axis=None,
-    outcomes_mapping=None
+        exp_design,
+        outcomes_arr: DataArray,
+        circuits: List[Circuit] = None,
+        circuits_axis=None,
+        outcomes_axis=None,
+        outcomes_mapping=None
 ):
     """
 
@@ -214,13 +225,16 @@ def analyse_circuit_results(
         exp_design: A pyGSTi experiment design or path to one.
         outcomes_arr: A QCodes DataArray which has all of the resulting counts
                      from running the given circuits.
-        circuits: A list of pyGSTi circuits. If unspecified, the experiment design
+        circuits: A list of pyGSTi circuits. If unspecified, the experiment
+        design
         'all_circuits_needing_data' is used.
         circuits_axis: Specifies which axis distinguishes each circuit.
         outcomes_axis: Specifies which axis distinguishes each circuit outcome.
         outcomes_mapping: Optional, a mapping between each outcome and the index
-                    into the outcomes_arr on the outcomes_axis. This is useful if
-                    the recorded results for each outcome aren't in binary order.
+                    into the outcomes_arr on the outcomes_axis. This is
+                    useful if
+                    the recorded results for each outcome aren't in binary
+                    order.
                     Defualt mapping is from index i to its binary string
                     representation, e.g. index 3 corresponds to outcome '11'.
 
@@ -229,15 +243,14 @@ def analyse_circuit_results(
         possible outcome.
 
     """
-    if isinstance(exp_design, (RobustPhaseEstimationDesign, GateSetTomographyDesign)):
+    if isinstance(exp_design,
+                  (RobustPhaseEstimationDesign, GateSetTomographyDesign)):
         pass
     else:
         exp_design = load_experiment_design(exp_design)
 
     if circuits is None:
         circuits = exp_design.all_circuits_needing_data
-
-
 
     target_model = exp_design.create_target_model()
     # Get unique set of outcome labels for this model (normally '0', '1', etc.)
@@ -252,21 +265,23 @@ def analyse_circuit_results(
         # Find which axis hosts the distinct circuit outcomes
         n_matching_axes = np.count_nonzero(
             np.array(outcomes_arr.shape) == n_outcomes)
-        assert n_matching_axes == 1,\
-        f"{n_matching_axes} axes were found with dimension that matches the number of " \
-        "expected outcomes. Please specify which axis distinguishes the circuit" \
-        "outcomes."
+        assert n_matching_axes == 1, \
+            f"{n_matching_axes} axes were found with dimension that matches " \
+            f"the number of " \
+            "expected outcomes. Please specify which axis distinguishes the " \
+            "circuit" \
+            "outcomes."
 
         outcomes_axis = np.argmin(np.array(outcomes_arr.shape), n_outcomes)
-
 
     if circuits_axis is None:
         # Find which axis hosts the distinct circuit outcomes
         n_matching_axes = np.count_nonzero(
             np.array(outcomes_arr.shape) == len(circuits))
-        assert n_matching_axes == 1,\
-        f"{n_matching_axes} axes were found with dimension that matches the number of " \
-        "circuits. Please specify which axis distinguishes the circuits."
+        assert n_matching_axes == 1, \
+            f"{n_matching_axes} axes were found with dimension that matches " \
+            f"the number of " \
+            "circuits. Please specify which axis distinguishes the circuits."
 
         circuits_axis = np.argmin(np.array(outcomes_arr.shape), len(circuits))
 
@@ -274,26 +289,31 @@ def analyse_circuit_results(
     outcomes_arr = np.swapaxes(outcomes_arr, outcomes_axis, -1)
     outcomes_arr = np.swapaxes(outcomes_arr, circuits_axis, -2)
 
-    # Assume all other dimensions are repetitions of the circuit and sum all counts
-    outcomes_arr = np.sum(outcomes_arr.reshape(-2, *outcomes_arr.shape[-2:]), axis=0)
+    # Assume all other dimensions are repetitions of the circuit and sum all
+    # counts
+    outcomes_arr = np.sum(outcomes_arr.reshape(-2, *outcomes_arr.shape[-2:]),
+                          axis=0)
 
-    return {circuit: {outcome_label: outcomes_arr[circuit_idx][outcomes_mapping[outcome_label]]
+    return {circuit: {outcome_label: outcomes_arr[circuit_idx][
+        outcomes_mapping[outcome_label]]
                       for outcome_label in outcome_labels}
             for circuit_idx, circuit in enumerate(circuits)}
 
 # deprecated
 def analyse_circuit_results_old(
-    flips_arr,
-    possible_flips_arr,
-    circuits=None,
-    output_filename=None,
-    insert_identity=False,
+        flips_arr,
+        possible_flips_arr,
+        circuits=None,
+        output_filename=None,
+        insert_identity=False,
 ):
     # Each circuit is repeated if the up_proportion filtering was unsuccessful.
-    # This happens a maximum of five times, though the majority is already successful at the first attempt.
+    # This happens a maximum of five times, though the majority is already
+    # successful at the first attempt.
     # Here we remove this final axis.
     flips_flattened_arr = np.nansum(flips_arr, axis=2)
-    # If all five attempts are unsuccessful, we set this array element back to nan
+    # If all five attempts are unsuccessful, we set this array element back
+    # to nan
     all_attempts_nan = np.all(np.isnan(flips_arr), axis=2)
     flips_flattened_arr[all_attempts_nan] = np.nan
 
@@ -301,7 +321,8 @@ def analyse_circuit_results_old(
     possible_flips_flattened_arr[all_attempts_nan] = np.nan
 
     successful_flips = np.nansum(flips_flattened_arr, axis=0)
-    unsuccessful_flips = np.nansum(possible_flips_flattened_arr, axis=0) - successful_flips
+    unsuccessful_flips = np.nansum(possible_flips_flattened_arr,
+                                   axis=0) - successful_flips
 
     results = {
         '1': successful_flips,
@@ -311,7 +332,8 @@ def analyse_circuit_results_old(
     if circuits is not None:
         assert len(successful_flips) == len(circuits)
         results['circuits'] = {
-            circuit: [flips, no_flips] for circuit, flips, no_flips in zip(circuits, successful_flips, unsuccessful_flips)
+            circuit: [flips, no_flips] for circuit, flips, no_flips in
+            zip(circuits, successful_flips, unsuccessful_flips)
         }
 
         if output_filename is not None:
@@ -333,6 +355,7 @@ def analyse_circuit_results_old(
 
     return results
 
+
 def save_circuits(circuits, filepath):
     """Save list of circuits to a .txt file"""
     filepath = Path(filepath)
@@ -343,6 +366,7 @@ def save_circuits(circuits, filepath):
         for circuit in circuits:
             circuit_str = convert_circuit(circuit, target_type=str)
             f.write(circuit_str + '\n')
+
 
 def load_circuits(
         filepath: Union[str, Path],
