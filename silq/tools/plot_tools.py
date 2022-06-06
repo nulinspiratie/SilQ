@@ -10,7 +10,7 @@ import numpy as np
 import logging
 
 import qcodes as qc
-from qcodes.plots.qcmatplotlib import MatPlot
+from qcodes.plots.qcmatplotlib import MatPlot, align_x_axis
 from qcodes.instrument.parameter import _BaseParameter
 from qcodes.station import Station
 from qcodes.data.data_set import DataSet
@@ -801,7 +801,6 @@ class DCSweepPlot(ScanningPlot):
     """
     gate_mapping = {}
     trace_ylim = (-0.1, 1.3)
-    point_color = 'r'
 
     # DCSweepParameter type
     def __init__(self,
@@ -812,56 +811,69 @@ class DCSweepPlot(ScanningPlot):
         if gate_mapping is not None:
             self.gate_mapping = gate_mapping
 
-        if parameter.trace_pulse.enabled:
-            subplots = (2, 1)
-            kwargs['gridspec_kw'] = {'height_ratios': [2, 1]}
-            kwargs['figsize'] = kwargs.get('figsize', (6.5, 6))
+        num_traces = np.count_nonzero([trace_pulse.enabled
+                                       for trace_pulse in parameter.trace_pulses])
+        if num_traces > 0:
+                subplots = (1 + num_traces, 1)
+                kwargs['gridspec_kw'] = {'height_ratios': [1.5] + [0.5]*num_traces}
+                kwargs['figsize'] = kwargs.get('figsize', (5, 4 + 1*num_traces))
         else:
             subplots = 1
 
-        self.point = None
+        self.points = {}
 
         self.buffer_length = averages
         self.buffers = [None, ] * self.buffer_length
         self.buf_idx = 0
 
         super().__init__(parameter, subplots=subplots, **kwargs)
-
-        if parameter.trace_pulse.enabled:
-            self[1].set_ylim(*self.trace_ylim)
+        self.tight_layout()
+        for k, trace_pulse in enumerate(parameter.trace_pulses, 1):
+            if trace_pulse.enabled:
+                self[k].set_ylim(*self.trace_ylim)
+                align_x_axis(self[k], self[0])
 
         self.actions = [MoveGates(self)]
 
-    def _update_point(self, ax=None):
+    def _update_points(self, ax=None):
         # This implicitly assumes the trace_pulse has a connection_label and an
         # amplitude. There should be no reason that the trace_pulse will not be
         # correctly initialized.
-        new_x = self.x_gate.get_latest()
-        new_y = self.x_gate.get_latest()
+        x_ref = self.x_gate.get_latest()
+        y_ref = self.y_gate.get_latest()
 
+        for k, trace_pulse in enumerate(self.parameter.trace_pulses):
+            if trace_pulse.enabled:
+                connection = self.layout.get_connection(
+                    trace_pulse.connection_label)
 
-        connection = self.layout.get_connection(
-            self.parameter.trace_pulse.connection_label)
+                # Add scaled offset for "read point" in diagram.
+                # Since pulse is already scaled to device voltages, we
+                # only need to apply the combination scaling.
+                new_x = x_ref
+                new_y = y_ref
 
-        # Add scaled offset for "read point" in diagram.
-        # Since pulse is already scaled to device voltages, we
-        # only need to apply the combination scaling.
-        if isinstance(connection, CombinedConnection):
-            A = self.parameter.trace_pulse.amplitude
-            for con, scale in zip(connection.connections,
-                                  connection.scale):
-                if self.x_gate.name == con.label:
-                    new_x += A * scale
-                elif self.y_gate.name == con.label:
-                    new_y += A * scale
+                if isinstance(connection, CombinedConnection):
+                    A = trace_pulse.amplitude
+                    for con, scale in zip(connection.connections,
+                                          connection.scale):
+                        if self.x_gate.name == con.label:
+                            new_x += A * scale
+                        elif self.y_gate.name == con.label:
+                            new_y += A * scale
 
-        if self.point is None:
-            assert ax is not None, "For the initial point to be drawn, axes must" \
-                                   "be provided."
-            self.point = ax.plot(new_x, new_y, 'o' + self.point_color, ms=5)[0]
-        else:
-            self.point.set_xdata(new_x)
-            self.point.set_ydata(new_y)
+                if trace_pulse.name not in self.points:
+                    assert ax is not None, "For the initial point to be drawn, axes must" \
+                                           "be provided."
+                    self.points[trace_pulse.name] = ax.plot(new_x, new_y,
+                                             marker='o', linestyle='',
+                                             color=f'C{k}', ms=5,
+                                             label=trace_pulse.name)[0]
+                else:
+                    self.points[trace_pulse.name].set_xdata(new_x)
+                    self.points[trace_pulse.name].set_ydata(new_y)
+            else:
+                pass
 
     def update_plot(self, initialize=False):
         """Update plot with new 2D DC scan.
@@ -901,7 +913,7 @@ class DCSweepPlot(ScanningPlot):
                         self.x_gate = getattr(self.station, self.x_label)
                         self.y_gate = getattr(self.station, self.y_label)
 
-                        self._update_point(ax=self[k])
+                        self._update_points(ax=self[k])
                 else:
                     self[k].add(result, x=setpoints[0],
                                 xlabel=setpoint_names[0],
@@ -915,7 +927,7 @@ class DCSweepPlot(ScanningPlot):
                     result_config['x'] = self.parameter.setpoints[k][1]
                     result_config['y'] = self.parameter.setpoints[k][0]
                     result_config['z'] = result
-                    self._update_point()
+                    self._update_points()
                 else:
                     result_config['y'] = result
                     result_config['x'] = self.parameter.setpoints[k][0]
