@@ -11,7 +11,7 @@ from qcodes import DataArray
 
 __all__ = ['convert_circuit', 'load_experiment_design', 'load_GST_circuits',
            'load_dataset', 'create_dataset', 'analyse_circuit_results',
-           'make_RPE_experiment']
+           'make_rpe_experiment']
 
 def convert_circuit(circuit, target_type: Union[str, List[str], Circuit] = str,
                     include_state_space_labels=True,
