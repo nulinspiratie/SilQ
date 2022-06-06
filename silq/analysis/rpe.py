@@ -7,7 +7,6 @@ except ImportError:
 
 import numpy as np
 from ..tools.general_tools import count_num_decimal_places
-from ..tools.circuit_tools import make_gate_sin_circ, make_gate_cos_circ
 
 from matplotlib import pyplot as plt
 
@@ -26,22 +25,25 @@ def analyse_RPE(dataset, gate_name, max_length: int = None):
     Returns:
 
     """
-    if max_length is None:
-        max_length = len(max(dataset.keys()))
-
     rpe_container = Q()
 
-    log2_max_length = int(np.log2(max_length))
-    max_lengths = [2 ** i for i in range(log2_max_length + 1)]
-
-    for length in max_lengths:
-        cos_circ = make_gate_cos_circ(length, gate_name)
-        sin_circ = make_gate_sin_circ(length, gate_name)
+    circuit_list = dataset.keys()
+    length = 1
+    while True:
+        if max_length is not None and length > max_length:
+            break
+        try:
+            cos_circ = next(circuit_list)
+            sin_circ = next(circuit_list)
+        except StopIteration:
+            break
 
         rpe_container.process_cos(length, (
         int(dataset[cos_circ]['0']), int(dataset[cos_circ]['1'])))
         rpe_container.process_sin(length, (
         int(dataset[sin_circ]['1']), int(dataset[sin_circ]['0'])))
+
+        length *= 2
 
     rpe_analyzer = RobustPhaseEstimation(rpe_container)
     return rpe_container, rpe_analyzer
