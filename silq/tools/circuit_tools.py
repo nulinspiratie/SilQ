@@ -285,40 +285,74 @@ def analyse_circuit_results(
                       for outcome_label in outcome_labels}
             for circuit_idx, circuit in enumerate(circuits)}
 
-# RPE
-def make_gate_cos_circ(k, gate_name, qubit_label=0,line_labels=[0]):
-    return pygsti.circuits.Circuit(k*[(gate_name, qubit_label)],
-                                   line_labels=line_labels)
 
-def make_gate_sin_circ(k, gate_name, qubit_label=0,line_labels=[0]):
-    return pygsti.circuits.Circuit((k + 1)*[(gate_name, qubit_label)],
-                                   line_labels=line_labels)
-
-def make_RPE_experiment(max_k, gate_name, qubit_label=0, line_labels=[0]):
+def make_rpe_experiment(max_length, gate,
+                        target_parameter='phi',
+                        target_rotation_angle=None,
+                        prep_fiducial='Gypi2',
+                        qubit_label=0, line_labels=[0]):
     """
 
     Args:
-        max_k: The maximum length of circuit to run (must be a power of 2)
-        gate_name: A string representing the operation being measured.
+        max_length: The maximum length of circuit to run (must be a power of 2)
+        gate: A string representing the operation being measured.
             e.g. 'Gxpi2' or 'Gypi2' for pi/2 rotations about the x or y axes,
-            respectively.
-        qubit_label:
-        line_labels:
+            respectively. Any angle of rotation should be estimable.
+        target_parameter: Either 'phi' or 'theta' to probe the rotation angle or
+                        rotation axis angle between gate and the prep_fiducial,
+                        respectively.
+        target_rotation_angle: The target rotation angle of gate (must be
+                provided when axis angle is to be estimated).
+        prep_fiducial: The fiducial that ideally performs a pi/2 rotation.
+        qubit_label: The qubit to be operated on.
+        line_labels: The string labels for each line of the quantum circuit.
 
     Returns:
+        A list of circuits.
 
     """
     circuits = []
-    log2_k = int(np.log2(max_k))
-    assert np.abs(log2_k - np.log2(max_k)) < 1e-8, "Only gate powers of 2 supported at present"
-    k_list = [2**i for i in range(log2_k+1)]
+    log2_k = int(np.log2(max_length))
+    assert np.abs(log2_k - np.log2(max_length)) < 1e-8, \
+        "Only gate powers of 2 supported at present"
+    length_list = [2 ** i for i in range(log2_k + 1)]
 
-    for k in k_list:
-        circuits.append(make_gate_cos_circ(k, gate_name, qubit_label, line_labels))
-        circuits.append(make_gate_sin_circ(k, gate_name, qubit_label, line_labels))
+    if target_parameter == 'phi':
+        # Standard angle of rotation experiment
+        U = gate
+    elif target_parameter == 'theta':
+        # Measure the angle between the X/Y axes
+        assert gate != prep_fiducial, \
+            f'Gate under test "{gate}" must be different from the ' \
+            f'reference gate "{prep_fiducial} to determine axis angle theta."'
+
+        if target_rotation_angle is None:
+            raise ValueError("When measuring the angle between two axes the "
+                             "target rotation angle must be provided to "
+                             "determine theta.")
+
+        # q phi = t pi for odd t
+        q = int(np.round(np.pi / target_rotation_angle))
+        assert int(round(q * target_rotation_angle / np.pi)) % 2 == 1, \
+            "Routine failed to find a method to achieve a pi rotation."
+        U = prep_fiducial + gate * q + prep_fiducial * 2 + gate * q \
+            + prep_fiducial
+
+    U = convert_circuit(U, Circuit)
+
+    for l in length_list:
+        cos_circ = pygsti.circuits.Circuit(
+            l * [(gate.name, qubit_label) for gate in U],
+            line_labels=line_labels)
+        sin_circ = pygsti.circuits.Circuit(
+            l * [(gate.name, qubit_label) for gate in U] + [
+                (prep_fiducial, qubit_label)],
+            line_labels=line_labels)
+        circuits.extend([cos_circ, sin_circ])
     circuits = pygsti.remove_duplicates(circuits)
 
     return circuits
+
 
 # deprecated
 def analyse_circuit_results_old(
