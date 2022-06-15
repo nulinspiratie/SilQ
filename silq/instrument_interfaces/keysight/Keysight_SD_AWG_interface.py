@@ -6,7 +6,7 @@ import logging
 
 from silq.instrument_interfaces import InstrumentInterface, Channel
 from silq.pulses import Pulse, SinePulse, PulseImplementation, TriggerPulse, \
-    AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse, FrequencyRampPulse
+    AWGPulse, CombinationPulse, DCPulse, DCRampPulse, MarkerPulse, FrequencyRampPulse, SingleWaveformPulse
 from silq.tools.pulse_tools import pulse_to_waveform_sequence
 from silq.tools.general_tools import find_approximate_divisor
 from qcodes.utils.helpers import arreqclose_in_list
@@ -719,6 +719,37 @@ class AWGPulseImplementation(PulseImplementation):
                     't_start': self.pulse.t_start,
                     't_stop': self.pulse.t_start,
                     'prescaler':prescaler}
+
+        return [waveform]
+
+
+class SingleWaveformPulseImplementation(PulseImplementation):
+    pulse_class = SingleWaveformPulse
+
+    def implement(self, interface, instrument, default_sampling_rate, threshold):
+        full_name = self.pulse.full_name or 'none'
+
+        sampling_rate = default_sampling_rate
+        prescaler = 0 if sampling_rate == 500e6 else (100e6 / sampling_rate)
+
+        samples = int(self.pulse.duration * sampling_rate)
+        samples -= samples % instrument.waveform_multiple
+        assert samples >= instrument.waveform_minimum, \
+            f"pulse {self.pulse} too short"
+
+        t_list = np.linspace(self.pulse.t_start, self.pulse.t_stop, samples)
+
+        waveform_data = self.pulse.get_voltage(t_list) / 1.5
+
+        waveform = {'waveform': waveform_data,
+                    'points': samples,
+                    'points_100MHz': (int(samples / 5) if prescaler == 0
+                                      else samples * prescaler),
+                    'name': full_name,
+                    'cycles': 1,
+                    't_start': self.pulse.t_start,
+                    't_stop': self.pulse.t_start,
+                    'prescaler': prescaler}
 
         return [waveform]
 
