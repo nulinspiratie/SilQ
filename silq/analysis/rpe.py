@@ -7,28 +7,40 @@ except ImportError:
 
 import numpy as np
 from ..tools.general_tools import count_num_decimal_places
-
+from warnings import warn
 from matplotlib import pyplot as plt
 
 __all__ = ['analyze_rpe', 'get_rotation_angle', 'get_axis_angle', 'plot_rpe_results']
 
 
-def analyze_rpe(dataset, max_length: int = None):
+def analyze_rpe(dataset, circuit_list = None, max_length: int = None):
     """Finds the estimated rotation angle of a unitary used in an RPE experiment.
 
     Args:
         dataset: A pygsti dataset
+        circuit_list: The list of all circuits to perform an RPE experiment.
+                      If not provided the circuit keys from the dataset will be
+                      used. Note: If the dataset is constructed from out-of-order
+                      this will cause analysis to fail.
         gate_name: The name of the operation being tested.
         max_length: The maximum circuit depth to perform the analysis up to.
                     The analysis automatically calculates an estimated angle for
-                    all powers of 2 up to max_length.
+                    all powers of 2 up to max_length. If not specified, all
+                    circuits will be used.
 
     Returns:
 
     """
     rpe_container = Q()
 
-    circuit_list = dataset.keys()
+    if circuit_list is None:
+        warn("Circuit list from the dataset keys will be used for analysis. "
+             "This assumes that the circuits were stored in the original order "
+             "from the experiment design.")
+        circuit_list = dataset.keys()
+
+    circuit_list = iter(circuit_list)
+
     length = 1
     while True:
         if max_length is not None and length > max_length:
@@ -128,7 +140,7 @@ def get_axis_angle(rpe_analyzer: RobustPhaseEstimation,
 
 
 def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
-                     plot_delta=False, unit='deg', ax=None, **kwargs):
+                     plot_delta=False, unit='deg', zoom_inset: bool = False, ax=None, **kwargs):
     """Plots the historical estimates of the target parameter with estimate
         precision shown as a shaded region.
 
@@ -142,6 +154,8 @@ def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
               If 'rad' plot angle in radians.
               If 'pi' plot angle as multiple of pi.
               If '2pi' plot angle as multiple of 2*pi.
+        zoom_inset: If True, zooms into the region around the best estimate to
+                    plainly show the estimate precision.
         ax: If provided, plot on an existing set of axes.
         **kwargs: Plot kwargs.
 
@@ -153,6 +167,9 @@ def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
     if ax is None:
         fig = plt.figure()
         ax = fig.gca()
+    else:
+        fig = ax.get_figure()
+
     max_lengths = np.array([2 ** i for i in range(len(rpe_analyzer.angle_estimates))])
     best_idx = rpe_analyzer.check_unif_local(**kwargs)
 
@@ -175,7 +192,8 @@ def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
     n_digits = count_num_decimal_places(precision)
 
     best_estimate = '{0:.{1}f}'.format(round(best_angle, n_digits)/np.pi, n_digits)\
-                    + '({0:.1g})'.format(round(precision, n_digits)/np.pi * (10 ** n_digits))
+                    + '({0:.0f})'.format(round(precision, n_digits + 1)/np.pi *
+                                        (10 ** (n_digits + 1)))
 
     if unit == 'deg':
         scale = 180.0 / np.pi
@@ -192,7 +210,6 @@ def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
 
     plot_label = f'$\\langle \\{target_parameter} \\rangle = \\pi\\cdot$' \
                  + best_estimate
-
 
     if plot_delta:
         target_label = f'$\\Delta \\{target_parameter} = 0'
@@ -223,6 +240,18 @@ def plot_rpe_results(rpe_analyzer, target_parameter='phi', target_angle=0,
 
         ylabel = f'$\\{target_parameter}$ ' + yunit
 
+    if zoom_inset:
+        ax_inset = ax.inset_axes([0.7, 0.1, 0.2, 0.2])
+        plot_rpe_results(rpe_analyzer, target_parameter=target_parameter,
+                         target_angle=target_angle, unit=unit, ax=ax_inset,
+                         plot_delta=plot_delta, **kwargs);
+
+        ax_inset.set_xlabel('')
+        ax_inset.set_ylabel('')
+        ax_inset.set_xlim([2 ** (best_idx - 1), 2 ** (best_idx + 1)])
+        ax_inset.set_ylim((best_angle - 4 * precision) / np.pi,
+                          (best_angle + 4 * precision) / np.pi)
+        ax_inset.get_legend().remove()
 
     ax.set_xscale('log', base=2)
     ax.set_xticks(max_lengths)
