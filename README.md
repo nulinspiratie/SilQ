@@ -49,7 +49,7 @@ The methods of installing the keysight packages are not elegant and are outlined
 
 1. Clone the [SilQ](https://nulinspiratie.github.io/SilQ/) and relevant [Qcodes fork](https://github.com/nulinspiratie/Qcodes) repo
 
-2. Open anaconda prompt as administrator
+2. Open anaconda prompt window - **run as administrator**
 
 3. cd into the SilQ repo directory and create an environment using the `spec-file.txt`. This will install all the required packages readily available via the `conda` package manager. 
 
