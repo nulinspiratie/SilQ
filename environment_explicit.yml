@@ -1,6 +1,0 @@
-name: silq
-channels:
-  - defaults
-dependencies:
-  - python=3.8
-prefix: /home/brandonseverin/miniconda3/envs/silq
