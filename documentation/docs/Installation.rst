@@ -57,6 +57,40 @@ basic GUI for managing GitHub repositories.
 Install QCoDeS and SilQ
 =======================
 
+The key requirements for SilQ_ outside the default anaconda packages are the following:
+
+..  code-block:: yaml
+
+    name: silq
+    channels:
+      - defaults
+    dependencies:
+      - python=3.9
+      - nodejs
+      - sidecar
+      - pyqtgraph
+      - peakutils
+      - lmfit
+      - ipympl
+      - slacker
+      - nidaqmx-python
+      - pyvisa=1.10.1
+    prefix: C:\Users\<USERNAME>\anaconda3
+
+**N.B.** pay close attention to the pyvisa verion (1.10.1). SilQ and the Qcodes fork that silq relies on will not work with newer pyvisa versions such as `1.12.0`.
+
+It is recommend to install the required packages using ``conda``, instead of ``pip`` via ``conda install -c conda-forge <PACKAGE NAME>`` as administrator.
+
+Users will also need the following:
+
+..  code-block:: yaml
+
+    dependencies:
+      - keysight-hvi
+      - keysightSD1
+
+The methods of installing the keysight packages are not elegant and are also outlined below.
+
 
 Download source code
 --------------------
@@ -70,12 +104,37 @@ downloaded from GitHub using GitHub Desktop by `cloning <https://help.github
 the repository SilQ_ into your hard drive (e.g. ``User/Documents/Github/SilQ``).
 
 .. note::
-  The QCoDeS fork our group uses is a submodule of SilQ, and should be a folder
-  in the ``SilQ`` root folder. Please check that the folder is not empty. If it
-  is empty, download the QCoDeS source code by entering the following command
-  in cmd prompt while in the SilQ root folder::
+  SilQ_ relies on an outdated QCoDeS fork which you must clone from `nulinspiratie github <https://github.com/nulinspiratie/Qcodes/>`_. Newer versions of Qcodes will not work
 
-    git submodule update --init --recursive
+Clone the SilQ_ and relevant `Qcodes fork <https://github.com/nulinspiratie/Qcodes/>`_ repo. Both of which reside on `nulinspiratie's github <https://github.com/nulinspiratie/>`_.
+
+Set up Python environment - Windows
+-----------------------------------
+
+1. Open anaconda prompt window - **run as administrator**
+
+2. cd into the SilQ repo directory and create an environment using the ``spec-file.txt``. This will install all the required packages readily available via the ``conda`` package manager. 
+
+    ``conda create --name myenv --file spec-file.txt``
+
+3. Activate the newly created environment
+
+    ``conda activate myenv``
+
+Set up Python environment - Linux
+---------------------------------
+
+Unfortunately, there is not a prepared conda environment ``spec-file.txt`` file for Linux-based operating systems but one can create a new conda environment and install the required packages in the following manner
+
+.. code-block:: bash
+  
+    conda create --name myenv
+
+    conda activate myenv
+
+    conda install -c forge nodejs sidecar pyqtgraph peakutils lmfit ipympl slacker nidaqmx-python pyvisa=1.10.1
+
+Then continue the installation of ``Qcodes``, ``SilQ``, ``keysight-hvi`` and ``keysightSD1`` by carrying out the relevant steps outlined above and replacing the directories for the relevant modules with the Linux-based ones.
 
 
 Install QCodes
@@ -87,7 +146,7 @@ these steps:
 1. Open command prompt (type cmd into start menu and right click to open as
    administrator)
 2. Navigate to the Qcodes folder on your computer (SilQ/Qcodes),
-3. run ``python setup.py develop``
+3. run ``pip install -e .``
 4. If a notification pops up that packages are missing, install these by running
    ``pip install {packages}``, where ``{packages}`` are the packages you
    want to install separated by spaces.
@@ -99,9 +158,24 @@ After QCoDeS is installed, similar directions should be used to install SilQ:
 
 1. In command prompt, navigate to SilQ folder on your computer
    (not ``SilQ/silq`` but one level up).
-2. Run ``python setup.py develop``.
+2. Run ``pip install -e .``.
 3. Install any packages that are missing.
 
+Install Keysight dependencies
+-----------------------------
+
+1. Download [KeysightSD1 2.X software](https://www.keysight.com/us/en/lib/software-detail/instrument-firmware-software/sd1-2x-software-2784055.html), follow the wizard, use default settings.
+
+2. Install ``keysight-hvi``
+
+    .. code-block:: bash
+          
+          
+          cd C:\Program Files\Keysight\PathWave Test Sync Executive 2021\api\Python\Python38
+
+          pip install .
+
+3. Install ``keysightSD1``, by copying the the ``keysightSD1.py`` file from ``C:\Program Files (x86)\Keysight\SD1\Libraries\Python`` to ``C:\Users\Scarlett\anaconda3\envs\<MY ENV>\Lib\site-packages``.
 
 Using SilQ
 ==========
