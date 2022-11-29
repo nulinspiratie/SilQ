@@ -47,7 +47,7 @@ The methods of installing the keysight packages are not elegant and are outlined
 
 #### Windows
 
-1. Clone the [SilQ](https://nulinspiratie.github.io/SilQ/) and relevant [Qcodes fork](https://github.com/nulinspiratie/Qcodes) repo
+1. Clone the [SilQ](https://github.com/nulinspiratie/silq) and relevant [Qcodes fork](https://github.com/nulinspiratie/Qcodes) repo
 
 2. Open anaconda prompt window - **run as administrator**
 
